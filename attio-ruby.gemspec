@@ -5,21 +5,21 @@ require_relative "lib/attio/version"
 Gem::Specification.new do |spec|
   spec.name = "attio-ruby"
   spec.version = Attio::VERSION
-  spec.authors = ["Your Name"]
-  spec.email = ["your.email@example.com"]
+  spec.authors = ["Attio Team"]
+  spec.email = ["support@attio.com"]
 
   spec.summary = "Ruby client library for the Attio API"
   spec.description = "A comprehensive Ruby client library for the Attio CRM API with OAuth support, type safety, and extensive test coverage"
-  spec.homepage = "https://github.com/yourusername/attio-ruby"
+  spec.homepage = "https://github.com/attio/attio-ruby"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = spec.homepage
-  spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/attio/attio-ruby"
+  spec.metadata["changelog_uri"] = "https://github.com/attio/attio-ruby/blob/main/CHANGELOG.md"
   spec.metadata["documentation_uri"] = "https://rubydoc.info/gems/attio-ruby"
-  spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/attio/attio-ruby/issues"
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.chdir(__dir__) do
