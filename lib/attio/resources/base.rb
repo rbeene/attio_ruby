@@ -172,7 +172,7 @@ module Attio
       end
 
       def connection_manager
-        @connection_manager ||= Util::ConnectionManager.new
+        Attio.connection_manager
       end
 
       protected
@@ -232,18 +232,47 @@ module Attio
         end
       end
 
-      # Dynamic attribute methods
+      # Define attribute accessors for known attributes
+      def self.attr_attio(*attributes)
+        attributes.each do |attr|
+          # Reader method
+          define_method(attr) do
+            self[attr]
+          end
+
+          # Writer method
+          define_method("#{attr}=") do |value|
+            self[attr] = value
+          end
+
+          # Predicate method
+          define_method("#{attr}?") do
+            !!self[attr]
+          end
+        end
+      end
+
+      # Dynamic attribute methods - use sparingly!
+      # This is kept for backwards compatibility and dynamic attributes
       def method_missing(method_name, *args, &block)
         method_string = method_name.to_s
 
         if method_string.end_with?("=")
           # Setter method
           attribute_name = method_string[0...-1].to_sym
-          self[attribute_name] = args.first
+          if @attributes.key?(attribute_name) || args.any?
+            self[attribute_name] = args.first
+          else
+            super
+          end
         elsif method_string.end_with?("?")
           # Predicate method
           attribute_name = method_string[0...-1].to_sym
-          !!self[attribute_name]
+          if @attributes.key?(attribute_name)
+            !!self[attribute_name]
+          else
+            super
+          end
         elsif @attributes.key?(method_name)
           # Getter method
           self[method_name]
@@ -255,8 +284,11 @@ module Attio
       def respond_to_missing?(method_name, include_private = false)
         method_string = method_name.to_s
 
-        if method_string.end_with?("=", "?")
-          true
+        if method_string.end_with?("=")
+          true # Allow any attribute to be set
+        elsif method_string.end_with?("?")
+          attribute_name = method_string[0...-1].to_sym
+          @attributes.key?(attribute_name)
         elsif @attributes.key?(method_name)
           true
         else
