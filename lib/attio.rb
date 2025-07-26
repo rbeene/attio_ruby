@@ -2,7 +2,22 @@
 
 require_relative "attio/version"
 require_relative "attio/util/configuration"
+require_relative "attio/util/connection_manager"
+require_relative "attio/util/request_builder"
+require_relative "attio/util/response_parser"
 require_relative "attio/errors"
+require_relative "attio/api_operations/create"
+require_relative "attio/api_operations/retrieve"
+require_relative "attio/api_operations/update"
+require_relative "attio/api_operations/delete"
+require_relative "attio/api_operations/list"
+require_relative "attio/resources/base"
+require_relative "attio/resources/object"
+require_relative "attio/resources/record"
+require_relative "attio/resources/attribute"
+require_relative "attio/oauth/client"
+require_relative "attio/oauth/token"
+require_relative "attio/oauth/scope_validator"
 
 module Attio
   class Error < StandardError; end
