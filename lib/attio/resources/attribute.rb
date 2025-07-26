@@ -1,17 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "../api_operations/list"
-require_relative "../api_operations/retrieve"
-require_relative "../api_operations/create"
-require_relative "../api_operations/update"
+require_relative "../api_resource"
 
 module Attio
-  class Attribute < Resources::Base
-    include APIOperations::List
-    include APIOperations::Retrieve
-    include APIOperations::Create
-    include APIOperations::Update
+  class Attribute < APIResource
+    api_operations :list, :retrieve, :create, :update
 
     # Attribute types
     TYPES = %w[
@@ -57,25 +50,19 @@ module Attio
       "/attributes"
     end
 
-    attr_reader :api_slug, :name, :description, :type, :is_required, :is_unique,
-      :is_default_value_enabled, :default_value, :options,
-      :attio_object_id, :object_api_slug, :parent_object_id,
-      :created_by_actor, :is_archived, :archived_at
+    # Define known attributes with proper accessors
+    attr_attio :name, :description, :is_required, :is_unique, 
+               :is_default_value_enabled, :default_value, :options
+
+    # Read-only attributes
+    attr_reader :api_slug, :type, :attio_object_id, :object_api_slug,
+                :parent_object_id, :created_by_actor, :is_archived, :archived_at
 
     def initialize(attributes = {}, opts = {})
       super
-
-      # Now we can safely use symbol keys only since parent normalized them
       normalized_attrs = normalize_attributes(attributes)
       @api_slug = normalized_attrs[:api_slug]
-      @name = normalized_attrs[:name]
-      @description = normalized_attrs[:description]
       @type = normalized_attrs[:type]
-      @is_required = normalized_attrs[:is_required] || false
-      @is_unique = normalized_attrs[:is_unique] || false
-      @is_default_value_enabled = normalized_attrs[:is_default_value_enabled] || false
-      @default_value = normalized_attrs[:default_value]
-      @options = normalized_attrs[:options]
       @attio_object_id = normalized_attrs[:object_id]
       @object_api_slug = normalized_attrs[:object_api_slug]
       @parent_object_id = normalized_attrs[:parent_object_id]
@@ -84,192 +71,21 @@ module Attio
       @archived_at = parse_timestamp(normalized_attrs[:archived_at])
     end
 
-    class << self
-      # List attributes for an object
-      def list(params = {}, object: nil, **opts)
-        query_params = params.dup
-        query_params[:object] = object if object
+    # Archive this attribute
+    def archive(**opts)
+      raise InvalidRequestError, "Cannot archive an attribute without an ID" unless persisted?
 
-        request = RequestBuilder.build(
-          method: :GET,
-          path: resource_path,
-          params: query_params,
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
-
-        response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
-
-        APIOperations::List::ListObject.new(parsed, self, query_params, opts)
-      end
-
-      # Create an attribute
-      def create(params = {}, object:, **opts)
-        validate_object_identifier!(object)
-        validate_type!(params[:type] || params["type"])
-        validate_type_config!(params)
-
-        attribute_params = prepare_attribute_params(params.merge(object: object))
-
-        request = RequestBuilder.build(
-          method: :POST,
-          path: resource_path,
-          params: attribute_params,
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
-
-        response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
-
-        new(parsed, opts)
-      end
-
-      private
-
-      def validate_object_identifier!(object)
-        raise ArgumentError, "Object identifier is required" if object.nil? || object.to_s.empty?
-      end
-
-      def validate_type!(type)
-        raise ArgumentError, "Attribute type is required" if type.nil? || type.to_s.empty?
-        unless TYPES.include?(type.to_s)
-          raise ArgumentError, "Invalid attribute type: #{type}. Valid types: #{TYPES.join(", ")}"
-        end
-      end
-
-      def validate_type_config!(params)
-        type = params[:type] || params["type"]
-        config = TYPE_CONFIGS[type.to_s]
-        return unless config
-
-        # Check required options
-        if config[:requires_options]
-          options = params[:options] || params["options"]
-          if options.nil? || (options.is_a?(Array) && options.empty?)
-            raise ArgumentError, "Attribute type '#{type}' requires options"
-          end
-        end
-
-        # Check required target object
-        if config[:requires_target_object]
-          target = params[:target_object] || params["target_object"]
-          if target.nil? || target.to_s.empty?
-            raise ArgumentError, "Attribute type '#{type}' requires target_object"
-          end
-        end
-
-        # Validate unsupported features
-        if params[:is_unique] && !config[:supports_unique]
-          raise ArgumentError, "Attribute type '#{type}' does not support unique constraint"
-        end
-
-        if params[:is_required] && !config[:supports_required]
-          raise ArgumentError, "Attribute type '#{type}' does not support required constraint"
-        end
-
-        if params[:is_default_value_enabled] && !config[:supports_default]
-          raise ArgumentError, "Attribute type '#{type}' does not support default values"
-        end
-      end
-
-      def prepare_attribute_params(params)
-        {
-          object: params[:object],
-          name: params[:name],
-          type: params[:type],
-          description: params[:description],
-          is_required: params[:is_required],
-          is_unique: params[:is_unique],
-          is_default_value_enabled: params[:is_default_value_enabled],
-          default_value: params[:default_value],
-          options: prepare_options(params[:options]),
-          target_object: params[:target_object]
-        }.compact
-      end
-
-      def prepare_options(options)
-        return nil unless options
-
-        case options
-        when Array
-          options.map do |opt|
-            case opt
-            when String
-              {title: opt}
-            when Hash
-              opt
-            else
-              {title: opt.to_s}
-            end
-          end
-        else
-          options
-        end
-      end
-    end
-
-    # Instance methods
-
-    def save(opts = {})
-      if id.nil?
-        raise Errors::InvalidRequestError, "Cannot update an attribute without an ID"
-      end
-
-      params = prepare_update_params
-
-      request = RequestBuilder.build(
-        method: :PATCH,
-        path: resource_path,
-        params: params,
-        headers: opts[:headers] || {},
-        api_key: opts[:api_key] || @opts[:api_key]
-      )
-
-      response = connection_manager.execute(request)
-      parsed = ResponseParser.parse(response, request)
-
-      update_from(parsed)
-      reset_changes!
+      response = self.class.send(:execute_request, :POST, "#{resource_path}/archive", {}, opts)
+      update_from(response[:data] || response)
       self
     end
 
-    def archive(opts = {})
-      if id.nil?
-        raise Errors::InvalidRequestError, "Cannot archive an attribute without an ID"
-      end
+    # Unarchive this attribute
+    def unarchive(**opts)
+      raise InvalidRequestError, "Cannot unarchive an attribute without an ID" unless persisted?
 
-      request = RequestBuilder.build(
-        method: :POST,
-        path: "#{resource_path}/#{id}/archive",
-        headers: opts[:headers] || {},
-        api_key: opts[:api_key] || @opts[:api_key]
-      )
-
-      response = connection_manager.execute(request)
-      parsed = ResponseParser.parse(response, request)
-
-      update_from(parsed)
-      self
-    end
-
-    def unarchive(opts = {})
-      if id.nil?
-        raise Errors::InvalidRequestError, "Cannot unarchive an attribute without an ID"
-      end
-
-      request = RequestBuilder.build(
-        method: :POST,
-        path: "#{resource_path}/#{id}/unarchive",
-        headers: opts[:headers] || {},
-        api_key: opts[:api_key] || @opts[:api_key]
-      )
-
-      response = connection_manager.execute(request)
-      parsed = ResponseParser.parse(response, request)
-
-      update_from(parsed)
+      response = self.class.send(:execute_request, :POST, "#{resource_path}/unarchive", {}, opts)
+      update_from(response[:data] || response)
       self
     end
 
@@ -278,15 +94,15 @@ module Attio
     end
 
     def required?
-      @is_required == true
+      is_required == true
     end
 
     def unique?
-      @is_unique == true
+      is_unique == true
     end
 
     def has_default?
-      @is_default_value_enabled == true
+      is_default_value_enabled == true
     end
 
     def to_h
@@ -309,29 +125,117 @@ module Attio
       ).compact
     end
 
-    private
+    class << self
+      # Override create to handle validation and object parameter
+      def prepare_params_for_create(params)
+        validate_object_identifier!(params[:object])
+        validate_type!(params[:type])
+        validate_type_config!(params)
 
-    def prepare_update_params
-      # Only certain fields can be updated
-      updateable_fields = %i[
-        name
-        description
-        is_required
-        is_unique
-        is_default_value_enabled
-        default_value
-        options
-      ]
+        {
+          object: params[:object],
+          name: params[:name],
+          type: params[:type],
+          description: params[:description],
+          is_required: params[:is_required],
+          is_unique: params[:is_unique],
+          is_default_value_enabled: params[:is_default_value_enabled],
+          default_value: params[:default_value],
+          options: prepare_options(params[:options]),
+          target_object: params[:target_object]
+        }.compact
+      end
 
-      params = {}
-      updateable_fields.each do |field|
-        if changed.include?(field.to_s)
-          params[field] = send(field)
+      # Override update params preparation
+      def prepare_params_for_update(params)
+        # Only certain fields can be updated
+        updateable_fields = %i[
+          name
+          description
+          is_required
+          is_unique
+          is_default_value_enabled
+          default_value
+          options
+        ]
+
+        update_params = params.slice(*updateable_fields)
+        update_params[:options] = prepare_options(update_params[:options]) if update_params[:options]
+        update_params
+      end
+
+      # List attributes for a specific object
+      def for_object(object, params = {}, **opts)
+        list(params.merge(object: object), **opts)
+      end
+
+      private
+
+      def validate_object_identifier!(object)
+        raise ArgumentError, "Object identifier is required" if object.nil? || object.to_s.empty?
+      end
+
+      def validate_type!(type)
+        raise ArgumentError, "Attribute type is required" if type.nil? || type.to_s.empty?
+        unless TYPES.include?(type.to_s)
+          raise ArgumentError, "Invalid attribute type: #{type}. Valid types: #{TYPES.join(", ")}"
         end
       end
 
-      params[:options] = self.class.send(:prepare_options, params[:options]) if params[:options]
-      params
+      def validate_type_config!(params)
+        type = params[:type]
+        config = TYPE_CONFIGS[type.to_s]
+        return unless config
+
+        # Check required options
+        if config[:requires_options]
+          options = params[:options]
+          if options.nil? || (options.is_a?(Array) && options.empty?)
+            raise ArgumentError, "Attribute type '#{type}' requires options"
+          end
+        end
+
+        # Check required target object
+        if config[:requires_target_object]
+          target = params[:target_object]
+          if target.nil? || target.to_s.empty?
+            raise ArgumentError, "Attribute type '#{type}' requires target_object"
+          end
+        end
+
+        # Validate unsupported features
+        if params[:is_unique] && !config[:supports_unique]
+          raise ArgumentError, "Attribute type '#{type}' does not support unique constraint"
+        end
+
+        if params[:is_required] && !config[:supports_required]
+          raise ArgumentError, "Attribute type '#{type}' does not support required constraint"
+        end
+
+        if params[:is_default_value_enabled] && !config[:supports_default]
+          raise ArgumentError, "Attribute type '#{type}' does not support default values"
+        end
+      end
+
+      def prepare_options(options)
+        return nil unless options
+
+        case options
+        when Array
+          options.map do |opt|
+            case opt
+            when String
+              {title: opt}
+            when Hash
+              opt
+            else
+              {title: opt.to_s}
+            end
+          end
+        else
+          options
+        end
+      end
     end
   end
 end

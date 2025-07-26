@@ -33,17 +33,21 @@ module Attio
 
     # Get all entries in this list
     def entries(params = {}, **opts)
-      ListEntry.list(params.merge(list_id: id), **opts)
+      client = Attio.client(api_key: opts[:api_key])
+      response = client.get("/lists/#{id}/entries", params)
+      response[:data] || []
     end
 
     # Add a record to this list
     def add_record(record_id, **opts)
-      ListEntry.create(list_id: id, record_id: record_id, **opts)
+      client = Attio.client(api_key: opts[:api_key])
+      client.post("/lists/#{id}/entries", { record_id: record_id })
     end
 
     # Remove a record from this list
     def remove_record(entry_id, **opts)
-      ListEntry.delete(entry_id, list_id: id, **opts)
+      client = Attio.client(api_key: opts[:api_key])
+      client.delete("/lists/#{id}/entries/#{entry_id}")
     end
 
     # Check if a record is in this list
@@ -53,7 +57,8 @@ module Attio
 
     # Get the count of entries
     def entry_count(**opts)
-      entries({ limit: 1 }, **opts).total_count
+      # Just get the entries and count them
+      entries(**opts).length
     end
 
     def to_h

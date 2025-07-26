@@ -1,29 +1,21 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "../api_operations/list"
-require_relative "../api_operations/retrieve"
-require_relative "../api_operations/create"
-require_relative "../api_operations/delete"
+require_relative "../api_resource"
 
 module Attio
-  class Note < Resources::Base
-    include APIOperations::List
-    include APIOperations::Retrieve
-    include APIOperations::Create
-    include APIOperations::Delete
+  class Note < APIResource
+    api_operations :list, :retrieve, :create, :delete
 
     def self.resource_path
       "/notes"
     end
 
+    # Read-only attributes - notes are immutable
     attr_reader :parent_object, :parent_record_id, :content, :format,
-      :created_by_actor, :content_plaintext
+                :created_by_actor, :content_plaintext
 
     def initialize(attributes = {}, opts = {})
       super
-
-      # Now we can safely use symbol keys only since parent normalized them
       normalized_attrs = normalize_attributes(attributes)
       @parent_object = normalized_attrs[:parent_object]
       @parent_record_id = normalized_attrs[:parent_record_id]
@@ -34,13 +26,13 @@ module Attio
     end
 
     # Get the parent record
-    def parent_record(opts = {})
+    def parent_record(**opts)
       return nil unless parent_object && parent_record_id
 
       Record.retrieve(
         object: parent_object,
         record_id: parent_record_id,
-        opts: opts
+        **opts
       )
     end
 
@@ -59,6 +51,15 @@ module Attio
       content_plaintext || strip_html(content)
     end
 
+    # Notes cannot be updated
+    def save(*)
+      raise NotImplementedError, "Notes cannot be updated. Create a new note instead."
+    end
+
+    def update(*)
+      raise NotImplementedError, "Notes cannot be updated. Create a new note instead."
+    end
+
     def to_h
       super.merge(
         parent_object: parent_object,
@@ -71,60 +72,28 @@ module Attio
     end
 
     class << self
-      # List notes for a specific record
-      def list(params = {}, parent_object: nil, parent_record_id: nil, **opts)
-        query_params = params.dup
-        query_params[:parent_object] = parent_object if parent_object
-        query_params[:parent_record_id] = parent_record_id if parent_record_id
+      # Override create to handle validation
+      def prepare_params_for_create(params)
+        validate_parent!(params[:parent_object], params[:parent_record_id])
+        validate_content!(params[:content])
+        validate_format!(params[:format]) if params[:format]
 
-        request = RequestBuilder.build(
-          method: :GET,
-          path: resource_path,
-          params: query_params,
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
-
-        response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
-
-        APIOperations::List::ListObject.new(parsed, self, query_params, opts)
-      end
-
-      # Create a note
-      def create(content:, parent_object:, parent_record_id:, format: "plaintext", **opts)
-        validate_parent!(parent_object, parent_record_id)
-        validate_content!(content)
-        validate_format!(format)
-
-        params = {
-          parent_object: parent_object,
-          parent_record_id: parent_record_id,
-          content: content,
-          format: format
+        {
+          parent_object: params[:parent_object],
+          parent_record_id: params[:parent_record_id],
+          content: params[:content],
+          format: params[:format] || "plaintext"
         }
-
-        request = RequestBuilder.build(
-          method: :POST,
-          path: resource_path,
-          params: params,
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
-
-        response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
-
-        new(parsed, opts)
       end
 
       # Get notes for a record
       def for_record(params = {}, object:, record_id:, **opts)
         list(
-          parent_object: object,
-          parent_record_id: record_id,
-          params: params,
-          opts: opts
+          params.merge(
+            parent_object: object,
+            parent_record_id: record_id
+          ),
+          **opts
         )
       end
 
@@ -152,17 +121,6 @@ module Attio
           raise ArgumentError, "Invalid format: #{format}. Valid formats: #{valid_formats.join(", ")}"
         end
       end
-    end
-
-    # Instance methods
-
-    # Notes cannot be updated
-    def save(*)
-      raise NotImplementedError, "Notes cannot be updated. Create a new note instead."
-    end
-
-    def update(*)
-      raise NotImplementedError, "Notes cannot be updated. Create a new note instead."
     end
 
     private

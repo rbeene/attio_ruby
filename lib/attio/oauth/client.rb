@@ -27,7 +27,6 @@ module Attio
         @client_id = client_id
         @client_secret = client_secret
         @redirect_uri = redirect_uri
-        @connection_manager = Attio.connection_manager
         validate_config!
       end
 
@@ -94,20 +93,16 @@ module Attio
           client_secret: client_secret
         }
 
-        request = Util::RequestBuilder.build(
-          method: :POST,
-          path: "/oauth/revoke",
-          params: params,
-          api_key: "oauth" # OAuth endpoints don't use API keys
-        )
+        # Use Faraday directly for OAuth endpoints
+        conn = create_oauth_connection
+        response = conn.post("/v2/oauth/revoke") do |req|
+          req.headers["Content-Type"] = "application/x-www-form-urlencoded"
+          req.body = URI.encode_www_form(params)
+        end
 
-        @connection_manager.execute(request)
-        true
-      rescue Error
-        # Token might already be revoked
-        false
-      rescue
-        # Catch any other errors
+        response.success?
+      rescue => e
+        # Token might already be revoked or other error
         false
       end
 
@@ -121,15 +116,18 @@ module Attio
           client_secret: client_secret
         }
 
-        request = Util::RequestBuilder.build(
-          method: :POST,
-          path: "/oauth/introspect",
-          params: params,
-          api_key: "oauth" # OAuth endpoints don't use API keys
-        )
+        # Use Faraday directly for OAuth endpoints
+        conn = create_oauth_connection
+        response = conn.post("/v2/oauth/introspect") do |req|
+          req.headers["Content-Type"] = "application/x-www-form-urlencoded"
+          req.body = URI.encode_www_form(params)
+        end
 
-        response = @connection_manager.execute(request)
-        Util::ResponseParser.parse(response)
+        if response.success?
+          JSON.parse(response.body, symbolize_names: true)
+        else
+          handle_oauth_error(response)
+        end
       end
 
       private
@@ -161,18 +159,51 @@ module Attio
       end
 
       def make_token_request(params)
-        request = {
-          method: :POST,
-          uri: URI.parse(TOKEN_URL),
-          headers: {
-            "Content-Type" => "application/x-www-form-urlencoded",
-            "Accept" => "application/json"
-          },
-          body: URI.encode_www_form(params)
-        }
+        conn = Faraday.new(url: TOKEN_URL) do |faraday|
+          faraday.request :url_encoded
+          faraday.response :json, parser_options: { symbolize_names: true }
+          faraday.adapter Faraday.default_adapter
+        end
 
-        response = @connection_manager.execute(request)
-        Util::ResponseParser.parse(response)
+        response = conn.post do |req|
+          req.headers["Accept"] = "application/json"
+          req.body = params
+        end
+
+        if response.success?
+          response.body
+        else
+          handle_oauth_error(response)
+        end
+      end
+
+      def create_oauth_connection
+        Faraday.new(url: "https://api.attio.com") do |faraday|
+          faraday.response :json, parser_options: { symbolize_names: true }
+          faraday.adapter Faraday.default_adapter
+        end
+      end
+
+      def handle_oauth_error(response)
+        error_body = response.body rescue {}
+        error_message = if error_body.is_a?(Hash)
+          error_body[:error_description] || error_body[:error] || "OAuth error"
+        else
+          "OAuth error"
+        end
+
+        case response.status
+        when 400
+          raise BadRequestError, error_message
+        when 401
+          raise AuthenticationError, error_message
+        when 403
+          raise PermissionError, error_message
+        when 404
+          raise NotFoundError, error_message
+        else
+          raise Error, "OAuth error: #{error_message} (status: #{response.status})"
+        end
       end
     end
   end

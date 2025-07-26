@@ -1,24 +1,21 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "../api_operations/list"
-require_relative "../api_operations/retrieve"
+require_relative "../api_resource"
 
 module Attio
-  class WorkspaceMember < Resources::Base
-    include APIOperations::List
-    include APIOperations::Retrieve
+  class WorkspaceMember < APIResource
+    api_operations :list, :retrieve
 
     def self.resource_path
       "/workspace_members"
     end
 
+    # Read-only attributes - workspace members are immutable via API
     attr_reader :email_address, :first_name, :last_name, :avatar_url,
-      :access_level, :status, :invited_at, :last_accessed_at
+                :access_level, :status, :invited_at, :last_accessed_at
 
     def initialize(attributes = {}, opts = {})
       super
-      # Now we can safely use symbol keys only since parent normalized them
       normalized_attrs = normalize_attributes(attributes)
       @email_address = normalized_attrs[:email_address]
       @first_name = normalized_attrs[:first_name]
@@ -60,6 +57,19 @@ module Attio
       access_level == "standard"
     end
 
+    # Workspace members cannot be modified via API
+    def save(*)
+      raise NotImplementedError, "Workspace members cannot be updated via API"
+    end
+
+    def update(*)
+      raise NotImplementedError, "Workspace members cannot be updated via API"
+    end
+
+    def destroy(*)
+      raise NotImplementedError, "Workspace members cannot be deleted via API"
+    end
+
     def to_h
       super.merge(
         email_address: email_address,
@@ -75,38 +85,29 @@ module Attio
 
     class << self
       # Get the current user (the API key owner)
-      def me(opts = {})
-        request = RequestBuilder.build(
-          method: :GET,
-          path: "#{resource_path}/me",
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
-
-        response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
-
-        new(parsed, opts)
+      def me(**opts)
+        response = execute_request(:GET, "#{resource_path}/me", {}, opts)
+        new(response[:data] || response, opts)
       end
       alias_method :current, :me
 
       # Find member by email
-      def find_by_email(email, opts = {})
-        list(opts).find { |member| member.email_address == email } ||
-          raise(Errors::NotFoundError, "Workspace member with email '#{email}' not found")
+      def find_by_email(email, **opts)
+        list(**opts).find { |member| member.email_address == email } ||
+          raise(NotFoundError, "Workspace member with email '#{email}' not found")
       end
 
       # List active members only
-      def active(opts = {})
-        list(opts).select(&:active?)
+      def active(**opts)
+        list(**opts).select(&:active?)
       end
 
       # List admin members only
-      def admins(opts = {})
-        list(opts).select(&:admin?)
+      def admins(**opts)
+        list(**opts).select(&:admin?)
       end
 
-      # This resource doesn't support creation or updates
+      # This resource doesn't support creation, updates, or deletion
       def create(*)
         raise NotImplementedError, "Workspace members cannot be created via API"
       end
@@ -118,15 +119,6 @@ module Attio
       def delete(*)
         raise NotImplementedError, "Workspace members cannot be deleted via API"
       end
-    end
-
-    # Instance methods that are not supported
-    def save(*)
-      raise NotImplementedError, "Workspace members cannot be updated via API"
-    end
-
-    def destroy(*)
-      raise NotImplementedError, "Workspace members cannot be deleted via API"
     end
   end
 end

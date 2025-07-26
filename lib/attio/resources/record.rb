@@ -201,7 +201,8 @@ module Attio
 
     # Add this record to a list
     def add_to_list(list_id, **opts)
-      ListEntry.create(list_id: list_id, record_id: id, **opts)
+      list = List.retrieve(list_id, **opts)
+      list.add_record(id, **opts)
     end
 
     # Get lists containing this record

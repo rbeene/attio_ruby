@@ -1,19 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "../api_operations/list"
-require_relative "../api_operations/retrieve"
-require_relative "../api_operations/create"
-require_relative "../api_operations/update"
-require_relative "../api_operations/delete"
+require_relative "../api_resource"
 
 module Attio
-  class Webhook < Resources::Base
-    include APIOperations::List
-    include APIOperations::Retrieve
-    include APIOperations::Create
-    include APIOperations::Update
-    include APIOperations::Delete
+  class Webhook < APIResource
+    api_operations :list, :retrieve, :create, :update, :delete
 
     def self.resource_path
       "/webhooks"
@@ -38,17 +29,15 @@ module Attio
       attribute.archived
     ].freeze
 
-    attr_reader :url, :events, :state, :api_version, :secret,
-      :last_event_at, :created_by_actor
+    # Define known attributes with proper accessors
+    attr_attio :url, :events, :state, :api_version
+
+    # Read-only attributes
+    attr_reader :secret, :last_event_at, :created_by_actor
 
     def initialize(attributes = {}, opts = {})
       super
-      # Now we can safely use symbol keys only since parent normalized them
       normalized_attrs = normalize_attributes(attributes)
-      @url = normalized_attrs[:url]
-      @events = normalized_attrs[:events] || []
-      @state = normalized_attrs[:state]
-      @api_version = normalized_attrs[:api_version]
       @secret = normalized_attrs[:secret]
       @last_event_at = parse_timestamp(normalized_attrs[:last_event_at])
       @created_by_actor = normalized_attrs[:created_by_actor]
@@ -65,74 +54,32 @@ module Attio
     end
 
     # Pause the webhook
-    def pause(opts = {})
-      update_state("paused", opts)
+    def pause(**opts)
+      self.state = "paused"
+      save(**opts)
     end
 
     # Resume the webhook
-    def resume(opts = {})
-      update_state("active", opts)
+    def resume(**opts)
+      self.state = "active"
+      save(**opts)
     end
     alias_method :activate, :resume
 
     # Test the webhook with a sample payload
-    def test(opts = {})
-      if id.nil?
-        raise Errors::InvalidRequestError, "Cannot test a webhook without an ID"
-      end
+    def test(**opts)
+      raise InvalidRequestError, "Cannot test a webhook without an ID" unless persisted?
 
-      request = RequestBuilder.build(
-        method: :POST,
-        path: "#{resource_path}/#{id}/test",
-        headers: opts[:headers] || {},
-        api_key: opts[:api_key] || @opts[:api_key]
-      )
-
-      response = connection_manager.execute(request)
-      ResponseParser.parse(response, request)
-
+      self.class.send(:execute_request, :POST, "#{resource_path}/test", {}, opts)
       true
     end
 
     # Get recent deliveries for this webhook
-    def deliveries(params = {}, opts = {})
-      if id.nil?
-        raise Errors::InvalidRequestError, "Cannot get deliveries for a webhook without an ID"
-      end
+    def deliveries(params = {}, **opts)
+      raise InvalidRequestError, "Cannot get deliveries for a webhook without an ID" unless persisted?
 
-      request = RequestBuilder.build(
-        method: :GET,
-        path: "#{resource_path}/#{id}/deliveries",
-        params: params,
-        headers: opts[:headers] || {},
-        api_key: opts[:api_key] || @opts[:api_key]
-      )
-
-      response = connection_manager.execute(request)
-      ResponseParser.parse(response, request)
-    end
-
-    def save(opts = {})
-      if id.nil?
-        raise Errors::InvalidRequestError, "Cannot update a webhook without an ID"
-      end
-
-      params = prepare_update_params
-
-      request = RequestBuilder.build(
-        method: :PATCH,
-        path: resource_path,
-        params: params,
-        headers: opts[:headers] || {},
-        api_key: opts[:api_key] || @opts[:api_key]
-      )
-
-      response = connection_manager.execute(request)
-      parsed = ResponseParser.parse(response, request)
-
-      update_from(parsed)
-      reset_changes!
-      self
+      response = self.class.send(:execute_request, :GET, "#{resource_path}/deliveries", params, opts)
+      response[:data] || []
     end
 
     def to_h
@@ -148,29 +95,29 @@ module Attio
     end
 
     class << self
-      # Create a webhook
-      def create(url:, events:, state: "active", opts: {})
-        validate_url!(url)
-        validate_events!(events)
+      # Override create to handle validation
+      def prepare_params_for_create(params)
+        validate_url!(params[:url])
+        validate_events!(params[:events])
 
-        params = {
-          url: url,
-          events: Array(events),
-          state: state
+        {
+          url: params[:url],
+          events: Array(params[:events]),
+          state: params[:state] || "active"
         }
+      end
 
-        request = RequestBuilder.build(
-          method: :POST,
-          path: resource_path,
-          params: params,
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
+      # Override update params preparation
+      def prepare_params_for_update(params)
+        # Only certain fields can be updated
+        updateable_fields = %i[url events state]
+        update_params = params.slice(*updateable_fields)
 
-        response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
+        # Validate if updating
+        validate_url!(update_params[:url]) if update_params[:url]
+        validate_events!(update_params[:events]) if update_params[:events]
 
-        new(parsed, opts)
+        update_params
       end
 
       private
@@ -195,30 +142,6 @@ module Attio
           raise ArgumentError, "Invalid events: #{invalid_events.join(", ")}. Valid events: #{EVENTS.join(", ")}"
         end
       end
-    end
-
-    private
-
-    def update_state(new_state, opts = {})
-      @state = new_state
-      save(opts)
-    end
-
-    def prepare_update_params
-      # Only certain fields can be updated
-      updateable_fields = %i[url events state]
-
-      params = {}
-      updateable_fields.each do |field|
-        value = send(field)
-        params[field] = value unless value.nil?
-      end
-
-      # Validate if updating
-      self.class.send(:validate_url!, params[:url]) if params[:url]
-      self.class.send(:validate_events!, params[:events]) if params[:events]
-
-      params
     end
   end
 end
