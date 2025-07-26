@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "../errors/client_errors"
 
 module Attio
   module Util
     class Configuration
-      class ConfigurationError < Errors::InvalidRequestError; end
+      class ConfigurationError < ::Attio::InvalidRequestError; end
       THREAD_MUTEX = Mutex.new
 
       REQUIRED_SETTINGS = %i[api_key].freeze
@@ -19,6 +18,7 @@ module Attio
         debug
         ca_bundle_path
         verify_ssl_certs
+        use_faraday
       ].freeze
 
       ALL_SETTINGS = (REQUIRED_SETTINGS + OPTIONAL_SETTINGS).freeze
@@ -32,7 +32,8 @@ module Attio
         logger: nil,
         debug: false,
         ca_bundle_path: nil,
-        verify_ssl_certs: true
+        verify_ssl_certs: true,
+        use_faraday: true
       }.freeze
 
       attr_accessor(*ALL_SETTINGS)

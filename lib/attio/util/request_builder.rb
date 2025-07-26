@@ -43,7 +43,7 @@ module Attio
       def validate_api_key!
         return if @api_key && !@api_key.empty?
 
-        raise Errors::AuthenticationError, "No API key provided. Set Attio.api_key or pass api_key option"
+        raise AuthenticationError, "No API key provided. Set Attio.api_key or pass api_key option"
       end
 
       def build_uri

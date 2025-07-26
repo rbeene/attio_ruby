@@ -1,21 +1,18 @@
 # frozen_string_literal: true
 
 require_relative "attio/version"
+require_relative "attio/errors"
 require_relative "attio/util/configuration"
 require_relative "attio/util/connection_manager"
+require_relative "attio/util/faraday_connection_manager"
 require_relative "attio/util/request_builder"
 require_relative "attio/util/response_parser"
-require_relative "attio/errors"
-require_relative "attio/api_operations/create"
-require_relative "attio/api_operations/retrieve"
-require_relative "attio/api_operations/update"
-require_relative "attio/api_operations/delete"
-require_relative "attio/api_operations/list"
 require_relative "attio/resources/base"
+require_relative "attio/api_resource"
 require_relative "attio/resources/object"
-require_relative "attio/resources/record"
+require_relative "attio/resources/record_v2"
 require_relative "attio/resources/attribute"
-require_relative "attio/resources/list"
+require_relative "attio/resources/list_v2"
 require_relative "attio/resources/list_entry"
 require_relative "attio/resources/webhook"
 require_relative "attio/resources/workspace_member"
@@ -113,6 +110,17 @@ module Attio
     # @return [String] The API version
     def api_version
       configuration.api_version
+    end
+
+    # Creates a new connection manager instance
+    #
+    # @return [Util::ConnectionManager, Util::FaradayConnectionManager] The connection manager
+    def connection_manager
+      if configuration.use_faraday
+        Util::FaradayConnectionManager.new
+      else
+        Util::ConnectionManager.new
+      end
     end
   end
 end

@@ -27,7 +27,7 @@ module Attio
         @client_id = client_id
         @client_secret = client_secret
         @redirect_uri = redirect_uri
-        @connection_manager = Util::ConnectionManager.new
+        @connection_manager = Attio.connection_manager
         validate_config!
       end
 
@@ -103,7 +103,7 @@ module Attio
 
         @connection_manager.execute(request)
         true
-      rescue Errors::Base
+      rescue Error
         # Token might already be revoked
         false
       rescue

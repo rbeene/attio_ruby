@@ -48,20 +48,18 @@ module Attio
             parsed_body
           end
         rescue JSON::ParserError => e
-          raise Errors::InvalidResponseError.new(
+          raise InvalidResponseError.new(
             "Invalid JSON response: #{e.message}",
-            http_status: @status,
-            http_body: @body,
-            response_headers: @headers
+            @response
           )
         end
       end
 
       def parse_error_response
-        error = Errors::ErrorFactory.from_response(@response, @request_context)
+        error = ErrorFactory.from_response(@response)
 
         # Add rate limit information if available
-        if error.is_a?(Errors::RateLimitError) && @headers["retry-after"]
+        if error.is_a?(RateLimitError) && @headers["retry-after"]
           error.instance_variable_set(:@retry_after, @headers["retry-after"].to_i)
         end
 
@@ -83,10 +81,6 @@ module Attio
     end
 
     # Custom error for invalid responses
-    class InvalidResponseError < Errors::Base
-      def initialize(message = "Invalid response from Attio API", **args)
-        super
-      end
-    end
+    class InvalidResponseError < Error; end
   end
 end

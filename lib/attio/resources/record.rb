@@ -253,7 +253,7 @@ module Attio
       end
 
       def connection_manager
-        Util::ConnectionManager.new
+        Attio.connection_manager
       end
     end
 

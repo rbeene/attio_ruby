@@ -123,12 +123,12 @@ module Attio
           retries += 1
 
           if retries >= max_retries
-            raise Errors::ErrorFactory.from_exception(e, request_context(request))
+            raise ErrorFactory.from_exception(e, request_context(request))
           end
 
           sleep(calculate_retry_delay(retries))
         rescue => e
-          raise Errors::ErrorFactory.from_exception(e, request_context(request))
+          raise ErrorFactory.from_exception(e, request_context(request))
         end
       end
 
