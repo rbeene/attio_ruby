@@ -1,6 +1,9 @@
+require_relative "../errors/client_errors"
+
 module Attio
   module Util
     class Configuration
+      class ConfigurationError < Errors::InvalidRequestError; end
       THREAD_MUTEX = Mutex.new
 
       REQUIRED_SETTINGS = %i[api_key].freeze
@@ -112,7 +115,6 @@ module Attio
         end
       end
 
-      class ConfigurationError < StandardError; end
     end
   end
 end

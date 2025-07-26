@@ -2,6 +2,7 @@
 
 require_relative "attio/version"
 require_relative "attio/util/configuration"
+require_relative "attio/errors"
 
 module Attio
   class Error < StandardError; end
