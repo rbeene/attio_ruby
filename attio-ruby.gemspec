@@ -32,8 +32,9 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  # Zero runtime dependencies as per the plan
-  # All dependencies are development only
+  # Runtime dependencies
+  spec.add_runtime_dependency "faraday", "~> 2.0"
+  spec.add_runtime_dependency "faraday-retry", "~> 2.0"
 
   # Development dependencies
   spec.add_development_dependency "bundler", "~> 2.0"
