@@ -21,10 +21,12 @@ module Attio
 
     def initialize(attributes = {}, opts = {})
       super
-      @api_slug = attributes[:api_slug] || attributes["api_slug"]
-      @singular_noun = attributes[:singular_noun] || attributes["singular_noun"]
-      @plural_noun = attributes[:plural_noun] || attributes["plural_noun"]
-      @created_by_actor = attributes[:created_by_actor] || attributes["created_by_actor"]
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @api_slug = normalized_attrs[:api_slug]
+      @singular_noun = normalized_attrs[:singular_noun]
+      @plural_noun = normalized_attrs[:plural_noun]
+      @created_by_actor = normalized_attrs[:created_by_actor]
     end
 
     # Get all attributes for this object

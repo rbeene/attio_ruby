@@ -14,19 +14,22 @@ module Attio
         @opts = opts
         @metadata = {}
 
+        # Normalize attributes to use symbol keys
+        normalized_attrs = normalize_attributes(attributes)
+
         # Extract metadata and system fields
-        if attributes.is_a?(Hash)
-          @id = attributes[:id] || attributes["id"]
-          @created_at = parse_timestamp(attributes[:created_at] || attributes["created_at"])
-          @metadata = attributes[:_metadata] || attributes["_metadata"] || {}
+        if normalized_attrs.is_a?(Hash)
+          @id = normalized_attrs[:id]
+          @created_at = parse_timestamp(normalized_attrs[:created_at])
+          @metadata = normalized_attrs[:_metadata] || {}
 
           # Process all attributes
-          skip_keys = %w[id created_at _metadata]
-          attributes.each do |key, value|
-            next if skip_keys.include?(key.to_s)
+          skip_keys = %i[id created_at _metadata]
+          normalized_attrs.each do |key, value|
+            next if skip_keys.include?(key)
 
-            @attributes[key.to_sym] = process_attribute_value(value)
-            @original_attributes[key.to_sym] = deep_copy(process_attribute_value(value))
+            @attributes[key] = process_attribute_value(value)
+            @original_attributes[key] = deep_copy(process_attribute_value(value))
           end
         end
       end
@@ -63,12 +66,12 @@ module Attio
       end
 
       def changed
-        @changed_attributes.to_a
+        @changed_attributes.map(&:to_s)
       end
 
       def changes
         @changed_attributes.each_with_object({}) do |key, hash|
-          hash[key] = [@original_attributes[key], @attributes[key]]
+          hash[key.to_s] = [@original_attributes[key], @attributes[key]]
         end
       end
 
@@ -165,14 +168,20 @@ module Attio
         )
 
         response = connection_manager.execute(request)
-        ResponseParser.parse(response, request)
+        Util::ResponseParser.parse(response, request)
       end
 
       def connection_manager
-        @connection_manager ||= ConnectionManager.new
+        @connection_manager ||= Util::ConnectionManager.new
       end
 
       protected
+
+      def normalize_attributes(attributes)
+        return attributes unless attributes.is_a?(Hash)
+
+        attributes.transform_keys(&:to_sym)
+      end
 
       def process_attribute_value(value)
         case value

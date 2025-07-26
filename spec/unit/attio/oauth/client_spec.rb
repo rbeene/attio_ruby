@@ -2,8 +2,6 @@
 
 RSpec.describe Attio::OAuth::Client do
   let(:client_id) { "test_client_id" }
-  let(:client_secret) { "test_client_secret" }
-  let(:redirect_uri) { "https://example.com/callback" }
   let(:client) do
     described_class.new(
       client_id: client_id,
@@ -11,6 +9,8 @@ RSpec.describe Attio::OAuth::Client do
       redirect_uri: redirect_uri
     )
   end
+  let(:client_secret) { "test_client_secret" }
+  let(:redirect_uri) { "https://example.com/callback" }
   let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
 
   before do
@@ -183,6 +183,8 @@ RSpec.describe Attio::OAuth::Client do
       allow(connection_manager).to receive(:execute).and_return({status: 200})
 
       result = client.revoke_token(token)
+
+      expect(connection_manager).to have_received(:execute)
       expect(result).to be true
     end
 

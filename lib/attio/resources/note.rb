@@ -22,12 +22,15 @@ module Attio
 
     def initialize(attributes = {}, opts = {})
       super
-      @parent_object = attributes[:parent_object] || attributes["parent_object"]
-      @parent_record_id = attributes[:parent_record_id] || attributes["parent_record_id"]
-      @content = attributes[:content] || attributes["content"]
-      @format = attributes[:format] || attributes["format"] || "plaintext"
-      @created_by_actor = attributes[:created_by_actor] || attributes["created_by_actor"]
-      @content_plaintext = attributes[:content_plaintext] || attributes["content_plaintext"]
+
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @parent_object = normalized_attrs[:parent_object]
+      @parent_record_id = normalized_attrs[:parent_record_id]
+      @content = normalized_attrs[:content]
+      @format = normalized_attrs[:format] || "plaintext"
+      @created_by_actor = normalized_attrs[:created_by_actor]
+      @content_plaintext = normalized_attrs[:content_plaintext]
     end
 
     # Get the parent record

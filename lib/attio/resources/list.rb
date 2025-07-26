@@ -19,18 +19,21 @@ module Attio
       "/lists"
     end
 
-    attr_reader :api_slug, :name, :object_id, :object_api_slug,
+    attr_reader :api_slug, :name, :attio_object_id, :object_api_slug,
       :created_by_actor, :workspace_id, :workspace_access
 
     def initialize(attributes = {}, opts = {})
       super
-      @api_slug = attributes[:api_slug] || attributes["api_slug"]
-      @name = attributes[:name] || attributes["name"]
-      @object_id = attributes[:object_id] || attributes["object_id"]
-      @object_api_slug = attributes[:object_api_slug] || attributes["object_api_slug"]
-      @created_by_actor = attributes[:created_by_actor] || attributes["created_by_actor"]
-      @workspace_id = attributes[:workspace_id] || attributes["workspace_id"]
-      @workspace_access = attributes[:workspace_access] || attributes["workspace_access"]
+
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @api_slug = normalized_attrs[:api_slug]
+      @name = normalized_attrs[:name]
+      @attio_object_id = normalized_attrs[:object_id]
+      @object_api_slug = normalized_attrs[:object_api_slug]
+      @created_by_actor = normalized_attrs[:created_by_actor]
+      @workspace_id = normalized_attrs[:workspace_id]
+      @workspace_access = normalized_attrs[:workspace_access]
     end
 
     # Get all entries in this list
@@ -89,7 +92,7 @@ module Attio
       super.merge(
         api_slug: api_slug,
         name: name,
-        object_id: object_id,
+        object_id: attio_object_id,
         object_api_slug: object_api_slug,
         created_by_actor: created_by_actor,
         workspace_id: workspace_id,

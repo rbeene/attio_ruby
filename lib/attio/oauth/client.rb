@@ -97,13 +97,17 @@ module Attio
         request = Util::RequestBuilder.build(
           method: :POST,
           path: "/oauth/revoke",
-          params: params
+          params: params,
+          api_key: "oauth" # OAuth endpoints don't use API keys
         )
 
         @connection_manager.execute(request)
         true
       rescue Errors::Base
         # Token might already be revoked
+        false
+      rescue
+        # Catch any other errors
         false
       end
 
@@ -120,7 +124,8 @@ module Attio
         request = Util::RequestBuilder.build(
           method: :POST,
           path: "/oauth/introspect",
-          params: params
+          params: params,
+          api_key: "oauth" # OAuth endpoints don't use API keys
         )
 
         response = @connection_manager.execute(request)

@@ -18,14 +18,16 @@ module Attio
 
     def initialize(attributes = {}, opts = {})
       super
-      @email_address = attributes[:email_address] || attributes["email_address"]
-      @first_name = attributes[:first_name] || attributes["first_name"]
-      @last_name = attributes[:last_name] || attributes["last_name"]
-      @avatar_url = attributes[:avatar_url] || attributes["avatar_url"]
-      @access_level = attributes[:access_level] || attributes["access_level"]
-      @status = attributes[:status] || attributes["status"]
-      @invited_at = parse_timestamp(attributes[:invited_at] || attributes["invited_at"])
-      @last_accessed_at = parse_timestamp(attributes[:last_accessed_at] || attributes["last_accessed_at"])
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @email_address = normalized_attrs[:email_address]
+      @first_name = normalized_attrs[:first_name]
+      @last_name = normalized_attrs[:last_name]
+      @avatar_url = normalized_attrs[:avatar_url]
+      @access_level = normalized_attrs[:access_level]
+      @status = normalized_attrs[:status]
+      @invited_at = parse_timestamp(normalized_attrs[:invited_at])
+      @last_accessed_at = parse_timestamp(normalized_attrs[:last_accessed_at])
     end
 
     # Get full name

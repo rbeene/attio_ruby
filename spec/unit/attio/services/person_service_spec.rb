@@ -95,21 +95,15 @@ RSpec.describe Attio::Services::PersonService do
     end
 
     it "handles company by name" do
-      company_response = {
-        status: 200,
-        headers: {},
-        body: JSON.generate({
-          data: [{
-            id: "company-123",
-            values: {name: [{value: "Acme Corp"}]}
-          }],
-          pagination: {}
-        })
-      }
-
-      allow(connection_manager).to receive(:execute).and_return(company_response, response)
+      # The PersonService will create a CompanyService and call find_or_create_by_name
+      # We'll mock that method directly instead of mocking the HTTP response
+      company_double = double(id: "company-123")
       allow_any_instance_of(Attio::Services::CompanyService).to receive(:find_or_create_by_name)
-        .and_return(double(id: "company-123"))
+        .with("Acme Corp")
+        .and_return(company_double)
+
+      # Now mock the response for creating the person
+      allow(connection_manager).to receive(:execute).and_return(response)
 
       person = service.create(name: "Jane Doe", company: "Acme Corp")
       expect(person).to be_a(Attio::Record)

@@ -43,13 +43,15 @@ module Attio
 
     def initialize(attributes = {}, opts = {})
       super
-      @url = attributes[:url] || attributes["url"]
-      @events = attributes[:events] || attributes["events"] || []
-      @state = attributes[:state] || attributes["state"]
-      @api_version = attributes[:api_version] || attributes["api_version"]
-      @secret = attributes[:secret] || attributes["secret"]
-      @last_event_at = parse_timestamp(attributes[:last_event_at] || attributes["last_event_at"])
-      @created_by_actor = attributes[:created_by_actor] || attributes["created_by_actor"]
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @url = normalized_attrs[:url]
+      @events = normalized_attrs[:events] || []
+      @state = normalized_attrs[:state]
+      @api_version = normalized_attrs[:api_version]
+      @secret = normalized_attrs[:secret]
+      @last_event_at = parse_timestamp(normalized_attrs[:last_event_at])
+      @created_by_actor = normalized_attrs[:created_by_actor]
     end
 
     # Check if webhook is active

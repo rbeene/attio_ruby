@@ -38,17 +38,25 @@ module Attio
       attr_accessor(*ALL_SETTINGS)
 
       def initialize
-        reset!
+        reset_without_lock!
       end
 
       def reset!
         THREAD_MUTEX.synchronize do
-          DEFAULT_SETTINGS.each do |key, value|
-            instance_variable_set("@#{key}", value)
-          end
-          @api_key = nil
+          reset_without_lock!
         end
       end
+
+      private
+
+      def reset_without_lock!
+        DEFAULT_SETTINGS.each do |key, value|
+          instance_variable_set("@#{key}", value)
+        end
+        @api_key = nil
+      end
+
+      public
 
       def configure
         THREAD_MUTEX.synchronize do

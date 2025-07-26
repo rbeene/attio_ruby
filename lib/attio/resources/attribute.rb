@@ -59,26 +59,29 @@ module Attio
 
     attr_reader :api_slug, :name, :description, :type, :is_required, :is_unique,
       :is_default_value_enabled, :default_value, :options,
-      :object_id, :object_api_slug, :parent_object_id,
+      :attio_object_id, :object_api_slug, :parent_object_id,
       :created_by_actor, :is_archived, :archived_at
 
     def initialize(attributes = {}, opts = {})
       super
-      @api_slug = attributes[:api_slug] || attributes["api_slug"]
-      @name = attributes[:name] || attributes["name"]
-      @description = attributes[:description] || attributes["description"]
-      @type = attributes[:type] || attributes["type"]
-      @is_required = attributes[:is_required] || attributes["is_required"] || false
-      @is_unique = attributes[:is_unique] || attributes["is_unique"] || false
-      @is_default_value_enabled = attributes[:is_default_value_enabled] || attributes["is_default_value_enabled"] || false
-      @default_value = attributes[:default_value] || attributes["default_value"]
-      @options = attributes[:options] || attributes["options"]
-      @object_id = attributes[:object_id] || attributes["object_id"]
-      @object_api_slug = attributes[:object_api_slug] || attributes["object_api_slug"]
-      @parent_object_id = attributes[:parent_object_id] || attributes["parent_object_id"]
-      @created_by_actor = attributes[:created_by_actor] || attributes["created_by_actor"]
-      @is_archived = attributes[:is_archived] || attributes["is_archived"] || false
-      @archived_at = parse_timestamp(attributes[:archived_at] || attributes["archived_at"])
+
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @api_slug = normalized_attrs[:api_slug]
+      @name = normalized_attrs[:name]
+      @description = normalized_attrs[:description]
+      @type = normalized_attrs[:type]
+      @is_required = normalized_attrs[:is_required] || false
+      @is_unique = normalized_attrs[:is_unique] || false
+      @is_default_value_enabled = normalized_attrs[:is_default_value_enabled] || false
+      @default_value = normalized_attrs[:default_value]
+      @options = normalized_attrs[:options]
+      @attio_object_id = normalized_attrs[:object_id]
+      @object_api_slug = normalized_attrs[:object_api_slug]
+      @parent_object_id = normalized_attrs[:parent_object_id]
+      @created_by_actor = normalized_attrs[:created_by_actor]
+      @is_archived = normalized_attrs[:is_archived] || false
+      @archived_at = parse_timestamp(normalized_attrs[:archived_at])
     end
 
     class << self
@@ -297,7 +300,7 @@ module Attio
         is_default_value_enabled: is_default_value_enabled,
         default_value: default_value,
         options: options,
-        object_id: object_id,
+        object_id: attio_object_id,
         object_api_slug: object_api_slug,
         parent_object_id: parent_object_id,
         created_by_actor: created_by_actor,

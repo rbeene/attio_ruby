@@ -45,6 +45,9 @@ RSpec.describe Attio::Util::Configuration do
     end
 
     it "validates configuration after yield" do
+      # First set a valid api_key so validation doesn't fail on that
+      config.api_key = "test_key"
+
       expect do
         config.configure do |c|
           c.timeout = -1
@@ -53,21 +56,32 @@ RSpec.describe Attio::Util::Configuration do
     end
 
     it "is thread-safe" do
-      results = []
+      # Test that concurrent configure blocks don't interfere with each other
+      # Each thread should see its changes applied atomically
+      errors = []
       threads = []
 
       10.times do |i|
         threads << Thread.new do
           config.configure do |c|
             c.api_key = "key_#{i}"
-            sleep(0.001)
+            c.timeout = 30 + i
+            # Verify within the configure block that our changes are consistent
+            if c.api_key != "key_#{i}" || c.timeout != 30 + i
+              errors << "Thread #{i} saw inconsistent state"
+            end
           end
-          results << config.api_key
+        rescue => e
+          errors << "Thread #{i} error: #{e.message}"
         end
       end
 
       threads.each(&:join)
-      expect(results.uniq.size).to eq(1)
+      expect(errors).to be_empty
+
+      # The final state should have one of the thread's values (whichever ran last)
+      expect(config.api_key).to match(/^key_\d+$/)
+      expect(config.timeout).to be_between(30, 39)
     end
   end
 

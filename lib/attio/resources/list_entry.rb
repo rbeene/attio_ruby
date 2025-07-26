@@ -18,10 +18,12 @@ module Attio
 
     def initialize(attributes = {}, opts = {})
       super
-      @list_id = attributes[:list_id] || attributes["list_id"]
-      @record_id = attributes[:record_id] || attributes["record_id"]
-      @added_by_actor = attributes[:added_by_actor] || attributes["added_by_actor"]
-      @record = attributes[:record] || attributes["record"]
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @list_id = normalized_attrs[:list_id]
+      @record_id = normalized_attrs[:record_id]
+      @added_by_actor = normalized_attrs[:added_by_actor]
+      @record = normalized_attrs[:record]
     end
 
     # Get the list this entry belongs to

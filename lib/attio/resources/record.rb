@@ -13,19 +13,23 @@ module Attio
     include APIOperations::Delete
 
     def self.resource_path
-      "/records"
+      "/objects"
     end
 
-    attr_reader :object_id, :object_api_slug
+    attr_reader :attio_object_id, :object_api_slug
 
     def initialize(attributes = {}, opts = {})
+      # Let parent normalize attributes first
       super
-      @object_id = attributes[:object_id] || attributes["object_id"]
-      @object_api_slug = attributes[:object_api_slug] || attributes["object_api_slug"]
+
+      # Now we can safely use symbol keys only since parent normalized them
+      normalized_attrs = normalize_attributes(attributes)
+      @attio_object_id = normalized_attrs[:object_id]
+      @object_api_slug = normalized_attrs[:object_api_slug]
 
       # Process values into attributes
-      if attributes[:values] || attributes["values"]
-        process_values(attributes[:values] || attributes["values"])
+      if normalized_attrs[:values]
+        process_values(normalized_attrs[:values])
       end
     end
 
@@ -37,19 +41,16 @@ module Attio
         # Build query parameters
         query_params = build_query_params(params)
 
-        request = RequestBuilder.build(
-          method: :GET,
-          path: "#{resource_path}/query",
-          params: {
-            object: object,
-            **query_params
-          },
+        request = Util::RequestBuilder.build(
+          method: :POST,
+          path: "#{resource_path}/#{object}/records/query",
+          params: query_params,
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
 
         response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
+        parsed = Util::ResponseParser.parse(response, request)
 
         APIOperations::List::ListObject.new(parsed, self, params.merge(object: object), opts)
       end
@@ -60,12 +61,11 @@ module Attio
         validate_object_identifier!(object)
         validate_values!(values)
 
-        request = RequestBuilder.build(
+        request = Util::RequestBuilder.build(
           method: :POST,
-          path: resource_path,
+          path: "#{resource_path}/#{object}/records",
           params: {
             data: {
-              object: object,
               values: normalize_values(values)
             }
           },
@@ -74,9 +74,15 @@ module Attio
         )
 
         response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
+        parsed = Util::ResponseParser.parse(response, request)
 
-        new(parsed[:data], opts)
+        # Ensure object info is included in the record data
+        record_data = parsed[:data] || {}
+        if record_data.is_a?(Hash)
+          record_data[:object_api_slug] ||= object
+        end
+
+        new(record_data, opts)
       end
 
       # Retrieve a specific record
@@ -84,18 +90,22 @@ module Attio
         validate_object_identifier!(object)
         validate_id!(record_id)
 
-        request = RequestBuilder.build(
+        request = Util::RequestBuilder.build(
           method: :GET,
-          path: "#{resource_path}/#{record_id}",
-          params: {object: object},
+          path: "#{resource_path}/#{object}/records/#{record_id}",
+          params: {},
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
 
         response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
+        parsed = Util::ResponseParser.parse(response, request)
 
-        new(parsed[:data], opts)
+        # Ensure object info is included in the record data
+        record_data = parsed[:data] || {}
+        record_data[:object_api_slug] ||= object
+
+        new(record_data, opts)
       end
       alias_method :get, :retrieve
       alias_method :find, :retrieve
@@ -105,7 +115,7 @@ module Attio
         validate_object_identifier!(object)
         raise ArgumentError, "Records must be an array" unless records.is_a?(Array)
 
-        request = RequestBuilder.build(
+        request = Util::RequestBuilder.build(
           method: :POST,
           path: "#{resource_path}/batch",
           params: {
@@ -117,7 +127,7 @@ module Attio
         )
 
         response = connection_manager.execute(request)
-        parsed = ResponseParser.parse(response, request)
+        parsed = Util::ResponseParser.parse(response, request)
 
         parsed[:data].map { |record_data| new(record_data, opts) }
       end
@@ -241,6 +251,10 @@ module Attio
         end
         filters
       end
+
+      def connection_manager
+        Util::ConnectionManager.new
+      end
     end
 
     # Instance methods
@@ -250,20 +264,24 @@ module Attio
         raise Errors::InvalidRequestError, "Cannot update a record without an ID"
       end
 
+      if object_api_slug.nil?
+        raise Errors::InvalidRequestError, "Cannot update a record without object information"
+      end
+
       params = {
         values: prepare_values_for_update
       }
 
-      request = RequestBuilder.build(
+      request = Util::RequestBuilder.build(
         method: :PATCH,
-        path: "#{self.class.resource_path}/#{id}",
+        path: "#{self.class.resource_path}/#{object_api_slug}/records/#{id}",
         params: {data: params},
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
 
       response = connection_manager.execute(request)
-      parsed = ResponseParser.parse(response, request)
+      parsed = Util::ResponseParser.parse(response, request)
 
       update_from(parsed[:data])
       reset_changes!
@@ -315,7 +333,9 @@ module Attio
           value_data
         end
       when Array
-        value_data.map { |v| extract_value(v) }
+        extracted = value_data.map { |v| extract_value(v) }
+        # If it's a single value array, return just the value
+        (extracted.length == 1) ? extracted.first : extracted
       else
         value_data
       end

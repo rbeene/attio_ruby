@@ -7,13 +7,15 @@ module Attio
         :expires_at, :scope, :created_at, :client
 
       def initialize(attributes = {})
-        @access_token = attributes[:access_token] || attributes["access_token"]
-        @refresh_token = attributes[:refresh_token] || attributes["refresh_token"]
-        @token_type = attributes[:token_type] || attributes["token_type"] || "Bearer"
-        @expires_in = (attributes[:expires_in] || attributes["expires_in"])&.to_i
-        @scope = parse_scope(attributes[:scope] || attributes["scope"])
-        @created_at = attributes[:created_at] || Time.now.utc
-        @client = attributes[:client]
+        # Since this doesn't inherit from Resources::Base, we need to normalize
+        normalized_attrs = normalize_attributes(attributes)
+        @access_token = normalized_attrs[:access_token]
+        @refresh_token = normalized_attrs[:refresh_token]
+        @token_type = normalized_attrs[:token_type] || "Bearer"
+        @expires_in = normalized_attrs[:expires_in]&.to_i
+        @scope = parse_scope(normalized_attrs[:scope])
+        @created_at = normalized_attrs[:created_at] || Time.now.utc
+        @client = normalized_attrs[:client]
 
         calculate_expiration!
         validate!
@@ -126,6 +128,14 @@ module Attio
         @expires_at = other_token.expires_at
         @scope = other_token.scope
         @created_at = other_token.created_at
+      end
+
+      def normalize_attributes(attributes)
+        return {} unless attributes
+
+        attributes.each_with_object({}) do |(key, value), hash|
+          hash[key.to_sym] = value
+        end
       end
 
       class InvalidTokenError < StandardError; end

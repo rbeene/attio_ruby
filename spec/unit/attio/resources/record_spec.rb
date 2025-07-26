@@ -40,7 +40,7 @@ RSpec.describe Attio::Record do
         response
       end
 
-      described_class.list(object: "people", params: {filter: {status: "active"}})
+      described_class.list({filter: {status: "active"}}, object: "people")
     end
 
     it "supports sorting" do
@@ -49,7 +49,7 @@ RSpec.describe Attio::Record do
         response
       end
 
-      described_class.list(object: "people", params: {sort: "created_at:desc"})
+      described_class.list({sort: "created_at:desc"}, object: "people")
     end
 
     it "raises error without object identifier" do
@@ -158,7 +158,7 @@ RSpec.describe Attio::Record do
   describe "#save" do
     let(:record) do
       described_class.new(
-        {id: "123", values: {name: [{value: "John"}]}},
+        {id: "123", object_api_slug: "people", values: {name: [{value: "John"}]}},
         {api_key: api_key}
       )
     end

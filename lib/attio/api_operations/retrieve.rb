@@ -64,17 +64,26 @@ module Attio
         @original_attributes.clear
         @changed_attributes.clear
 
-        skip_keys = %w[id created_at _metadata]
-        attributes.each do |key, value|
-          next if skip_keys.include?(key.to_s)
+        normalized_attrs = normalize_attributes(attributes)
+        skip_keys = %i[id created_at _metadata]
+        normalized_attrs.each do |key, value|
+          next if skip_keys.include?(key)
 
-          @attributes[key.to_sym] = process_attribute_value(value)
-          @original_attributes[key.to_sym] = deep_copy(process_attribute_value(value))
+          @attributes[key] = process_attribute_value(value)
+          @original_attributes[key] = deep_copy(process_attribute_value(value))
         end
 
-        @id = attributes[:id] || attributes["id"] if attributes[:id] || attributes["id"]
-        @created_at = parse_timestamp(attributes[:created_at] || attributes["created_at"])
-        @metadata = attributes[:_metadata] || attributes["_metadata"] || {}
+        @id = normalized_attrs[:id] if normalized_attrs[:id]
+        @created_at = parse_timestamp(normalized_attrs[:created_at])
+        @metadata = normalized_attrs[:_metadata] || {}
+      end
+
+      def normalize_attributes(attributes)
+        return {} unless attributes
+
+        attributes.each_with_object({}) do |(key, value), hash|
+          hash[key.to_sym] = value
+        end
       end
     end
   end
