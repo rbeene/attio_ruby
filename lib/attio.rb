@@ -3,10 +3,7 @@
 require_relative "attio/version"
 require_relative "attio/errors"
 require_relative "attio/util/configuration"
-require_relative "attio/util/connection_manager"
-require_relative "attio/util/faraday_connection_manager"
-require_relative "attio/util/request_builder"
-require_relative "attio/util/response_parser"
+require_relative "attio/client"
 require_relative "attio/resources/base"
 require_relative "attio/api_resource"
 require_relative "attio/resources/object"
@@ -18,11 +15,6 @@ require_relative "attio/resources/webhook"
 require_relative "attio/resources/workspace_member"
 require_relative "attio/resources/note"
 require_relative "attio/util/webhook_signature"
-require_relative "attio/util/cache"
-require_relative "attio/services/base_service"
-require_relative "attio/services/person_service"
-require_relative "attio/services/company_service"
-require_relative "attio/services/batch_service"
 require_relative "attio/oauth/client"
 require_relative "attio/oauth/token"
 require_relative "attio/oauth/scope_validator"
@@ -112,15 +104,11 @@ module Attio
       configuration.api_version
     end
 
-    # Creates a new connection manager instance
+    # Creates a new HTTP client instance
     #
-    # @return [Util::ConnectionManager, Util::FaradayConnectionManager] The connection manager
-    def connection_manager
-      if configuration.use_faraday
-        Util::FaradayConnectionManager.new
-      else
-        Util::ConnectionManager.new
-      end
+    # @return [Client] The HTTP client
+    def client(api_key: nil)
+      Client.new(api_key: api_key)
     end
   end
 end

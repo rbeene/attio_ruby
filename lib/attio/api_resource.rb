@@ -37,8 +37,7 @@ module Attio
       def define_list_operation
         singleton_class.class_eval do
           def list(params = {}, **opts)
-            request = build_request(:GET, resource_path, params, opts)
-            response = execute_request(request)
+            response = execute_request(:GET, resource_path, params, opts)
             
             ListObject.new(response, self, params, opts)
           end
@@ -50,8 +49,7 @@ module Attio
           def create(attributes = {}, **opts)
             params = prepare_params_for_create(attributes)
             
-            request = build_request(:POST, resource_path, params, opts)
-            response = execute_request(request)
+            response = execute_request(:POST, resource_path, params, opts)
             
             new(response[:data] || response, opts)
           end
@@ -69,8 +67,7 @@ module Attio
           def retrieve(id, **opts)
             validate_id!(id)
             
-            request = build_request(:GET, "#{resource_path}/#{id}", {}, opts)
-            response = execute_request(request)
+            response = execute_request(:GET, "#{resource_path}/#{id}", {}, opts)
             
             new(response[:data] || response, opts)
           end
@@ -85,8 +82,7 @@ module Attio
           def update(id, attributes = {}, **opts)
             validate_id!(id)
             
-            request = build_request(:PATCH, "#{resource_path}/#{id}", attributes, opts)
-            response = execute_request(request)
+            response = execute_request(:PATCH, "#{resource_path}/#{id}", attributes, opts)
             
             new(response[:data] || response, opts)
           end
@@ -101,8 +97,7 @@ module Attio
 
           def save(**opts)
             if persisted?
-              request = self.class.send(:build_request, :PATCH, resource_path, changed_attributes, opts)
-              response = self.class.send(:execute_request, request)
+              response = self.class.send(:execute_request, :PATCH, resource_path, changed_attributes, opts)
               
               update_from(response[:data] || response)
               reset_changes!
@@ -119,8 +114,7 @@ module Attio
           def delete(id, **opts)
             validate_id!(id)
             
-            request = build_request(:DELETE, "#{resource_path}/#{id}", {}, opts)
-            execute_request(request)
+            execute_request(:DELETE, "#{resource_path}/#{id}", {}, opts)
             
             true
           end
@@ -141,23 +135,23 @@ module Attio
       end
 
       # Common methods used by operations
-      def build_request(method, path, params, opts)
-        Util::RequestBuilder.build(
-          method: method,
-          path: path,
-          params: params,
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
-      end
-
-      def execute_request(request)
-        response = connection_manager.execute(request)
-        Util::ResponseParser.parse(response, request)
-      end
-
-      def connection_manager
-        Attio.connection_manager
+      def execute_request(method, path, params, opts)
+        client = Attio.client(api_key: opts[:api_key])
+        
+        case method
+        when :GET
+          client.get(path, params)
+        when :POST
+          client.post(path, params)
+        when :PUT
+          client.put(path, params)
+        when :PATCH
+          client.patch(path, params)
+        when :DELETE
+          client.delete(path)
+        else
+          raise ArgumentError, "Unsupported method: #{method}"
+        end
       end
 
       def validate_id!(id)

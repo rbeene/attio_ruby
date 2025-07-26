@@ -158,21 +158,22 @@ module Attio
       # API interaction helpers
       def request(method:, path: nil, params: nil, headers: {})
         path ||= resource_path
-
-        request = RequestBuilder.build(
-          method: method,
-          path: path,
-          params: params,
-          headers: headers,
-          api_key: @opts[:api_key]
-        )
-
-        response = connection_manager.execute(request)
-        Util::ResponseParser.parse(response, request)
-      end
-
-      def connection_manager
-        Attio.connection_manager
+        client = Attio.client(api_key: @opts[:api_key])
+        
+        case method
+        when :get
+          client.get(path, params)
+        when :post
+          client.post(path, params)
+        when :put
+          client.put(path, params)
+        when :patch
+          client.patch(path, params)
+        when :delete
+          client.delete(path)
+        else
+          raise ArgumentError, "Unsupported method: #{method}"
+        end
       end
 
       protected

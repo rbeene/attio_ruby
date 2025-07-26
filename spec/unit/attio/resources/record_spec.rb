@@ -2,11 +2,11 @@
 
 RSpec.describe Attio::Record do
   let(:api_key) { "test_api_key" }
-  let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
+  let(:client) { instance_double(Attio::Client) }
 
   before do
     Attio.configure { |c| c.api_key = api_key }
-    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
+    allow(Attio).to receive(:client).and_return(client)
   end
 
   describe ".list" do
