@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "../errors/client_errors"
 
 module Attio
@@ -63,17 +65,11 @@ module Attio
           end
         end
 
-        if timeout && timeout <= 0
-          raise ConfigurationError, "timeout must be positive"
-        end
+        raise ConfigurationError, "timeout must be positive" if timeout && timeout <= 0
 
-        if open_timeout && open_timeout <= 0
-          raise ConfigurationError, "open_timeout must be positive"
-        end
+        raise ConfigurationError, "open_timeout must be positive" if open_timeout && open_timeout <= 0
 
-        if max_retries && max_retries < 0
-          raise ConfigurationError, "max_retries must be non-negative"
-        end
+        raise ConfigurationError, "max_retries must be non-negative" if max_retries&.negative?
 
         true
       end
@@ -93,7 +89,10 @@ module Attio
           @open_timeout = ENV.fetch("ATTIO_OPEN_TIMEOUT", @open_timeout).to_i if ENV.key?("ATTIO_OPEN_TIMEOUT")
           @max_retries = ENV.fetch("ATTIO_MAX_RETRIES", @max_retries).to_i if ENV.key?("ATTIO_MAX_RETRIES")
           @debug = ENV.fetch("ATTIO_DEBUG", @debug).to_s.downcase == "true" if ENV.key?("ATTIO_DEBUG")
-          @verify_ssl_certs = ENV.fetch("ATTIO_VERIFY_SSL_CERTS", @verify_ssl_certs).to_s.downcase != "false" if ENV.key?("ATTIO_VERIFY_SSL_CERTS")
+          if ENV.key?("ATTIO_VERIFY_SSL_CERTS")
+            @verify_ssl_certs = ENV.fetch("ATTIO_VERIFY_SSL_CERTS",
+                                          @verify_ssl_certs).to_s.downcase != "false"
+          end
         end
       end
 
@@ -114,7 +113,6 @@ module Attio
           end
         end
       end
-
     end
   end
 end

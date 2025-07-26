@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "base"
 
 module Attio
@@ -5,14 +7,14 @@ module Attio
     # 500 Internal Server Error
     class InternalServerError < Base
       def initialize(message = "An internal server error occurred", **args)
-        super(message, **args)
+        super
       end
     end
 
     # 502 Bad Gateway
     class BadGatewayError < Base
       def initialize(message = "Bad gateway error occurred", **args)
-        super(message, **args)
+        super
       end
     end
 
@@ -35,14 +37,14 @@ module Attio
     # 504 Gateway Timeout
     class GatewayTimeoutError < Base
       def initialize(message = "Gateway timeout occurred", **args)
-        super(message, **args)
+        super
       end
     end
 
     # Generic server error for other 5xx status codes
     class ServerError < Base
       def initialize(message = "Server error occurred", **args)
-        super(message, **args)
+        super
       end
     end
   end

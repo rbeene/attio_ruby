@@ -13,8 +13,8 @@ module Attio
       @configuration ||= Util::Configuration.new.tap(&:apply_env_vars!)
     end
 
-    def configure
-      configuration.configure { |config| yield(config) }
+    def configure(&block)
+      configuration.configure(&block)
     end
 
     def reset!

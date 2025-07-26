@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "base"
 
 module Attio
@@ -5,42 +7,42 @@ module Attio
     # 400 Bad Request
     class BadRequestError < Base
       def initialize(message = "The request was invalid or cannot be served", **args)
-        super(message, **args)
+        super
       end
     end
 
     # 401 Unauthorized
     class AuthenticationError < Base
       def initialize(message = "Authentication failed. Please check your API key", **args)
-        super(message, **args)
+        super
       end
     end
 
     # 403 Forbidden
     class ForbiddenError < Base
       def initialize(message = "You do not have permission to access this resource", **args)
-        super(message, **args)
+        super
       end
     end
 
     # 404 Not Found
     class NotFoundError < Base
       def initialize(message = "The requested resource could not be found", **args)
-        super(message, **args)
+        super
       end
     end
 
     # 409 Conflict
     class ConflictError < Base
       def initialize(message = "The request conflicts with the current state of the resource", **args)
-        super(message, **args)
+        super
       end
     end
 
     # 422 Unprocessable Entity
     class UnprocessableEntityError < Base
       def initialize(message = "The request was well-formed but contains semantic errors", **args)
-        super(message, **args)
+        super
       end
     end
 
@@ -63,7 +65,7 @@ module Attio
     # Generic client error for other 4xx status codes
     class ClientError < Base
       def initialize(message = "Client error occurred", **args)
-        super(message, **args)
+        super
       end
     end
 
@@ -99,7 +101,7 @@ module Attio
     # Invalid request error
     class InvalidRequestError < BadRequestError
       def initialize(message = "Invalid request parameters", **args)
-        super(message, **args)
+        super
       end
     end
   end

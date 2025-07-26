@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "attio/ruby"
+require "attio"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

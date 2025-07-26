@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Attio
   module Errors
     class Base < StandardError
@@ -133,7 +135,7 @@ module Attio
         end
 
         def extract_error_data(json_body, raw_body)
-          if json_body && json_body.is_a?(Hash)
+          if json_body&.is_a?(Hash)
             {
               message: json_body[:error] || json_body[:message] || raw_body,
               code: json_body[:code] || json_body[:error_code]
