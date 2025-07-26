@@ -3,7 +3,6 @@
 require "net/http"
 require "net/https"
 require "uri"
-require "thread"
 
 module Attio
   module Util
@@ -36,7 +35,7 @@ module Attio
             key = connection_key(uri)
             conn = @connections[key]
 
-            if conn && conn.started? && !stale?(key)
+            if conn&.started? && !stale?(key)
               @last_used[key] = Time.now
               return conn
             end
@@ -118,20 +117,18 @@ module Attio
         last_error = nil
 
         loop do
-          begin
-            return perform_request(uri, http_method, headers, body)
-          rescue *retryable_exceptions => e
-            last_error = e
-            retries += 1
+          return perform_request(uri, http_method, headers, body)
+        rescue *retryable_exceptions => e
+          last_error = e
+          retries += 1
 
-            if retries >= max_retries
-              raise Errors::ErrorFactory.from_exception(e, request_context(request))
-            end
-
-            sleep(calculate_retry_delay(retries))
-          rescue => e
+          if retries >= max_retries
             raise Errors::ErrorFactory.from_exception(e, request_context(request))
           end
+
+          sleep(calculate_retry_delay(retries))
+        rescue => e
+          raise Errors::ErrorFactory.from_exception(e, request_context(request))
         end
       end
 

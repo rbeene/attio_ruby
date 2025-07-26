@@ -22,7 +22,7 @@ module Attio
       super
       @object_id = attributes[:object_id] || attributes["object_id"]
       @object_api_slug = attributes[:object_api_slug] || attributes["object_api_slug"]
-      
+
       # Process values into attributes
       if attributes[:values] || attributes["values"]
         process_values(attributes[:values] || attributes["values"])
@@ -33,10 +33,10 @@ module Attio
       # List records with filtering and sorting
       def list(params = {}, object:, **opts)
         validate_object_identifier!(object)
-        
+
         # Build query parameters
         query_params = build_query_params(params)
-        
+
         request = RequestBuilder.build(
           method: :GET,
           path: "#{resource_path}/query",
@@ -47,19 +47,19 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         APIOperations::List::ListObject.new(parsed, self, params.merge(object: object), opts)
       end
-      alias all list
+      alias_method :all, :list
 
       # Create a new record
       def create(values:, object:, **opts)
         validate_object_identifier!(object)
         validate_values!(values)
-        
+
         request = RequestBuilder.build(
           method: :POST,
           path: resource_path,
@@ -72,10 +72,10 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         new(parsed[:data], opts)
       end
 
@@ -83,42 +83,42 @@ module Attio
       def retrieve(record_id:, object:, **opts)
         validate_object_identifier!(object)
         validate_id!(record_id)
-        
+
         request = RequestBuilder.build(
           method: :GET,
           path: "#{resource_path}/#{record_id}",
-          params: { object: object },
+          params: {object: object},
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         new(parsed[:data], opts)
       end
-      alias get retrieve
-      alias find retrieve
+      alias_method :get, :retrieve
+      alias_method :find, :retrieve
 
       # Batch create records
       def create_batch(records:, object:, **opts)
         validate_object_identifier!(object)
         raise ArgumentError, "Records must be an array" unless records.is_a?(Array)
-        
+
         request = RequestBuilder.build(
           method: :POST,
           path: "#{resource_path}/batch",
           params: {
             object: object,
-            data: records.map { |r| { values: normalize_values(r[:values] || r["values"]) } }
+            data: records.map { |r| {values: normalize_values(r[:values] || r["values"])} }
           },
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         parsed[:data].map { |record_data| new(record_data, opts) }
       end
 
@@ -128,7 +128,7 @@ module Attio
           q: query,
           attributes: attributes
         }.compact
-        
+
         list(object: object, params: params, opts: opts)
       end
 
@@ -151,7 +151,7 @@ module Attio
           case value
           when String, Numeric, TrueClass, FalseClass, NilClass
             # Wrap scalar values in Attio format
-            { value: value }
+            {value: value}
           when Array
             # Handle array values (for multi-select, etc.)
             value.map { |v| normalize_single_value(v) }
@@ -160,10 +160,10 @@ module Attio
             if value.key?(:value) || value.key?("value")
               value
             else
-              { value: value }
+              {value: value}
             end
           else
-            { value: value.to_s }
+            {value: value.to_s}
           end
         end
       end
@@ -173,31 +173,31 @@ module Attio
         when Hash
           value
         else
-          { value: value }
+          {value: value}
         end
       end
 
       def build_query_params(params)
         query_params = {}
-        
+
         # Filtering
         if params[:filter]
           query_params[:filter] = build_filter(params[:filter])
         end
-        
+
         # Sorting
         if params[:sort] || params[:order_by]
           query_params[:sort] = build_sort(params[:sort] || params[:order_by])
         end
-        
+
         # Pagination
         query_params[:limit] = params[:limit] if params[:limit]
         query_params[:cursor] = params[:cursor] if params[:cursor]
-        
+
         # Search
         query_params[:q] = params[:q] if params[:q]
         query_params[:attributes] = params[:attributes] if params[:attributes]
-        
+
         query_params
       end
 
@@ -219,9 +219,9 @@ module Attio
           # Handle "created_at:desc" format
           if sort.include?(":")
             field, direction = sort.split(":", 2)
-            { field: field, direction: direction }
+            {field: field, direction: direction}
           else
-            { field: sort, direction: "asc" }
+            {field: sort, direction: "asc"}
           end
         when Hash
           sort
@@ -253,18 +253,18 @@ module Attio
       params = {
         values: prepare_values_for_update
       }
-      
+
       request = RequestBuilder.build(
         method: :PATCH,
         path: "#{self.class.resource_path}/#{id}",
-        params: { data: params },
+        params: {data: params},
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       parsed = ResponseParser.parse(response, request)
-      
+
       update_from(parsed[:data])
       reset_changes!
       self
@@ -323,7 +323,7 @@ module Attio
 
     def prepare_values_for_update
       changed_attributes.transform_values do |value|
-        self.class.send(:normalize_values, { key: value })[:key]
+        self.class.send(:normalize_values, {key: value})[:key]
       end
     end
 

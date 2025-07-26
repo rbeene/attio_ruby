@@ -14,20 +14,55 @@ RSpec.describe "Webhook Integration", :integration do
     let(:webhook_url) { "https://example.com/webhooks/attio" }
     let(:webhook_name) { "Test Webhook #{SecureRandom.hex(4)}" }
 
-    it "creates a webhook" do
-      VCR.use_cassette("webhooks/create") do
-        webhook = Attio::Webhook.create(
+    describe "creating a webhook" do
+      let(:webhook_params) do
+        {
           name: webhook_name,
           url: webhook_url,
           subscriptions: %w[record.created record.updated]
-        )
-        
-        expect(webhook).to be_a(Attio::Webhook)
-        expect(webhook.name).to eq(webhook_name)
-        expect(webhook.url).to eq(webhook_url)
-        expect(webhook.subscriptions).to include("record.created", "record.updated")
-        expect(webhook.active).to be true
-        expect(webhook.id).to be_present
+        }
+      end
+
+      it "returns a webhook instance" do
+        VCR.use_cassette("webhooks/create") do
+          webhook = Attio::Webhook.create(**webhook_params)
+          expect(webhook).to be_a(Attio::Webhook)
+        end
+      end
+
+      it "sets the webhook name" do
+        VCR.use_cassette("webhooks/create") do
+          webhook = Attio::Webhook.create(**webhook_params)
+          expect(webhook.name).to eq(webhook_name)
+        end
+      end
+
+      it "sets the webhook URL" do
+        VCR.use_cassette("webhooks/create") do
+          webhook = Attio::Webhook.create(**webhook_params)
+          expect(webhook.url).to eq(webhook_url)
+        end
+      end
+
+      it "sets the subscriptions" do
+        VCR.use_cassette("webhooks/create") do
+          webhook = Attio::Webhook.create(**webhook_params)
+          expect(webhook.subscriptions).to include("record.created", "record.updated")
+        end
+      end
+
+      it "creates an active webhook by default" do
+        VCR.use_cassette("webhooks/create") do
+          webhook = Attio::Webhook.create(**webhook_params)
+          expect(webhook.active).to be true
+        end
+      end
+
+      it "assigns a webhook ID" do
+        VCR.use_cassette("webhooks/create") do
+          webhook = Attio::Webhook.create(**webhook_params)
+          expect(webhook.id).to be_present
+        end
       end
     end
 
@@ -39,10 +74,10 @@ RSpec.describe "Webhook Integration", :integration do
           url: webhook_url,
           subscriptions: %w[record.created]
         )
-        
+
         # Retrieve it
         webhook = Attio::Webhook.retrieve(created.id)
-        
+
         expect(webhook.id).to eq(created.id)
         expect(webhook.name).to eq(webhook_name)
         expect(webhook.url).to eq(webhook_url)
@@ -57,13 +92,13 @@ RSpec.describe "Webhook Integration", :integration do
           url: webhook_url,
           subscriptions: %w[record.created]
         )
-        
+
         # List all
         webhooks = Attio::Webhook.list
-        
+
         expect(webhooks).to be_a(Attio::APIOperations::List::ListObject)
         expect(webhooks.count).to be > 0
-        
+
         webhook_names = webhooks.map(&:name)
         expect(webhook_names).to include(webhook_name)
       end
@@ -77,13 +112,13 @@ RSpec.describe "Webhook Integration", :integration do
           url: webhook_url,
           subscriptions: %w[record.created]
         )
-        
+
         # Update
         webhook.name = "Updated #{webhook_name}"
         webhook.subscriptions = %w[record.created record.updated record.deleted]
         webhook.active = false
         webhook.save
-        
+
         # Verify
         updated = Attio::Webhook.retrieve(webhook.id)
         expect(updated.name).to eq("Updated #{webhook_name}")
@@ -100,12 +135,12 @@ RSpec.describe "Webhook Integration", :integration do
           url: webhook_url,
           subscriptions: %w[record.created]
         )
-        
+
         # Delete
         result = webhook.destroy
         expect(result).to be true
         expect(webhook).to be_frozen
-        
+
         # Verify deletion
         expect {
           Attio::Webhook.retrieve(webhook.id)
@@ -128,13 +163,13 @@ RSpec.describe "Webhook Integration", :integration do
           task.updated
           task.completed
         ]
-        
+
         webhook = Attio::Webhook.create(
           name: "All Events Webhook",
           url: "https://example.com/all-events",
           subscriptions: all_events
         )
-        
+
         expect(webhook.subscriptions).to match_array(all_events)
       end
     end
@@ -169,18 +204,18 @@ RSpec.describe "Webhook Integration", :integration do
       VCR.use_cassette("webhooks/toggle_active") do
         # Should start active
         expect(webhook.active).to be true
-        
+
         # Deactivate
         webhook.active = false
         webhook.save
-        
+
         updated = Attio::Webhook.retrieve(webhook.id)
         expect(updated.active).to be false
-        
+
         # Reactivate
         updated.active = true
         updated.save
-        
+
         final = Attio::Webhook.retrieve(webhook.id)
         expect(final.active).to be true
       end
@@ -191,31 +226,31 @@ RSpec.describe "Webhook Integration", :integration do
     let(:payload) { '{"type":"record.created","data":{"object":"people"}}' }
     let(:secret) { "webhook_secret_key" }
     let(:timestamp) { Time.now.to_i.to_s }
-    
+
     it "verifies valid signature" do
       # Generate valid signature
       signed_payload = "#{timestamp}.#{payload}"
       expected_signature = OpenSSL::HMAC.hexdigest("SHA256", secret, signed_payload)
       signature_header = "t=#{timestamp} v1=#{expected_signature}"
-      
+
       # Verify
       verifier = Attio::Webhook::SignatureVerifier.new(secret)
       expect(verifier.verify(payload, signature_header)).to be true
     end
-    
+
     it "rejects invalid signature" do
       signature_header = "t=#{timestamp} v1=invalid_signature"
-      
+
       verifier = Attio::Webhook::SignatureVerifier.new(secret)
       expect(verifier.verify(payload, signature_header)).to be false
     end
-    
+
     it "rejects old timestamp" do
       old_timestamp = (Time.now.to_i - 400).to_s # 400 seconds ago
       signed_payload = "#{old_timestamp}.#{payload}"
       signature = OpenSSL::HMAC.hexdigest("SHA256", secret, signed_payload)
       signature_header = "t=#{old_timestamp} v1=#{signature}"
-      
+
       verifier = Attio::Webhook::SignatureVerifier.new(secret)
       expect(verifier.verify(payload, signature_header)).to be false
     end
@@ -236,41 +271,62 @@ RSpec.describe "Webhook Integration", :integration do
           }
         }
       }
-      
+
       event = Attio::Webhook::Event.new(payload)
-      
+
       expect(event.id).to eq("evt_123")
       expect(event.type).to eq("record.created")
       expect(event.object_type).to eq("people")
       expect(event.record_id).to eq("person_123")
       expect(event.record_data[:name]).to eq("John Doe")
     end
-    
-    it "parses record updated event with changes" do
+
+    context "with record updated event" do
+      let(:updated_payload) do
+        {
+          id: "evt_124",
+          type: "record.updated",
+          occurred_at: "2024-01-01T00:00:00Z",
+          data: {
+            object: "people",
+            record: {
+              id: "person_123",
+              name: "Jane Doe",
+              email_addresses: ["jane@example.com"]
+            },
+            changes: {
+              name: {old: "John Doe", new: "Jane Doe"},
+              email_addresses: {
+                old: ["john@example.com"],
+                new: ["jane@example.com"]
+              }
+            }
+          }
+        }
+      end
+
+      it "parses record updated event" do
+        event = Attio::Webhook::Event.new(updated_payload)
+        expect(event.changes).to be_present
+      end
+    end
+
+    it "parses changes in updated event" do
       payload = {
         id: "evt_124",
         type: "record.updated",
         occurred_at: "2024-01-01T00:00:00Z",
         data: {
           object: "people",
-          record: {
-            id: "person_123",
-            name: "Jane Doe",
-            email_addresses: ["jane@example.com"]
-          },
+          record: {id: "person_123"},
           changes: {
-            name: { old: "John Doe", new: "Jane Doe" },
-            email_addresses: { 
-              old: ["john@example.com"], 
-              new: ["jane@example.com"] 
-            }
+            name: {old: "John Doe", new: "Jane Doe"}
           }
         }
       }
-      
+
       event = Attio::Webhook::Event.new(payload)
-      
-      expect(event.changes).to be_present
+
       expect(event.changes[:name][:old]).to eq("John Doe")
       expect(event.changes[:name][:new]).to eq("Jane Doe")
     end
@@ -297,7 +353,7 @@ RSpec.describe "Webhook Integration", :integration do
           url: "https://example.com/duplicate",
           subscriptions: %w[record.created]
         )
-        
+
         # Try to create duplicate (same URL and subscriptions)
         expect {
           Attio::Webhook.create(

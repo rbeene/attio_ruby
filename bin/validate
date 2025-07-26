@@ -41,7 +41,7 @@ begin
   puts "  API Key: #{Attio.api_key[0..10]}..."
   puts "  API Base: #{Attio.api_base}"
   puts "  API Version: #{Attio.api_version}"
-rescue StandardError => e
+rescue => e
   puts "✗ Configuration failed: #{e.message}"
 end
 puts
@@ -72,7 +72,7 @@ spec = Gem::Specification.load("attio-ruby.gemspec")
 if spec
   puts "✓ Name: #{spec.name}"
   puts "✓ Version: #{spec.version}"
-  puts "✓ Authors: #{spec.authors.join(', ')}"
+  puts "✓ Authors: #{spec.authors.join(", ")}"
   puts "✓ License: #{spec.license}"
   puts "✓ Ruby requirement: #{spec.required_ruby_version}"
   puts "✓ Development dependencies: #{spec.development_dependencies.size}"

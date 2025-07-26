@@ -20,7 +20,7 @@ module Attio
     end
 
     attr_reader :api_slug, :name, :object_id, :object_api_slug,
-                :created_by_actor, :workspace_id, :workspace_access
+      :created_by_actor, :workspace_id, :workspace_access
 
     def initialize(attributes = {}, opts = {})
       super
@@ -35,7 +35,7 @@ module Attio
 
     # Get all entries in this list
     def entries(params = {}, opts = {})
-      ListEntry.list({ list_id: id }.merge(params), opts)
+      ListEntry.list({list_id: id}.merge(params), opts)
     end
 
     # Add a record to this list
@@ -50,12 +50,12 @@ module Attio
 
     # Check if a record is in this list
     def contains_record?(record_id, opts = {})
-      entries({ record_id: record_id }, opts).any?
+      entries({record_id: record_id}, opts).any?
     end
 
     # Get the count of entries
     def entry_count(opts = {})
-      entries({ limit: 1 }, opts).total_count
+      entries({limit: 1}, opts).total_count
     end
 
     # Update list properties
@@ -76,10 +76,10 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       parsed = ResponseParser.parse(response, request)
-      
+
       update_from(parsed)
       reset_changes!
       self
@@ -101,13 +101,13 @@ module Attio
       # Create a new list
       def create(name:, object:, workspace_access: nil, opts: {})
         validate_object_identifier!(object)
-        
+
         params = {
           name: name,
           object: object,
           workspace_access: workspace_access
         }.compact
-        
+
         request = RequestBuilder.build(
           method: :POST,
           path: resource_path,
@@ -115,10 +115,10 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         new(parsed, opts)
       end
 

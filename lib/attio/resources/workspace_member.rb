@@ -14,7 +14,7 @@ module Attio
     end
 
     attr_reader :email_address, :first_name, :last_name, :avatar_url,
-                :access_level, :status, :invited_at, :last_accessed_at
+      :access_level, :status, :invited_at, :last_accessed_at
 
     def initialize(attributes = {}, opts = {})
       super
@@ -80,13 +80,13 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         new(parsed, opts)
       end
-      alias current me
+      alias_method :current, :me
 
       # Find member by email
       def find_by_email(email, opts = {})

@@ -6,7 +6,7 @@ module Attio
       module ClassMethods
         def create(params = {}, opts = {})
           validate_params!(params)
-          
+
           request = RequestBuilder.build(
             method: :POST,
             path: resource_path,
@@ -14,10 +14,10 @@ module Attio
             headers: opts[:headers] || {},
             api_key: opts[:api_key]
           )
-          
+
           response = connection_manager.execute(request)
           parsed = ResponseParser.parse(response, request)
-          
+
           construct_from(parsed, opts)
         end
 

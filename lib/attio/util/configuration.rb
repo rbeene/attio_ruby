@@ -91,7 +91,7 @@ module Attio
           @debug = ENV.fetch("ATTIO_DEBUG", @debug).to_s.downcase == "true" if ENV.key?("ATTIO_DEBUG")
           if ENV.key?("ATTIO_VERIFY_SSL_CERTS")
             @verify_ssl_certs = ENV.fetch("ATTIO_VERIFY_SSL_CERTS",
-                                          @verify_ssl_certs).to_s.downcase != "false"
+              @verify_ssl_certs).to_s.downcase != "false"
           end
         end
       end

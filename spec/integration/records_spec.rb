@@ -26,7 +26,7 @@ RSpec.describe "Record Integration", :integration do
           object: "people",
           values: person_data
         )
-        
+
         expect(person).to be_a(Attio::Record)
         expect(person[:name]).to eq("Test Person")
         expect(person[:email_addresses]).to include(test_email)
@@ -38,10 +38,10 @@ RSpec.describe "Record Integration", :integration do
       VCR.use_cassette("records/retrieve_person") do
         # First create a person
         created = Attio::Record.create(object: "people", values: person_data)
-        
+
         # Then retrieve it
         person = Attio::Record.retrieve(object: "people", record_id: created.id)
-        
+
         expect(person.id).to eq(created.id)
         expect(person[:name]).to eq("Test Person")
       end
@@ -51,12 +51,12 @@ RSpec.describe "Record Integration", :integration do
       VCR.use_cassette("records/update_person") do
         # Create person
         person = Attio::Record.create(object: "people", values: person_data)
-        
+
         # Update
         person[:job_title] = "Senior Software Engineer"
         person[:tags] = ["vip", "customer"]
         person.save
-        
+
         # Verify
         updated = Attio::Record.retrieve(object: "people", record_id: person.id)
         expect(updated[:job_title]).to eq("Senior Software Engineer")
@@ -70,15 +70,15 @@ RSpec.describe "Record Integration", :integration do
         unique_name = "Unique #{SecureRandom.hex(8)}"
         Attio::Record.create(
           object: "people",
-          values: { name: unique_name, email_addresses: test_email }
+          values: {name: unique_name, email_addresses: test_email}
         )
-        
+
         # Search
         results = Attio::Record.list(
           object: "people",
-          params: { q: unique_name }
+          params: {q: unique_name}
         )
-        
+
         expect(results.count).to be >= 1
         expect(results.first[:name]).to include(unique_name)
       end
@@ -88,12 +88,12 @@ RSpec.describe "Record Integration", :integration do
       VCR.use_cassette("records/delete_person") do
         # Create person
         person = Attio::Record.create(object: "people", values: person_data)
-        
+
         # Delete
         result = person.destroy
         expect(result).to be true
         expect(person).to be_frozen
-        
+
         # Verify deletion
         expect {
           Attio::Record.retrieve(object: "people", record_id: person.id)
@@ -118,7 +118,7 @@ RSpec.describe "Record Integration", :integration do
           object: "companies",
           values: company_data
         )
-        
+
         expect(company).to be_a(Attio::Record)
         expect(company[:name]).to start_with("Test Company")
         expect(company[:industry]).to eq("Technology")
@@ -129,20 +129,20 @@ RSpec.describe "Record Integration", :integration do
       VCR.use_cassette("records/create_relationship") do
         # Create company
         company = Attio::Record.create(object: "companies", values: company_data)
-        
+
         # Create person with company relationship
         person = Attio::Record.create(
           object: "people",
           values: {
             name: "Employee Test",
             email_addresses: "employee-#{SecureRandom.hex(8)}@example.com",
-            company: [{ 
-              target_object: "companies", 
-              target_record: company.id 
+            company: [{
+              target_object: "companies",
+              target_record: company.id
             }]
           }
         )
-        
+
         expect(person[:company]).to be_present
         expect(person[:company].first["target_record"]).to eq(company.id)
       end
@@ -153,19 +153,19 @@ RSpec.describe "Record Integration", :integration do
     it "creates multiple records in batch" do
       VCR.use_cassette("records/batch_create") do
         records = [
-          { values: { name: "Batch Person 1", email_addresses: "batch1@example.com" } },
-          { values: { name: "Batch Person 2", email_addresses: "batch2@example.com" } },
-          { values: { name: "Batch Person 3", email_addresses: "batch3@example.com" } }
+          {values: {name: "Batch Person 1", email_addresses: "batch1@example.com"}},
+          {values: {name: "Batch Person 2", email_addresses: "batch2@example.com"}},
+          {values: {name: "Batch Person 3", email_addresses: "batch3@example.com"}}
         ]
-        
+
         results = Attio::Record.create_batch(
           object: "people",
           records: records
         )
-        
+
         expect(results).to be_an(Array)
         expect(results.size).to eq(3)
-        expect(results.all? { |r| r.is_a?(Attio::Record) }).to be true
+        expect(results.all?(Attio::Record)).to be true
       end
     end
   end
@@ -176,17 +176,17 @@ RSpec.describe "Record Integration", :integration do
         # Create test data
         Attio::Record.create(
           object: "people",
-          values: { 
-            name: "Alice Filter Test", 
+          values: {
+            name: "Alice Filter Test",
             email_addresses: "alice@filter.com",
             job_title: "CEO"
           }
         )
-        
+
         Attio::Record.create(
           object: "people",
-          values: { 
-            name: "Bob Filter Test", 
+          values: {
+            name: "Bob Filter Test",
             email_addresses: "bob@filter.com",
             job_title: "CTO"
           }
@@ -200,11 +200,11 @@ RSpec.describe "Record Integration", :integration do
           object: "people",
           params: {
             filter: {
-              job_title: { "$contains": "C" }
+              job_title: {"$contains": "C"}
             }
           }
         )
-        
+
         expect(results.count).to be >= 2
         expect(results.all? { |r| r[:job_title]&.include?("C") }).to be true
       end
@@ -215,12 +215,12 @@ RSpec.describe "Record Integration", :integration do
         results = Attio::Record.list(
           object: "people",
           params: {
-            sort: [{ attribute: "name", direction: "asc" }],
+            sort: [{attribute: "name", direction: "asc"}],
             limit: 10
           }
         )
-        
-        names = results.map { |r| r[:name] }.compact
+
+        names = results.filter_map { |r| r[:name] }
         expect(names).to eq(names.sort)
       end
     end
@@ -232,7 +232,7 @@ RSpec.describe "Record Integration", :integration do
         expect {
           Attio::Record.create(
             object: "people",
-            values: { email_addresses: "invalid-email" }
+            values: {email_addresses: "invalid-email"}
           )
         }.to raise_error(Attio::Errors::InvalidRequestError)
       end

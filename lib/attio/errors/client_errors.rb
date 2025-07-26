@@ -91,10 +91,10 @@ module Attio
 
         error_messages = errors.map do |field, messages|
           messages = [messages] unless messages.is_a?(Array)
-          "#{field}: #{messages.join(', ')}"
+          "#{field}: #{messages.join(", ")}"
         end
 
-        "#{base_message} - #{error_messages.join('; ')}"
+        "#{base_message} - #{error_messages.join("; ")}"
       end
     end
 

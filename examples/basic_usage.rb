@@ -73,7 +73,7 @@ puts
 # 5. Updating Records
 puts "5. Updating a Record:"
 person[:job_title] = "Senior Software Engineer"
-person[:company] = [{ target_object: "companies", target_record: company.id }]
+person[:company] = [{target_object: "companies", target_record: company.id}]
 person.save
 puts "  Updated #{person[:name]}'s job title and company"
 puts
@@ -139,8 +139,8 @@ batch_service = Attio::Services::BatchService.new(
 puts "  Creating multiple records in batch..."
 batch_results = batch_service.create_records(
   "people" => [
-    { values: { name: "Alice Johnson", email_addresses: "alice@example.com" } },
-    { values: { name: "Bob Wilson", email_addresses: "bob@example.com" } }
+    {values: {name: "Alice Johnson", email_addresses: "alice@example.com"}},
+    {values: {name: "Bob Wilson", email_addresses: "bob@example.com"}}
   ]
 )
 puts "\n  Created #{batch_results[:success].size} records successfully"

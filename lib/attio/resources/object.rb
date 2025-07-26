@@ -65,10 +65,10 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       parsed = ResponseParser.parse(response, request)
-      
+
       update_from(parsed)
       reset_changes!
       self

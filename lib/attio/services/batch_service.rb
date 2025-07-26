@@ -24,18 +24,18 @@ module Attio
       # Execute multiple operations in batches
       def execute(operations, batch_size: MAX_BATCH_SIZE, concurrency: DEFAULT_CONCURRENCY)
         @results[:total] = operations.size
-        
+
         operations.each_slice(batch_size).with_index do |batch, batch_index|
           process_batch(batch, batch_index)
         end
-        
+
         @results
       end
 
       # Create multiple records across different objects
       def create_records(records_by_object, batch_size: MAX_BATCH_SIZE)
         operations = []
-        
+
         records_by_object.each do |object_slug, records|
           records.each_slice(batch_size) do |batch|
             operations << {
@@ -45,7 +45,7 @@ module Attio
             }
           end
         end
-        
+
         execute(operations)
       end
 
@@ -59,7 +59,7 @@ module Attio
             values: update[:values]
           }
         end
-        
+
         execute(operations, batch_size: batch_size)
       end
 
@@ -72,7 +72,7 @@ module Attio
             record_id: deletion[:record_id]
           }
         end
-        
+
         execute(operations, batch_size: batch_size)
       end
 
@@ -82,7 +82,7 @@ module Attio
           validate_operation!(op)
           op
         end
-        
+
         execute(validated_operations)
       end
 
@@ -90,21 +90,21 @@ module Attio
       def import_with_deduplication(object:, records:, unique_attribute:, batch_size: MAX_BATCH_SIZE)
         # First, get existing records
         existing = {}
-        
+
         Record.list(object: object).auto_paging_each do |record|
           key = record[unique_attribute]
           existing[key] = record if key
         end
-        
+
         # Separate new vs update operations
         operations = []
-        
+
         records.each do |record_data|
           unique_value = record_data[:values][unique_attribute]
-          
-          if existing[unique_value]
+
+          operations << if existing[unique_value]
             # Update existing
-            operations << {
+            {
               type: :update,
               object: object,
               record_id: existing[unique_value].id,
@@ -112,14 +112,14 @@ module Attio
             }
           else
             # Create new
-            operations << {
+            {
               type: :create,
               object: object,
               values: record_data[:values]
             }
           end
         end
-        
+
         execute(operations, batch_size: batch_size)
       end
 
@@ -128,7 +128,7 @@ module Attio
         # Get all existing records
         existing = {}
         existing_ids = Set.new
-        
+
         Record.list(object: object).auto_paging_each do |record|
           key = record[match_attribute]
           if key
@@ -136,15 +136,15 @@ module Attio
             existing_ids.add(record.id)
           end
         end
-        
+
         # Build operations
         operations = []
         seen_keys = Set.new
-        
+
         source_records.each do |source|
           key = source[:values][match_attribute]
           seen_keys.add(key)
-          
+
           if existing[key]
             # Update existing
             operations << {
@@ -163,7 +163,7 @@ module Attio
             }
           end
         end
-        
+
         # Delete missing records if requested
         if delete_missing
           existing_ids.each do |record_id|
@@ -174,7 +174,7 @@ module Attio
             }
           end
         end
-        
+
         execute(operations)
       end
 
@@ -182,31 +182,29 @@ module Attio
 
       def process_batch(batch, batch_index)
         batch.each_with_index do |operation, index|
-          begin
-            result = execute_operation(operation)
-            @results[:success] << { operation: operation, result: result }
-            @results[:processed] += 1
-            
-            trigger_success_callback(operation, result)
-            trigger_progress_callback
-          rescue StandardError => e
-            error_info = {
-              operation: operation,
-              error: e.message,
-              error_class: e.class.name,
-              batch_index: batch_index,
-              operation_index: index
-            }
-            
-            @results[:errors] << error_info
-            @results[:processed] += 1
-            
-            trigger_error_callback(error_info)
-            trigger_progress_callback
-            
-            # Re-raise if fail-fast mode
-            raise e if @options[:fail_fast]
-          end
+          result = execute_operation(operation)
+          @results[:success] << {operation: operation, result: result}
+          @results[:processed] += 1
+
+          trigger_success_callback(operation, result)
+          trigger_progress_callback
+        rescue => e
+          error_info = {
+            operation: operation,
+            error: e.message,
+            error_class: e.class.name,
+            batch_index: batch_index,
+            operation_index: index
+          }
+
+          @results[:errors] << error_info
+          @results[:processed] += 1
+
+          trigger_error_callback(error_info)
+          trigger_progress_callback
+
+          # Re-raise if fail-fast mode
+          raise e if @options[:fail_fast]
         end
       end
 
@@ -252,10 +250,10 @@ module Attio
         unless operation[:type]
           raise ArgumentError, "Operation must have a type"
         end
-        
+
         case operation[:type]
         when :create, :create_batch
-          unless operation[:object] && operation[:values] || operation[:records]
+          if !operation[:object] || (!operation[:values] && !operation[:records])
             raise ArgumentError, "Create operation requires object and values/records"
           end
         when :update
@@ -271,7 +269,7 @@ module Attio
 
       def trigger_progress_callback
         return unless @progress_callback
-        
+
         progress = {
           processed: @results[:processed],
           total: @results[:total],
@@ -279,7 +277,7 @@ module Attio
           error_count: @results[:errors].size,
           percentage: (@results[:processed].to_f / @results[:total] * 100).round(2)
         }
-        
+
         @progress_callback.call(progress)
       end
 

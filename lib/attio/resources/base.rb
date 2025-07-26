@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module Attio
   module Resources
     class Base
@@ -21,11 +19,12 @@ module Attio
           @id = attributes[:id] || attributes["id"]
           @created_at = parse_timestamp(attributes[:created_at] || attributes["created_at"])
           @metadata = attributes[:_metadata] || attributes["_metadata"] || {}
-          
+
           # Process all attributes
+          skip_keys = %w[id created_at _metadata]
           attributes.each do |key, value|
-            next if %w[id created_at _metadata].include?(key.to_s)
-            
+            next if skip_keys.include?(key.to_s)
+
             @attributes[key.to_sym] = process_attribute_value(value)
             @original_attributes[key.to_sym] = deep_copy(process_attribute_value(value))
           end
@@ -41,9 +40,9 @@ module Attio
         key = key.to_sym
         old_value = @attributes[key]
         new_value = process_attribute_value(value)
-        
+
         return if old_value == new_value
-        
+
         @attributes[key] = new_value
         @changed_attributes.add(key)
       end
@@ -55,8 +54,8 @@ module Attio
       def key?(key)
         @attributes.key?(key.to_sym)
       end
-      alias has_key? key?
-      alias include? key?
+      alias_method :has_key?, :key?
+      alias_method :include?, :key?
 
       # Dirty tracking
       def changed?
@@ -97,7 +96,7 @@ module Attio
           **@attributes
         }.compact
       end
-      alias to_hash to_h
+      alias_method :to_hash, :to_h
 
       def to_json(*args)
         JSON.generate(to_h, *args)
@@ -126,7 +125,7 @@ module Attio
       def ==(other)
         other.is_a?(self.class) && id == other.id && @attributes == other.instance_variable_get(:@attributes)
       end
-      alias eql? ==
+      alias_method :eql?, :==
 
       def hash
         [self.class, id, @attributes].hash
@@ -156,7 +155,7 @@ module Attio
       # API interaction helpers
       def request(method:, path: nil, params: nil, headers: {})
         path ||= resource_path
-        
+
         request = RequestBuilder.build(
           method: method,
           path: path,
@@ -164,7 +163,7 @@ module Attio
           headers: headers,
           api_key: @opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         ResponseParser.parse(response, request)
       end
@@ -194,7 +193,7 @@ module Attio
 
       def parse_timestamp(value)
         return nil if value.nil?
-        
+
         case value
         when Time
           value
@@ -202,8 +201,6 @@ module Attio
           Time.parse(value)
         when Integer
           Time.at(value)
-        else
-          nil
         end
       rescue ArgumentError
         nil
@@ -218,14 +215,18 @@ module Attio
         when Set
           Set.new(obj.map { |v| deep_copy(v) })
         else
-          obj.dup rescue obj
+          begin
+            obj.dup
+          rescue
+            obj
+          end
         end
       end
 
       # Dynamic attribute methods
       def method_missing(method_name, *args, &block)
         method_string = method_name.to_s
-        
+
         if method_string.end_with?("=")
           # Setter method
           attribute_name = method_string[0...-1].to_sym
@@ -244,7 +245,7 @@ module Attio
 
       def respond_to_missing?(method_name, include_private = false)
         method_string = method_name.to_s
-        
+
         if method_string.end_with?("=", "?")
           true
         elsif @attributes.key?(method_name)

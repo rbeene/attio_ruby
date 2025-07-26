@@ -29,18 +29,18 @@ batch_service = Attio::Services::BatchService.new(
 )
 
 # Prepare sample data
-people_data = 10.times.map do |i|
+people_data = Array.new(10) do |i|
   {
     values: {
       name: "Test Person #{i + 1}",
       email_addresses: "test#{i + 1}@example.com",
-      phone_numbers: "+1-555-#{format('%04d', i + 1)}",
+      phone_numbers: "+1-555-#{format("%04d", i + 1)}",
       job_title: %w[Engineer Manager Designer Analyst].sample
     }
   }
 end
 
-companies_data = 5.times.map do |i|
+companies_data = Array.new(5) do |i|
   {
     values: {
       name: "Test Company #{i + 1}",
@@ -65,12 +65,12 @@ puts
 puts "2. Batch Updating Records:"
 
 # Get some records to update
-people = Attio::Record.list(object: "people", params: { limit: 5 })
+people = Attio::Record.list(object: "people", params: {limit: 5})
 update_data = people.map do |person|
   {
     record_id: person.id,
     values: {
-      job_title: "Senior #{person[:job_title] || 'Professional'}",
+      job_title: "Senior #{person[:job_title] || "Professional"}",
       tags: %w[batch-updated example]
     }
   }
@@ -137,10 +137,10 @@ puts "5. Batch Operations with Error Handling:"
 
 # Intentionally include some invalid data
 mixed_data = [
-  { values: { name: "Valid Person", email_addresses: "valid@example.com" } },
-  { values: { name: "" } }, # Invalid: empty name
-  { values: { name: "Another Valid", email_addresses: "another@example.com" } },
-  { values: { email_addresses: "no-name@example.com" } } # Missing required field
+  {values: {name: "Valid Person", email_addresses: "valid@example.com"}},
+  {values: {name: ""}}, # Invalid: empty name
+  {values: {name: "Another Valid", email_addresses: "another@example.com"}},
+  {values: {email_addresses: "no-name@example.com"}} # Missing required field
 ]
 
 batch_service_with_errors = Attio::Services::BatchService.new(
@@ -185,7 +185,7 @@ export_data = {
   end
 }
 
-File.write("attio_export_#{Time.now.strftime('%Y%m%d_%H%M%S')}.json", JSON.pretty_generate(export_data))
+File.write("attio_export_#{Time.now.strftime("%Y%m%d_%H%M%S")}.json", JSON.pretty_generate(export_data))
 puts "  Exported #{all_people.count} records to JSON file"
 puts
 
@@ -193,8 +193,8 @@ puts
 puts "7. Batch Relationship Updates:"
 
 # Get some people and companies
-people_for_relationships = Attio::Record.list(object: "people", params: { limit: 3 })
-companies = Attio::Record.list(object: "companies", params: { limit: 2 })
+people_for_relationships = Attio::Record.list(object: "people", params: {limit: 3})
+companies = Attio::Record.list(object: "companies", params: {limit: 2})
 
 if people_for_relationships.any? && companies.any?
   relationship_updates = people_for_relationships.map do |person|
@@ -230,7 +230,7 @@ parallel_batch = Attio::Services::BatchService.new(
 )
 
 # Generate larger dataset
-large_dataset = 100.times.map do |i|
+large_dataset = Array.new(100) do |i|
   {
     values: {
       name: "Bulk Person #{i + 1}",
@@ -293,7 +293,7 @@ if ENV["CLEANUP"]
   puts "\nCleaning up test data..."
   cleanup_people = Attio::Record.list(
     object: "people",
-    params: { q: "email:*@example.com", limit: 1000 }
+    params: {q: "email:*@example.com", limit: 1000}
   )
 
   if cleanup_people.any?

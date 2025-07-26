@@ -46,7 +46,7 @@ module Attio
 
         uri = URI.parse(OAUTH_BASE_URL)
         uri.query = URI.encode_www_form(params)
-        
+
         {
           url: uri.to_s,
           state: state
@@ -87,7 +87,7 @@ module Attio
       # Revoke a token
       def revoke_token(token)
         token_value = token.is_a?(Token) ? token.access_token : token
-        
+
         params = {
           token: token_value,
           client_id: client_id,
@@ -110,7 +110,7 @@ module Attio
       # Validate token with introspection endpoint
       def introspect_token(token)
         token_value = token.is_a?(Token) ? token.access_token : token
-        
+
         params = {
           token: token_value,
           client_id: client_id,
@@ -133,7 +133,7 @@ module Attio
         raise ArgumentError, "client_id is required" if client_id.nil? || client_id.empty?
         raise ArgumentError, "client_secret is required" if client_secret.nil? || client_secret.empty?
         raise ArgumentError, "redirect_uri is required" if redirect_uri.nil? || redirect_uri.empty?
-        
+
         unless redirect_uri.start_with?("http://", "https://")
           raise ArgumentError, "redirect_uri must be a valid HTTP(S) URL"
         end
@@ -142,12 +142,12 @@ module Attio
       def validate_scopes(scopes)
         scopes = Array(scopes).map(&:to_s)
         return DEFAULT_SCOPES if scopes.empty?
-        
+
         invalid_scopes = scopes - ScopeValidator::VALID_SCOPES
         unless invalid_scopes.empty?
-          raise ArgumentError, "Invalid scopes: #{invalid_scopes.join(', ')}"
+          raise ArgumentError, "Invalid scopes: #{invalid_scopes.join(", ")}"
         end
-        
+
         scopes
       end
 

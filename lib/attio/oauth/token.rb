@@ -4,7 +4,7 @@ module Attio
   module OAuth
     class Token
       attr_reader :access_token, :refresh_token, :token_type, :expires_in,
-                  :expires_at, :scope, :created_at, :client
+        :expires_at, :scope, :created_at, :client
 
       def initialize(attributes = {})
         @access_token = attributes[:access_token] || attributes["access_token"]
@@ -14,7 +14,7 @@ module Attio
         @scope = parse_scope(attributes[:scope] || attributes["scope"])
         @created_at = attributes[:created_at] || Time.now.utc
         @client = attributes[:client]
-        
+
         calculate_expiration!
         validate!
       end
@@ -32,7 +32,7 @@ module Attio
       def refresh!
         raise InvalidTokenError, "No refresh token available" unless @refresh_token
         raise InvalidTokenError, "No OAuth client configured" unless @client
-        
+
         new_token = @client.refresh_token(@refresh_token)
         update_from(new_token)
         self
@@ -40,7 +40,7 @@ module Attio
 
       def revoke!
         raise InvalidTokenError, "No OAuth client configured" unless @client
-        
+
         @client.revoke_token(self)
         @access_token = nil
         @refresh_token = nil
@@ -65,9 +65,9 @@ module Attio
 
       def inspect
         "#<#{self.class.name}:#{object_id} " \
-          "token=#{@access_token ? '***' + @access_token[-4..] : 'nil'} " \
+          "token=#{@access_token ? "***" + @access_token[-4..] : "nil"} " \
           "expires_at=#{@expires_at&.iso8601} " \
-          "scope=#{@scope.join(' ')}>"
+          "scope=#{@scope.join(" ")}>"
       end
 
       # Authorization header value
@@ -97,10 +97,8 @@ module Attio
       private
 
       def calculate_expiration!
-        if @expires_in
-          @expires_at = @created_at + @expires_in
-        else
-          @expires_at = nil
+        @expires_at = if @expires_in
+          @created_at + @expires_in
         end
       end
 

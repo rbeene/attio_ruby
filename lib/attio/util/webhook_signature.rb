@@ -15,16 +15,16 @@ module Attio
         # Verify webhook signature
         def verify(payload:, signature:, timestamp:, secret:, tolerance: TOLERANCE_SECONDS)
           validate_inputs!(payload, signature, timestamp, secret)
-          
+
           # Check timestamp to prevent replay attacks
           verify_timestamp!(timestamp, tolerance)
-          
+
           # Calculate expected signature
           expected_signature = calculate_signature(payload, timestamp, secret)
-          
+
           # Constant-time comparison to prevent timing attacks
           secure_compare(signature, expected_signature)
-        rescue StandardError => e
+        rescue => e
           raise SignatureVerificationError, "Webhook signature verification failed: #{e.message}"
         end
 
@@ -32,25 +32,25 @@ module Attio
         def calculate_signature(payload, timestamp, secret)
           # Ensure payload is a string
           payload_string = payload.is_a?(String) ? payload : JSON.generate(payload)
-          
+
           # Create the signed payload
           signed_payload = "#{timestamp}.#{payload_string}"
-          
+
           # Calculate HMAC
           hmac = OpenSSL::HMAC.hexdigest("SHA256", secret, signed_payload)
-          
+
           # Return in the format Attio uses
           "v1=#{hmac}"
         end
 
         # Extract signature from headers
         def extract_from_headers(headers)
-          signature = headers[SIGNATURE_HEADER] || headers[SIGNATURE_HEADER.upcase] || headers[SIGNATURE_HEADER.gsub("-", "_").upcase]
-          timestamp = headers[TIMESTAMP_HEADER] || headers[TIMESTAMP_HEADER.upcase] || headers[TIMESTAMP_HEADER.gsub("-", "_").upcase]
-          
+          signature = headers[SIGNATURE_HEADER] || headers[SIGNATURE_HEADER.upcase] || headers[SIGNATURE_HEADER.tr("-", "_").upcase]
+          timestamp = headers[TIMESTAMP_HEADER] || headers[TIMESTAMP_HEADER.upcase] || headers[TIMESTAMP_HEADER.tr("-", "_").upcase]
+
           raise SignatureVerificationError, "Missing signature header: #{SIGNATURE_HEADER}" unless signature
           raise SignatureVerificationError, "Missing timestamp header: #{TIMESTAMP_HEADER}" unless timestamp
-          
+
           {
             signature: signature,
             timestamp: timestamp
@@ -69,11 +69,11 @@ module Attio
         def verify_timestamp!(timestamp, tolerance)
           timestamp_int = timestamp.to_i
           current_time = Time.now.to_i
-          
+
           if timestamp_int < (current_time - tolerance)
             raise SignatureVerificationError, "Timestamp too old"
           end
-          
+
           if timestamp_int > (current_time + tolerance)
             raise SignatureVerificationError, "Timestamp too far in the future"
           end
@@ -81,7 +81,7 @@ module Attio
 
         def secure_compare(a, b)
           return false unless a.bytesize == b.bytesize
-          
+
           # Use constant-time comparison
           res = 0
           a.bytes.zip(b.bytes) { |x, y| res |= x ^ y }
@@ -102,9 +102,9 @@ module Attio
         def verify_request(request)
           headers = extract_headers(request)
           body = extract_body(request)
-          
+
           signature_data = WebhookSignature.extract_from_headers(headers)
-          
+
           WebhookSignature.verify(
             payload: body,
             signature: signature_data[:signature],
@@ -116,7 +116,7 @@ module Attio
         # Parse and verify a request
         def parse_and_verify(request)
           verify_request(request)
-          
+
           body = extract_body(request)
           JSON.parse(body, symbolize_names: true)
         rescue JSON::ParserError => e

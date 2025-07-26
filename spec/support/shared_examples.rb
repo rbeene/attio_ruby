@@ -8,8 +8,8 @@ RSpec.shared_examples "a listable resource" do
       headers: {},
       body: JSON.generate({
         data: [
-          { id: "1", name: "Item 1" },
-          { id: "2", name: "Item 2" }
+          {id: "1", name: "Item 1"},
+          {id: "2", name: "Item 2"}
         ],
         pagination: {
           has_next_page: false,
@@ -107,13 +107,13 @@ RSpec.shared_examples "a creatable resource" do
       expect(request[:method]).to eq(:POST)
       create_response
     end
-    
+
     described_class.create(name: "New Item")
   end
 end
 
 RSpec.shared_examples "an updatable resource" do
-  let(:resource) { described_class.new({ id: "123", name: "Original" }) }
+  let(:resource) { described_class.new({id: "123", name: "Original"}) }
   let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
   let(:update_response) do
     {
@@ -134,14 +134,14 @@ RSpec.shared_examples "an updatable resource" do
   it "updates the resource" do
     resource.name = "Updated"
     result = resource.save
-    
+
     expect(result).to eq(resource)
     expect(resource.changed?).to be false
   end
 
   it "raises error without ID" do
     resource_without_id = described_class.new({})
-    
+
     expect do
       resource_without_id.save
     end.to raise_error(Attio::Errors::InvalidRequestError)
@@ -163,7 +163,7 @@ RSpec.shared_examples "a deletable resource" do
     allow(connection_manager).to receive(:execute).and_return(delete_response)
   end
 
-  context "class method" do
+  context "when using class method" do
     it "deletes by ID" do
       result = described_class.delete("123")
       expect(result).to be true
@@ -174,13 +174,13 @@ RSpec.shared_examples "a deletable resource" do
         expect(request[:method]).to eq(:DELETE)
         delete_response
       end
-      
+
       described_class.delete("123")
     end
   end
 
-  context "instance method" do
-    let(:resource) { described_class.new({ id: "123" }) }
+  context "when using instance method" do
+    let(:resource) { described_class.new({id: "123"}) }
 
     it "deletes the resource" do
       result = resource.destroy

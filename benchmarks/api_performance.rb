@@ -55,19 +55,19 @@ Benchmark.bm(30) do |x|
 
   x.report("List 10 records:") do
     50.times do
-      Attio::Record.list(object: "people", params: { limit: 10 })
+      Attio::Record.list(object: "people", params: {limit: 10})
     end
   end
 
   x.report("List 100 records:") do
     10.times do
-      Attio::Record.list(object: "people", params: { limit: 100 })
+      Attio::Record.list(object: "people", params: {limit: 100})
     end
   end
 
   x.report("Search records:") do
     20.times do
-      Attio::Record.list(object: "people", params: { q: "test", limit: 10 })
+      Attio::Record.list(object: "people", params: {q: "test", limit: 10})
     end
   end
 end
@@ -94,7 +94,7 @@ Benchmark.ips do |x|
     # Use a pre-created record for updates
     record = Attio::Record.create(
       object: "people",
-      values: { name: "Update Test", email_addresses: "update@example.com" }
+      values: {name: "Update Test", email_addresses: "update@example.com"}
     )
     record[:job_title] = "Updated Title #{rand(100)}"
     record.save
@@ -105,7 +105,7 @@ Benchmark.ips do |x|
   end
 
   x.report("List iteration (10 items)") do
-    list = Attio::Record.list(object: "people", params: { limit: 10 })
+    list = Attio::Record.list(object: "people", params: {limit: 10})
     list.each { |record| record[:name] }
   end
 
@@ -121,7 +121,7 @@ puts "-" * 50
 single_record_mem = measure_memory do
   Attio::Record.create(
     object: "people",
-    values: { name: "Memory Test", email_addresses: "memory@example.com" }
+    values: {name: "Memory Test", email_addresses: "memory@example.com"}
   )
 end
 
@@ -133,8 +133,8 @@ puts
 
 # Batch operation memory usage
 batch_mem = measure_memory do
-  records = 100.times.map do |i|
-    { values: { name: "Batch #{i}", email_addresses: "batch#{i}@example.com" } }
+  records = Array.new(100) do |i|
+    {values: {name: "Batch #{i}", email_addresses: "batch#{i}@example.com"}}
   end
 
   Attio::Record.create_batch(object: "people", records: records)
@@ -148,7 +148,7 @@ puts
 
 # List iteration memory usage
 list_mem = measure_memory do
-  list = Attio::Record.list(object: "people", params: { limit: 100 })
+  list = Attio::Record.list(object: "people", params: {limit: 100})
   list.map { |r| r[:name] }
 end
 
@@ -192,7 +192,7 @@ manual_time = Benchmark.realtime do
   loop do
     records = Attio::Record.list(
       object: "people",
-      params: { limit: 50, offset: (page - 1) * 50 }
+      params: {limit: 50, offset: (page - 1) * 50}
     )
     all_records.concat(records.to_a)
     break unless records.has_next_page?
@@ -253,7 +253,7 @@ Benchmark.bm(30) do |x|
     10.times do |i|
       person_service.find_or_create_by_email(
         "perf#{i}@example.com",
-        defaults: { name: "Perf Test #{i}" }
+        defaults: {name: "Perf Test #{i}"}
       )
     end
   end
@@ -283,7 +283,7 @@ puts "-" * 50
 batch_service = Attio::Services::BatchService.new(batch_size: 50)
 
 # Prepare test data
-test_records = 500.times.map do |i|
+test_records = Array.new(500) do |i|
   {
     values: {
       name: "Batch Perf #{i}",
@@ -320,7 +320,7 @@ Benchmark.ips do |x|
   end
 
   x.report("Error handling (validation)") do
-    Attio::Record.create(object: "people", values: { email_addresses: "invalid" })
+    Attio::Record.create(object: "people", values: {email_addresses: "invalid"})
   rescue Attio::Errors::InvalidRequestError
     # Expected error
   end

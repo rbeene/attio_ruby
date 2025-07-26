@@ -81,6 +81,38 @@ RSpec/DescribeClass:
   Exclude:
     - 'spec/integration/**/*'
 
+RSpec/MultipleMemoizedHelpers:
+  Max: 7
+
+RSpec/MessageSpies:
+  Enabled: false
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/FilePath:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/ContextWording:
+  Prefixes:
+    - when
+    - with
+    - without
+    - and
+
+RSpec/IndexedLet:
+  Enabled: false
+
+# Disable Capybara cops as they're causing errors and we're not using Capybara
+Capybara/RSpec/PredicateMatcher:
+  Enabled: false
+
 # Allow global variables in examples
 Style/GlobalVars:
   Exclude:
@@ -95,3 +127,8 @@ Layout/TrailingWhitespace:
 Layout/TrailingEmptyLines:
   Enabled: true
   AutoCorrect: true
+
+# Performance cops configuration
+Performance/CollectionLiteralInLoop:
+  Exclude:
+    - 'spec/**/*'

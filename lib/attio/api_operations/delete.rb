@@ -6,20 +6,20 @@ module Attio
       module ClassMethods
         def delete(id, opts = {})
           validate_id!(id)
-          
+
           request = RequestBuilder.build(
             method: :DELETE,
             path: "#{resource_path}/#{id}",
             headers: opts[:headers] || {},
             api_key: opts[:api_key]
           )
-          
+
           response = connection_manager.execute(request)
           ResponseParser.parse(response, request)
-          
+
           true
         end
-        alias destroy delete
+        alias_method :destroy, :delete
 
         private
 

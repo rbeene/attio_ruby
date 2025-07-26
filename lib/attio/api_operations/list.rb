@@ -12,31 +12,31 @@ module Attio
             headers: opts[:headers] || {},
             api_key: opts[:api_key]
           )
-          
+
           response = connection_manager.execute(request)
           parsed = ResponseParser.parse(response, request)
-          
+
           ListObject.new(parsed, self, params, opts)
         end
-        alias all list
+        alias_method :all, :list
 
         def each(params = {}, opts = {}, &block)
           return enum_for(:each, params, opts) unless block_given?
-          
+
           list(params, opts).auto_paging_each(&block)
         end
 
         def each_page(params = {}, opts = {}, &block)
           return enum_for(:each_page, params, opts) unless block_given?
-          
+
           cursor = nil
-          
+
           loop do
-            page_params = params.merge(cursor ? { cursor: cursor } : {})
+            page_params = params.merge(cursor ? {cursor: cursor} : {})
             page = list(page_params, opts)
-            
+
             yield page
-            
+
             break unless page.has_next_page?
             cursor = page.next_cursor
           end
@@ -62,7 +62,7 @@ module Attio
           @resource_class = resource_class
           @params = params
           @opts = opts
-          
+
           if response.is_a?(Hash) && response.key?(:data)
             @data = (response[:data] || []).map { |item| resource_class.new(item, opts) }
             @pagination = response[:pagination] || {}
@@ -80,14 +80,14 @@ module Attio
 
         def auto_paging_each(&block)
           return enum_for(:auto_paging_each) unless block_given?
-          
+
           page = self
-          
+
           loop do
             page.each(&block)
-            
+
             break unless page.has_next_page?
-            
+
             page = fetch_next_page(page)
           end
         end
@@ -99,8 +99,8 @@ module Attio
         def size
           @data.size
         end
-        alias length size
-        alias count size
+        alias_method :length, :size
+        alias_method :count, :size
 
         def first
           @data.first

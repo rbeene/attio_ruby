@@ -4,13 +4,13 @@ module Attio
   module Errors
     class Base < StandardError
       attr_reader :message, :code, :request_id, :http_status, :http_body, :json_body,
-                  :request_url, :request_method, :request_params, :request_headers,
-                  :response_headers, :occurred_at
+        :request_url, :request_method, :request_params, :request_headers,
+        :response_headers, :occurred_at
 
       def initialize(message = nil, code: nil, request_id: nil, http_status: nil,
-                     http_body: nil, json_body: nil, request_url: nil,
-                     request_method: nil, request_params: nil, request_headers: nil,
-                     response_headers: nil)
+        http_body: nil, json_body: nil, request_url: nil,
+        request_method: nil, request_params: nil, request_headers: nil,
+        response_headers: nil)
         @message = message
         @code = code
         @request_id = request_id

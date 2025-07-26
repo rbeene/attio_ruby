@@ -6,21 +6,21 @@ module Attio
       module ClassMethods
         def retrieve(id, opts = {})
           validate_id!(id)
-          
+
           request = RequestBuilder.build(
             method: :GET,
             path: "#{resource_path}/#{id}",
             headers: opts[:headers] || {},
             api_key: opts[:api_key]
           )
-          
+
           response = connection_manager.execute(request)
           parsed = ResponseParser.parse(response, request)
-          
+
           construct_from(parsed, opts)
         end
-        alias get retrieve
-        alias find retrieve
+        alias_method :get, :retrieve
+        alias_method :find, :retrieve
 
         private
 
@@ -48,14 +48,14 @@ module Attio
           headers: @opts[:headers] || {},
           api_key: @opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         update_from(parsed)
         self
       end
-      alias reload refresh
+      alias_method :reload, :refresh
 
       private
 
@@ -63,14 +63,15 @@ module Attio
         @attributes.clear
         @original_attributes.clear
         @changed_attributes.clear
-        
+
+        skip_keys = %w[id created_at _metadata]
         attributes.each do |key, value|
-          next if %w[id created_at _metadata].include?(key.to_s)
-          
+          next if skip_keys.include?(key.to_s)
+
           @attributes[key.to_sym] = process_attribute_value(value)
           @original_attributes[key.to_sym] = deep_copy(process_attribute_value(value))
         end
-        
+
         @id = attributes[:id] || attributes["id"] if attributes[:id] || attributes["id"]
         @created_at = parse_timestamp(attributes[:created_at] || attributes["created_at"])
         @metadata = attributes[:_metadata] || attributes["_metadata"] || {}

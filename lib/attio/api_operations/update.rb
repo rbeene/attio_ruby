@@ -9,7 +9,7 @@ module Attio
         end
 
         params = changed? ? changed_attributes : @attributes
-        
+
         request = RequestBuilder.build(
           method: :PATCH,
           path: resource_path,
@@ -17,15 +17,15 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key] || @opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         update_from(parsed)
         reset_changes!
         self
       end
-      alias update save
+      alias_method :update, :save
 
       def update_attributes(attributes, opts = {})
         attributes.each do |key, value|
@@ -45,14 +45,14 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key] || @opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         ResponseParser.parse(response, request)
-        
+
         freeze
         true
       end
-      alias delete destroy
+      alias_method :delete, :destroy
 
       private
 
@@ -62,13 +62,14 @@ module Attio
       end
 
       def update_from(attributes)
+        skip_keys = %w[id created_at _metadata]
         attributes.each do |key, value|
-          next if %w[id created_at _metadata].include?(key.to_s)
-          
+          next if skip_keys.include?(key.to_s)
+
           @attributes[key.to_sym] = process_attribute_value(value)
           @original_attributes[key.to_sym] = deep_copy(process_attribute_value(value))
         end
-        
+
         @id = attributes[:id] || attributes["id"] if attributes[:id] || attributes["id"]
         @created_at = parse_timestamp(attributes[:created_at] || attributes["created_at"])
         @metadata = attributes[:_metadata] || attributes["_metadata"] || {}

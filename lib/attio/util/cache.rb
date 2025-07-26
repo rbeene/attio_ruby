@@ -20,10 +20,10 @@ module Attio
       # Get a value from cache
       def get(key)
         return nil unless enabled
-        
+
         namespaced_key = build_key(key)
         @store.get(namespaced_key)
-      rescue StandardError => e
+      rescue => e
         handle_cache_error("get", e)
         nil
       end
@@ -31,11 +31,11 @@ module Attio
       # Set a value in cache
       def set(key, value, ttl: DEFAULT_TTL)
         return value unless enabled
-        
+
         namespaced_key = build_key(key)
         @store.set(namespaced_key, value, ttl: ttl)
         value
-      rescue StandardError => e
+      rescue => e
         handle_cache_error("set", e)
         value
       end
@@ -43,29 +43,29 @@ module Attio
       # Delete a value from cache
       def delete(key)
         return unless enabled
-        
+
         namespaced_key = build_key(key)
         @store.delete(namespaced_key)
-      rescue StandardError => e
+      rescue => e
         handle_cache_error("delete", e)
       end
 
       # Clear all cached values in namespace
       def clear
         return unless enabled
-        
+
         @store.clear(namespace: namespace)
-      rescue StandardError => e
+      rescue => e
         handle_cache_error("clear", e)
       end
 
       # Fetch with block for cache miss
       def fetch(key, ttl: DEFAULT_TTL, &block)
         return yield if !enabled || !block_given?
-        
+
         cached = get(key)
         return cached unless cached.nil?
-        
+
         value = yield
         set(key, value, ttl: ttl)
         value
@@ -74,10 +74,10 @@ module Attio
       # Check if key exists
       def exist?(key)
         return false unless enabled
-        
+
         namespaced_key = build_key(key)
         @store.exist?(namespaced_key)
-      rescue StandardError => e
+      rescue => e
         handle_cache_error("exist?", e)
         false
       end
@@ -85,7 +85,7 @@ module Attio
       # Cache API responses
       def cache_response(request, response, ttl: DEFAULT_TTL)
         return response unless enabled && cacheable_request?(request)
-        
+
         cache_key = request_cache_key(request)
         set(cache_key, response, ttl: ttl)
         response
@@ -94,7 +94,7 @@ module Attio
       # Get cached API response
       def get_cached_response(request)
         return nil unless enabled && cacheable_request?(request)
-        
+
         cache_key = request_cache_key(request)
         get(cache_key)
       end
@@ -102,13 +102,13 @@ module Attio
       # Invalidate cache for a resource
       def invalidate_resource(resource_type, resource_id = nil)
         return unless enabled
-        
+
         pattern = if resource_id
-                    "#{resource_type}:#{resource_id}:*"
-                  else
-                    "#{resource_type}:*"
-                  end
-        
+          "#{resource_type}:#{resource_id}:*"
+        else
+          "#{resource_type}:*"
+        end
+
         delete_pattern(pattern)
       end
 
@@ -127,18 +127,18 @@ module Attio
         method = request[:method].to_s.upcase
         path = request[:uri].path
         params = request[:params] || {}
-        
+
         # Only cache GET requests
         return nil unless method == "GET"
-        
+
         # Build cache key from request details
         cache_parts = [
           "request",
           method,
-          path.gsub("/", ":"),
+          path.tr("/", ":"),
           Digest::MD5.hexdigest(params.to_json)
         ]
-        
+
         cache_parts.join(":")
       end
 
@@ -149,7 +149,7 @@ module Attio
 
       def delete_pattern(pattern)
         namespaced_pattern = build_key(pattern)
-        
+
         if @store.respond_to?(:delete_matched)
           @store.delete_matched(namespaced_pattern)
         else
@@ -160,11 +160,9 @@ module Attio
 
       def handle_cache_error(operation, error)
         # Log error but don't raise - cache errors shouldn't break the app
-        if Attio.configuration.logger
-          Attio.configuration.logger.warn(
+        Attio.configuration.logger&.warn(
             "[Attio Cache] Error during #{operation}: #{error.class} - #{error.message}"
           )
-        end
       end
 
       def create_default_store
@@ -185,7 +183,7 @@ module Attio
             cleanup_expired
             return nil unless @data.key?(key)
             return nil if expired?(key)
-            
+
             @data[key]
           end
         end
@@ -269,13 +267,13 @@ module Attio
 
         def set(key, value, ttl: DEFAULT_TTL)
           json_value = value.is_a?(String) ? value : JSON.generate(value)
-          
+
           if ttl && ttl > 0
             @redis.setex(key, ttl, json_value)
           else
             @redis.set(key, json_value)
           end
-          
+
           value
         end
 

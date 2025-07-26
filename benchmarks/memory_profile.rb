@@ -88,7 +88,7 @@ end
 
 # 4. List Operation
 profile_memory("4. List Operation (100 records)") do
-  records = Attio::Record.list(object: "people", params: { limit: 100 })
+  records = Attio::Record.list(object: "people", params: {limit: 100})
   # Force evaluation of the list
   records.to_a
 end
@@ -96,7 +96,7 @@ end
 # 5. Pagination Memory Usage
 profile_memory("5. Auto-Pagination (200 records)") do
   count = 0
-  Attio::Record.list(object: "people", params: { limit: 50 }).auto_paging_each do |_record|
+  Attio::Record.list(object: "people", params: {limit: 50}).auto_paging_each do |_record|
     count += 1
     break if count >= 200
   end
@@ -104,7 +104,7 @@ end
 
 # 6. Batch Operations
 profile_memory("6. Batch Create (50 records)") do
-  records = 50.times.map do |i|
+  records = Array.new(50) do |i|
     {
       values: {
         name: "Batch Memory Test #{i}",
@@ -124,7 +124,7 @@ profile_memory("7. Service Layer Operations") do
   5.times do |i|
     service.find_or_create_by_email(
       "service#{i}@memory.com",
-      defaults: { name: "Service Test #{i}" }
+      defaults: {name: "Service Test #{i}"}
     )
   end
 
@@ -147,7 +147,7 @@ profile_memory("8. Error Handling") do
 
   # Validation error
   begin
-    Attio::Record.create(object: "people", values: { email_addresses: "invalid" })
+    Attio::Record.create(object: "people", values: {email_addresses: "invalid"})
   rescue Attio::Errors::InvalidRequestError => e
     errors << e
   end
@@ -168,7 +168,7 @@ end
 profile_memory("9. Concurrent Operations") do
   require "concurrent"
 
-  promises = 10.times.map do |i|
+  promises = Array.new(10) do |i|
     Concurrent::Promise.execute do
       Attio::Record.create(
         object: "people",
@@ -199,7 +199,7 @@ object_samples = []
 
   # Perform operations
   100.times do
-    list = Attio::Record.list(object: "people", params: { limit: 10 })
+    list = Attio::Record.list(object: "people", params: {limit: 10})
     list.to_a
   end
 
@@ -211,8 +211,8 @@ puts
 memory_growth = memory_samples.last - memory_samples.first
 object_growth = object_samples.last - object_samples.first
 
-puts "Memory samples (MB): #{memory_samples.map { |m| m.round(2) }.join(', ')}"
-puts "Object count samples: #{object_samples.join(', ')}"
+puts "Memory samples (MB): #{memory_samples.map { |m| m.round(2) }.join(", ")}"
+puts "Object count samples: #{object_samples.join(", ")}"
 puts
 puts "Total memory growth: #{memory_growth.round(2)} MB"
 puts "Total object growth: #{object_growth}"
@@ -234,7 +234,7 @@ before_gc = GC.stat[:heap_live_slots]
   Attio::Record.new(
     id: "test_#{rand(1000)}",
     object: "people",
-    values: { name: "Temp" }
+    values: {name: "Temp"}
   )
 end
 

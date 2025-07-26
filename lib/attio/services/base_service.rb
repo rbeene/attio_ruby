@@ -15,19 +15,19 @@ module Attio
       # Transaction support
       def transaction(&block)
         raise ArgumentError, "Transaction requires a block" unless block_given?
-        
+
         begin
           @in_transaction = true
           @transaction_records = []
-          
+
           result = yield(self)
-          
+
           # If we get here, transaction succeeded
           @in_transaction = false
           @transaction_records = []
-          
+
           result
-        rescue StandardError => e
+        rescue => e
           # Rollback on any error
           rollback!
           raise TransactionError, "Transaction failed: #{e.message}"
@@ -39,7 +39,7 @@ module Attio
       # Find or create a record by unique attribute
       def find_or_create_by(attribute:, value:, defaults: {})
         records = search_by_attribute(attribute, value)
-        
+
         if records.any?
           records.first
         else
@@ -51,7 +51,7 @@ module Attio
       # Update or create a record
       def upsert(search_attribute:, search_value:, attributes: {})
         records = search_by_attribute(search_attribute, search_value)
-        
+
         if records.any?
           record = records.first
           record.update_attributes(attributes)
@@ -68,31 +68,27 @@ module Attio
           success: [],
           errors: []
         }
-        
+
         records.each_slice(batch_size) do |batch|
-          begin
-            imported = Record.create_batch(object: object_slug, records: batch)
-            results[:success].concat(imported)
-          rescue StandardError => e
-            case on_error
-            when :raise
-              raise e
-            when :skip
-              results[:errors].concat(batch.map { |r| { record: r, error: e.message } })
-            when :continue
-              # Try individual imports
-              batch.each do |record_data|
-                begin
-                  imported = create_record(record_data[:values] || record_data)
-                  results[:success] << imported
-                rescue StandardError => individual_error
-                  results[:errors] << { record: record_data, error: individual_error.message }
-                end
-              end
+          imported = Record.create_batch(object: object_slug, records: batch)
+          results[:success].concat(imported)
+        rescue => e
+          case on_error
+          when :raise
+            raise e
+          when :skip
+            results[:errors].concat(batch.map { |r| {record: r, error: e.message} })
+          when :continue
+            # Try individual imports
+            batch.each do |record_data|
+              imported = create_record(record_data[:values] || record_data)
+              results[:success] << imported
+            rescue => individual_error
+              results[:errors] << {record: record_data, error: individual_error.message}
             end
           end
         end
-        
+
         results
       end
 
@@ -103,17 +99,17 @@ module Attio
         params[:filter] = build_filters(filters) if filters.any?
         params[:sort] = sort if sort
         params[:limit] = limit if limit
-        
+
         Record.list(object: object_slug, params: params)
       end
 
       # Get records by IDs
       def find_by_ids(ids)
-        Array(ids).map do |id|
+        Array(ids).filter_map do |id|
           Record.retrieve(object: object_slug, record_id: id)
         rescue Errors::NotFoundError
           nil
-        end.compact
+        end
       end
 
       # Count records with optional filters
@@ -139,7 +135,7 @@ module Attio
         Record.list(
           object: object_slug,
           params: {
-            filter: { attribute => value }
+            filter: {attribute => value}
           }
         )
       end
@@ -150,7 +146,7 @@ module Attio
           filters
         when Array
           # Support array of filter conditions
-          { "$and" => filters }
+          {"$and" => filters}
         else
           filters
         end
@@ -162,16 +158,14 @@ module Attio
 
       def rollback!
         return unless @transaction_records.any?
-        
+
         @transaction_records.reverse_each do |record|
-          begin
-            record.destroy
-          rescue StandardError => e
-            # Log rollback failure but continue
-            warn "Failed to rollback record #{record.id}: #{e.message}"
-          end
+          record.destroy
+        rescue => e
+          # Log rollback failure but continue
+          warn "Failed to rollback record #{record.id}: #{e.message}"
         end
-        
+
         @transaction_records = []
       end
 

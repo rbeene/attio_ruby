@@ -35,22 +35,22 @@ module Attio
 
     # Type configurations
     TYPE_CONFIGS = {
-      "text" => { supports_default: true, supports_required: true },
-      "number" => { supports_default: true, supports_required: true, supports_unique: true },
-      "checkbox" => { supports_default: true },
-      "date" => { supports_default: true, supports_required: true },
-      "timestamp" => { supports_default: true, supports_required: true },
-      "rating" => { supports_default: true, max_value: 5 },
-      "currency" => { supports_default: true, supports_required: true },
-      "status" => { requires_options: true },
-      "select" => { requires_options: true, supports_default: true },
-      "multiselect" => { requires_options: true },
-      "email" => { supports_unique: true, supports_required: true },
-      "phone" => { supports_required: true },
-      "url" => { supports_required: true },
-      "user" => { supports_required: true },
-      "record_reference" => { requires_target_object: true, supports_required: true },
-      "location" => { supports_required: true }
+      "text" => {supports_default: true, supports_required: true},
+      "number" => {supports_default: true, supports_required: true, supports_unique: true},
+      "checkbox" => {supports_default: true},
+      "date" => {supports_default: true, supports_required: true},
+      "timestamp" => {supports_default: true, supports_required: true},
+      "rating" => {supports_default: true, max_value: 5},
+      "currency" => {supports_default: true, supports_required: true},
+      "status" => {requires_options: true},
+      "select" => {requires_options: true, supports_default: true},
+      "multiselect" => {requires_options: true},
+      "email" => {supports_unique: true, supports_required: true},
+      "phone" => {supports_required: true},
+      "url" => {supports_required: true},
+      "user" => {supports_required: true},
+      "record_reference" => {requires_target_object: true, supports_required: true},
+      "location" => {supports_required: true}
     }.freeze
 
     def self.resource_path
@@ -58,9 +58,9 @@ module Attio
     end
 
     attr_reader :api_slug, :name, :description, :type, :is_required, :is_unique,
-                :is_default_value_enabled, :default_value, :options,
-                :object_id, :object_api_slug, :parent_object_id,
-                :created_by_actor, :is_archived, :archived_at
+      :is_default_value_enabled, :default_value, :options,
+      :object_id, :object_api_slug, :parent_object_id,
+      :created_by_actor, :is_archived, :archived_at
 
     def initialize(attributes = {}, opts = {})
       super
@@ -86,7 +86,7 @@ module Attio
       def list(params = {}, object: nil, **opts)
         query_params = params.dup
         query_params[:object] = object if object
-        
+
         request = RequestBuilder.build(
           method: :GET,
           path: resource_path,
@@ -94,10 +94,10 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         APIOperations::List::ListObject.new(parsed, self, query_params, opts)
       end
 
@@ -106,9 +106,9 @@ module Attio
         validate_object_identifier!(object)
         validate_type!(params[:type] || params["type"])
         validate_type_config!(params)
-        
+
         attribute_params = prepare_attribute_params(params.merge(object: object))
-        
+
         request = RequestBuilder.build(
           method: :POST,
           path: resource_path,
@@ -116,10 +116,10 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         new(parsed, opts)
       end
 
@@ -132,7 +132,7 @@ module Attio
       def validate_type!(type)
         raise ArgumentError, "Attribute type is required" if type.nil? || type.to_s.empty?
         unless TYPES.include?(type.to_s)
-          raise ArgumentError, "Invalid attribute type: #{type}. Valid types: #{TYPES.join(', ')}"
+          raise ArgumentError, "Invalid attribute type: #{type}. Valid types: #{TYPES.join(", ")}"
         end
       end
 
@@ -188,17 +188,17 @@ module Attio
 
       def prepare_options(options)
         return nil unless options
-        
+
         case options
         when Array
           options.map do |opt|
             case opt
             when String
-              { title: opt }
+              {title: opt}
             when Hash
               opt
             else
-              { title: opt.to_s }
+              {title: opt.to_s}
             end
           end
         else
@@ -215,7 +215,7 @@ module Attio
       end
 
       params = prepare_update_params
-      
+
       request = RequestBuilder.build(
         method: :PATCH,
         path: resource_path,
@@ -223,10 +223,10 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       parsed = ResponseParser.parse(response, request)
-      
+
       update_from(parsed)
       reset_changes!
       self
@@ -243,10 +243,10 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       parsed = ResponseParser.parse(response, request)
-      
+
       update_from(parsed)
       self
     end
@@ -262,10 +262,10 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       parsed = ResponseParser.parse(response, request)
-      
+
       update_from(parsed)
       self
     end
@@ -319,14 +319,14 @@ module Attio
         default_value
         options
       ]
-      
+
       params = {}
       updateable_fields.each do |field|
         if changed.include?(field.to_s)
           params[field] = send(field)
         end
       end
-      
+
       params[:options] = self.class.send(:prepare_options, params[:options]) if params[:options]
       params
     end

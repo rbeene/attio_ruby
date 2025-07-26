@@ -39,7 +39,7 @@ module Attio
     ].freeze
 
     attr_reader :url, :events, :state, :api_version, :secret,
-                :last_event_at, :created_by_actor
+      :last_event_at, :created_by_actor
 
     def initialize(attributes = {}, opts = {})
       super
@@ -71,7 +71,7 @@ module Attio
     def resume(opts = {})
       update_state("active", opts)
     end
-    alias activate resume
+    alias_method :activate, :resume
 
     # Test the webhook with a sample payload
     def test(opts = {})
@@ -85,10 +85,10 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       ResponseParser.parse(response, request)
-      
+
       true
     end
 
@@ -105,7 +105,7 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       ResponseParser.parse(response, request)
     end
@@ -116,7 +116,7 @@ module Attio
       end
 
       params = prepare_update_params
-      
+
       request = RequestBuilder.build(
         method: :PATCH,
         path: resource_path,
@@ -124,10 +124,10 @@ module Attio
         headers: opts[:headers] || {},
         api_key: opts[:api_key] || @opts[:api_key]
       )
-      
+
       response = connection_manager.execute(request)
       parsed = ResponseParser.parse(response, request)
-      
+
       update_from(parsed)
       reset_changes!
       self
@@ -150,13 +150,13 @@ module Attio
       def create(url:, events:, state: "active", opts: {})
         validate_url!(url)
         validate_events!(events)
-        
+
         params = {
           url: url,
           events: Array(events),
           state: state
         }
-        
+
         request = RequestBuilder.build(
           method: :POST,
           path: resource_path,
@@ -164,10 +164,10 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         new(parsed, opts)
       end
 
@@ -175,7 +175,7 @@ module Attio
 
       def validate_url!(url)
         raise ArgumentError, "URL is required" if url.nil? || url.empty?
-        
+
         uri = URI.parse(url)
         unless uri.scheme == "https"
           raise ArgumentError, "Webhook URL must use HTTPS"
@@ -187,10 +187,10 @@ module Attio
       def validate_events!(events)
         events = Array(events)
         raise ArgumentError, "At least one event is required" if events.empty?
-        
+
         invalid_events = events - EVENTS
         unless invalid_events.empty?
-          raise ArgumentError, "Invalid events: #{invalid_events.join(', ')}. Valid events: #{EVENTS.join(', ')}"
+          raise ArgumentError, "Invalid events: #{invalid_events.join(", ")}. Valid events: #{EVENTS.join(", ")}"
         end
       end
     end
@@ -205,17 +205,17 @@ module Attio
     def prepare_update_params
       # Only certain fields can be updated
       updateable_fields = %i[url events state]
-      
+
       params = {}
       updateable_fields.each do |field|
         value = send(field)
         params[field] = value unless value.nil?
       end
-      
+
       # Validate if updating
       self.class.send(:validate_url!, params[:url]) if params[:url]
       self.class.send(:validate_events!, params[:events]) if params[:events]
-      
+
       params
     end
   end

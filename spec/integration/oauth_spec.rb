@@ -6,7 +6,7 @@ RSpec.describe "OAuth Integration", :integration do
   let(:client_id) { ENV["ATTIO_CLIENT_ID"] }
   let(:client_secret) { ENV["ATTIO_CLIENT_SECRET"] }
   let(:redirect_uri) { "http://localhost:3000/callback" }
-  
+
   let(:oauth_client) do
     Attio::OAuth::Client.new(
       client_id: client_id,
@@ -16,23 +16,44 @@ RSpec.describe "OAuth Integration", :integration do
   end
 
   describe "authorization flow" do
-    it "generates authorization URL" do
-      auth_data = oauth_client.authorization_url(
+    let(:auth_params) do
+      {
         scopes: %w[record:read record:write],
         state: "test-state-123"
-      )
-      
+      }
+    end
+
+    let(:auth_data) { oauth_client.authorization_url(**auth_params) }
+
+    it "returns authorization data structure" do
+      expect(auth_data).to have_key(:url)
+      expect(auth_data).to have_key(:state)
+    end
+
+    it "uses correct OAuth endpoint" do
       expect(auth_data[:url]).to include("https://app.attio.com/authorize")
+    end
+
+    it "includes client_id in URL" do
       expect(auth_data[:url]).to include("client_id=#{client_id}")
+    end
+
+    it "includes redirect_uri in URL" do
       expect(auth_data[:url]).to include("redirect_uri=#{CGI.escape(redirect_uri)}")
+    end
+
+    it "includes encoded scopes in URL" do
       expect(auth_data[:url]).to include("scope=record%3Aread+record%3Awrite")
+    end
+
+    it "preserves state parameter" do
       expect(auth_data[:url]).to include("state=test-state-123")
       expect(auth_data[:state]).to eq("test-state-123")
     end
 
     it "generates state if not provided" do
       auth_data = oauth_client.authorization_url(scopes: %w[user:read])
-      
+
       expect(auth_data[:state]).to be_present
       expect(auth_data[:state].length).to eq(32)
     end
@@ -44,9 +65,9 @@ RSpec.describe "OAuth Integration", :integration do
         # This would require a valid authorization code from the OAuth flow
         # In real integration tests, you'd need to simulate or provide this
         code = "test_authorization_code"
-        
+
         token = oauth_client.exchange_code_for_token(code: code)
-        
+
         expect(token).to be_a(Attio::OAuth::Token)
         expect(token.access_token).to be_present
         expect(token.token_type).to eq("Bearer")
@@ -69,9 +90,9 @@ RSpec.describe "OAuth Integration", :integration do
       VCR.use_cassette("oauth/refresh_token") do
         # This would require a valid refresh token
         refresh_token = "test_refresh_token"
-        
+
         new_token = oauth_client.refresh_token(refresh_token)
-        
+
         expect(new_token).to be_a(Attio::OAuth::Token)
         expect(new_token.access_token).to be_present
         expect(new_token.access_token).not_to eq(refresh_token)
@@ -91,9 +112,9 @@ RSpec.describe "OAuth Integration", :integration do
     it "introspects valid token", skip: "Requires valid token" do
       VCR.use_cassette("oauth/introspect_valid") do
         token = "valid_access_token"
-        
+
         info = oauth_client.introspect_token(token)
-        
+
         expect(info[:active]).to be true
         expect(info[:token_type]).to eq("access_token")
         expect(info[:scope]).to be_present
@@ -104,7 +125,7 @@ RSpec.describe "OAuth Integration", :integration do
     it "introspects invalid token" do
       VCR.use_cassette("oauth/introspect_invalid") do
         info = oauth_client.introspect_token("invalid_token")
-        
+
         expect(info[:active]).to be false
       end
     end
@@ -114,10 +135,10 @@ RSpec.describe "OAuth Integration", :integration do
     it "revokes access token", skip: "Requires valid token" do
       VCR.use_cassette("oauth/revoke_token") do
         token = "valid_access_token"
-        
+
         result = oauth_client.revoke_token(token)
         expect(result).to be true
-        
+
         # Verify token is no longer valid
         info = oauth_client.introspect_token(token)
         expect(info[:active]).to be false
@@ -138,11 +159,11 @@ RSpec.describe "OAuth Integration", :integration do
       VCR.use_cassette("oauth/authenticated_request") do
         # Configure with OAuth token
         oauth_token = "valid_oauth_access_token"
-        
+
         Attio.configure do |config|
           config.api_key = oauth_token
         end
-        
+
         # Should be able to make API calls
         me = Attio::WorkspaceMember.me
         expect(me).to be_a(Attio::WorkspaceMember)
@@ -155,7 +176,7 @@ RSpec.describe "OAuth Integration", :integration do
         Attio.configure do |config|
           config.api_key = "expired_oauth_token"
         end
-        
+
         expect {
           Attio::WorkspaceMember.me
         }.to raise_error(Attio::Errors::AuthenticationError) do |error|
@@ -178,7 +199,7 @@ RSpec.describe "OAuth Integration", :integration do
 
     it "handles network errors gracefully" do
       allow_any_instance_of(Net::HTTP).to receive(:request).and_raise(Net::OpenTimeout)
-      
+
       expect {
         oauth_client.exchange_code_for_token(code: "test_code")
       }.to raise_error(Attio::Errors::ConnectionError)

@@ -8,34 +8,34 @@ module Attio
         # Record scopes
         "record:read" => "Read access to records",
         "record:write" => "Write access to records (includes read)",
-        
+
         # Object scopes
         "object:read" => "Read access to objects and their configuration",
         "object:write" => "Write access to objects (includes read)",
-        
+
         # List scopes
         "list:read" => "Read access to lists and list entries",
         "list:write" => "Write access to lists (includes read)",
-        
+
         # Webhook scopes
         "webhook:read" => "Read access to webhooks",
         "webhook:write" => "Write access to webhooks (includes read)",
-        
+
         # User scopes
         "user:read" => "Read access to workspace members",
-        
+
         # Note scopes
         "note:read" => "Read access to notes",
         "note:write" => "Write access to notes (includes read)",
-        
+
         # Attribute scopes
         "attribute:read" => "Read access to attributes",
         "attribute:write" => "Write access to attributes (includes read)",
-        
+
         # Comment scopes
         "comment:read" => "Read access to comments",
         "comment:write" => "Write access to comments (includes read)",
-        
+
         # Task scopes
         "task:read" => "Read access to tasks",
         "task:write" => "Write access to tasks (includes read)"
@@ -59,11 +59,11 @@ module Attio
         def validate(scopes)
           scopes = Array(scopes).map(&:to_s)
           invalid_scopes = scopes - VALID_SCOPES
-          
+
           unless invalid_scopes.empty?
-            raise InvalidScopeError, "Invalid scopes: #{invalid_scopes.join(', ')}"
+            raise InvalidScopeError, "Invalid scopes: #{invalid_scopes.join(", ")}"
           end
-          
+
           scopes
         end
 
@@ -84,9 +84,9 @@ module Attio
         def includes?(scopes, required_scope)
           scopes = Array(scopes).map(&:to_s)
           required = required_scope.to_s
-          
+
           return true if scopes.include?(required)
-          
+
           # Check if any scope in the set provides the required scope
           scopes.any? do |scope|
             implied_scopes = SCOPE_HIERARCHY[scope] || []
@@ -98,12 +98,12 @@ module Attio
         def expand(scopes)
           scopes = Array(scopes).map(&:to_s)
           expanded = Set.new(scopes)
-          
+
           scopes.each do |scope|
             implied = SCOPE_HIERARCHY[scope] || []
             expanded.merge(implied)
           end
-          
+
           expanded.to_a.sort
         end
 
@@ -111,13 +111,13 @@ module Attio
         def minimize(scopes)
           scopes = Array(scopes).map(&:to_s)
           minimized = scopes.dup
-          
+
           SCOPE_HIERARCHY.each do |write_scope, read_scopes|
             if minimized.include?(write_scope)
               minimized -= read_scopes
             end
           end
-          
+
           minimized.sort
         end
 
@@ -125,13 +125,13 @@ module Attio
         def group_by_resource(scopes)
           scopes = Array(scopes).map(&:to_s)
           grouped = {}
-          
+
           scopes.each do |scope|
             resource = scope.split(":").first
             grouped[resource] ||= []
             grouped[resource] << scope
           end
-          
+
           grouped
         end
 

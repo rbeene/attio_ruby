@@ -36,7 +36,7 @@ module Attio
 
         begin
           parsed_body = JSON.parse(@body, symbolize_names: true)
-          
+
           # Handle paginated responses
           if parsed_body.is_a?(Hash) && parsed_body.key?(:data) && parsed_body.key?(:pagination)
             {
@@ -59,12 +59,12 @@ module Attio
 
       def parse_error_response
         error = Errors::ErrorFactory.from_response(@response, @request_context)
-        
+
         # Add rate limit information if available
         if error.is_a?(Errors::RateLimitError) && @headers["retry-after"]
           error.instance_variable_set(:@retry_after, @headers["retry-after"].to_i)
         end
-        
+
         raise error
       end
 
@@ -85,7 +85,7 @@ module Attio
     # Custom error for invalid responses
     class InvalidResponseError < Errors::Base
       def initialize(message = "Invalid response from Attio API", **args)
-        super(message, **args)
+        super
       end
     end
   end

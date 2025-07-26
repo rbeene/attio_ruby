@@ -18,7 +18,7 @@ RSpec.describe "List Integration", :integration do
           name: list_name,
           object: "people"
         )
-        
+
         expect(list).to be_a(Attio::List)
         expect(list.name).to eq(list_name)
         expect(list.object).to eq("people")
@@ -30,10 +30,10 @@ RSpec.describe "List Integration", :integration do
       VCR.use_cassette("lists/retrieve") do
         # Create list
         created = Attio::List.create(name: list_name, object: "people")
-        
+
         # Retrieve it
         list = Attio::List.retrieve(created.id)
-        
+
         expect(list.id).to eq(created.id)
         expect(list.name).to eq(list_name)
       end
@@ -43,13 +43,13 @@ RSpec.describe "List Integration", :integration do
       VCR.use_cassette("lists/list_all") do
         # Create a list first
         Attio::List.create(name: list_name, object: "people")
-        
+
         # List all
         lists = Attio::List.list
-        
+
         expect(lists).to be_a(Attio::APIOperations::List::ListObject)
         expect(lists.count).to be > 0
-        
+
         list_names = lists.map(&:name)
         expect(list_names).to include(list_name)
       end
@@ -59,11 +59,11 @@ RSpec.describe "List Integration", :integration do
       VCR.use_cassette("lists/update") do
         # Create list
         list = Attio::List.create(name: list_name, object: "people")
-        
+
         # Update
         list.name = "Updated #{list_name}"
         list.save
-        
+
         # Verify
         updated = Attio::List.retrieve(list.id)
         expect(updated.name).to eq("Updated #{list_name}")
@@ -74,12 +74,12 @@ RSpec.describe "List Integration", :integration do
       VCR.use_cassette("lists/delete") do
         # Create list
         list = Attio::List.create(name: list_name, object: "people")
-        
+
         # Delete
         result = list.destroy
         expect(result).to be true
         expect(list).to be_frozen
-        
+
         # Verify deletion
         expect {
           Attio::List.retrieve(list.id)
@@ -110,7 +110,7 @@ RSpec.describe "List Integration", :integration do
     it "adds a record to a list" do
       VCR.use_cassette("lists/add_entry") do
         entry = list.add_record(person.id)
-        
+
         expect(entry).to be_a(Attio::ListEntry)
         expect(entry.record_id).to eq(person.id)
         expect(entry.list_id).to eq(list.id)
@@ -121,13 +121,13 @@ RSpec.describe "List Integration", :integration do
       VCR.use_cassette("lists/list_entries") do
         # Add entry
         list.add_record(person.id)
-        
+
         # List entries
         entries = list.entries
-        
+
         expect(entries).to be_a(Attio::APIOperations::List::ListObject)
         expect(entries.count).to be >= 1
-        
+
         entry = entries.find { |e| e.record_id == person.id }
         expect(entry).to be_present
       end
@@ -136,12 +136,12 @@ RSpec.describe "List Integration", :integration do
     it "removes a record from a list" do
       VCR.use_cassette("lists/remove_entry") do
         # Add entry
-        entry = list.add_record(person.id)
-        
+        list.add_record(person.id)
+
         # Remove entry
         result = list.remove_record(person.id)
         expect(result).to be true
-        
+
         # Verify removal
         entries = list.entries
         expect(entries.none? { |e| e.record_id == person.id }).to be true
@@ -152,7 +152,7 @@ RSpec.describe "List Integration", :integration do
       VCR.use_cassette("lists/duplicate_entry") do
         # Add entry
         list.add_record(person.id)
-        
+
         # Try to add again
         expect {
           list.add_record(person.id)
@@ -168,12 +168,12 @@ RSpec.describe "List Integration", :integration do
           name: "VIP Customers",
           object: "people",
           filters: {
-            job_title: { "$contains": "CEO" }
+            job_title: {"$contains": "CEO"}
           }
         )
-        
+
         expect(list.filters).to be_present
-        expect(list.filters["job_title"]).to eq({ "$contains" => "CEO" })
+        expect(list.filters["job_title"]).to eq({"$contains" => "CEO"})
       end
     end
   end
@@ -181,7 +181,7 @@ RSpec.describe "List Integration", :integration do
   describe "batch operations" do
     let(:list) { Attio::List.create(name: "Batch Test List", object: "people") }
     let(:people) do
-      3.times.map do |i|
+      Array.new(3) do |i|
         Attio::Record.create(
           object: "people",
           values: {
@@ -202,12 +202,12 @@ RSpec.describe "List Integration", :integration do
     it "adds multiple records in batch" do
       VCR.use_cassette("lists/batch_add") do
         record_ids = people.map(&:id)
-        
+
         entries = list.add_records(record_ids)
-        
+
         expect(entries).to be_an(Array)
         expect(entries.size).to eq(3)
-        expect(entries.all? { |e| e.is_a?(Attio::ListEntry) }).to be true
+        expect(entries.all?(Attio::ListEntry)).to be true
       end
     end
 
@@ -216,11 +216,11 @@ RSpec.describe "List Integration", :integration do
         # Add records first
         record_ids = people.map(&:id)
         list.add_records(record_ids)
-        
+
         # Remove in batch
         result = list.remove_records(record_ids)
         expect(result).to be true
-        
+
         # Verify all removed
         entries = list.entries
         expect(entries.count).to eq(0)
@@ -243,7 +243,7 @@ RSpec.describe "List Integration", :integration do
     it "handles adding non-existent record" do
       VCR.use_cassette("lists/add_invalid_record") do
         list = Attio::List.create(name: "Error Test List", object: "people")
-        
+
         expect {
           list.add_record("non-existent-record-id")
         }.to raise_error(Attio::Errors::NotFoundError)

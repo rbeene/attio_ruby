@@ -24,7 +24,7 @@ get "/" do
     <p>This example demonstrates the OAuth 2.0 flow for Attio.</p>
     <a href="/auth">Connect to Attio</a>
     <hr>
-    #{$token_store[:access_token] ? "<p>✅ Connected! <a href='/test'>Test API</a></p>" : '<p>❌ Not connected</p>'}
+    #{$token_store[:access_token] ? "<p>✅ Connected! <a href='/test'>Test API</a></p>" : "<p>❌ Not connected</p>"}
   HTML
 end
 
@@ -63,10 +63,10 @@ get "/callback" do
       <p>Successfully connected to Attio.</p>
       <p>Access token: #{token.access_token[0..10]}...</p>
       <p>Expires at: #{token.expires_at}</p>
-      <p>Scopes: #{token.scope.join(', ')}</p>
+      <p>Scopes: #{token.scope.join(", ")}</p>
       <a href="/test">Test API Access</a>
     HTML
-  rescue StandardError => e
+  rescue => e
     "Error exchanging code: #{e.message}"
   end
 end
@@ -88,7 +88,7 @@ get "/test" do
     me = Attio::WorkspaceMember.me
 
     # List some records
-    people = Attio::Record.list(object: "people", params: { limit: 5 })
+    people = Attio::Record.list(object: "people", params: {limit: 5})
 
     <<~HTML
       <h1>API Test Results</h1>
@@ -112,13 +112,13 @@ get "/test" do
         $token_store[:access_token] = new_token.access_token
         $token_store[:refresh_token] = new_token.refresh_token if new_token.refresh_token
         redirect "/test"
-      rescue StandardError
+      rescue
         "Token refresh failed. <a href='/auth'>Re-authenticate</a>"
       end
     else
       "Authentication failed. <a href='/auth'>Re-authenticate</a>"
     end
-  rescue StandardError => e
+  rescue => e
     "Error: #{e.message}"
   end
 end

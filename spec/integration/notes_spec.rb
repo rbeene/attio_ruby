@@ -7,6 +7,10 @@ RSpec.describe "Notes Integration", :integration do
     Attio.configure do |config|
       config.api_key = ENV["ATTIO_API_KEY"]
     end
+    VCR.use_cassette("notes/setup") do
+      person
+      company
+    end
   end
 
   let(:person) do
@@ -29,28 +33,48 @@ RSpec.describe "Notes Integration", :integration do
     )
   end
 
-  before do
-    VCR.use_cassette("notes/setup") do
-      person
-      company
-    end
-  end
-
   describe "creating notes" do
-    it "creates a plaintext note on a person" do
+    let(:note_params) do
+      {
+        parent_object: "people",
+        parent_record_id: person.id,
+        content: "Had a great meeting with this person. They're interested in our product.",
+        format: "plaintext"
+      }
+    end
+
+    it "creates a note successfully" do
       VCR.use_cassette("notes/create_plaintext") do
-        note = Attio::Note.create(
-          parent_object: "people",
-          parent_record_id: person.id,
-          content: "Had a great meeting with this person. They're interested in our product.",
-          format: "plaintext"
-        )
-        
+        note = Attio::Note.create(**note_params)
         expect(note).to be_a(Attio::Note)
+      end
+    end
+
+    it "preserves the note content" do
+      VCR.use_cassette("notes/create_plaintext") do
+        note = Attio::Note.create(**note_params)
         expect(note.content).to include("great meeting")
+      end
+    end
+
+    it "sets the correct format" do
+      VCR.use_cassette("notes/create_plaintext") do
+        note = Attio::Note.create(**note_params)
         expect(note.format).to eq("plaintext")
+      end
+    end
+
+    it "maintains parent relationship" do
+      VCR.use_cassette("notes/create_plaintext") do
+        note = Attio::Note.create(**note_params)
         expect(note.parent_object).to eq("people")
         expect(note.parent_record_id).to eq(person.id)
+      end
+    end
+
+    it "assigns system fields" do
+      VCR.use_cassette("notes/create_plaintext") do
+        note = Attio::Note.create(**note_params)
         expect(note.id).to be_present
         expect(note.created_at).to be_present
       end
@@ -74,14 +98,14 @@ RSpec.describe "Notes Integration", :integration do
           2. Schedule follow-up call
           3. Prepare demo
         MD
-        
+
         note = Attio::Note.create(
           parent_object: "companies",
           parent_record_id: company.id,
           content: markdown_content,
           format: "markdown"
         )
-        
+
         expect(note.format).to eq("markdown")
         expect(note.content).to include("## Meeting Notes")
         expect(note.content).to include("Budget range")
@@ -97,7 +121,7 @@ RSpec.describe "Notes Integration", :integration do
           content: "Reached out via LinkedIn. Scheduled intro call for next week.",
           format: "plaintext"
         )
-        
+
         expect(note.title).to eq("Initial Contact")
       end
     end
@@ -124,7 +148,7 @@ RSpec.describe "Notes Integration", :integration do
           parent_object: "people",
           parent_record_id: person.id
         )
-        
+
         expect(notes).to be_a(Attio::APIOperations::List::ListObject)
         expect(notes.count).to be >= 3
         expect(notes.all? { |n| n.parent_record_id == person.id }).to be true
@@ -133,10 +157,10 @@ RSpec.describe "Notes Integration", :integration do
 
     it "lists all notes with pagination" do
       VCR.use_cassette("notes/list_paginated") do
-        notes = Attio::Note.list(params: { limit: 2 })
-        
+        notes = Attio::Note.list(params: {limit: 2})
+
         expect(notes.count).to eq(2)
-        
+
         if notes.has_next_page?
           next_page = notes.next_page
           expect(next_page).to be_a(Attio::APIOperations::List::ListObject)
@@ -150,13 +174,13 @@ RSpec.describe "Notes Integration", :integration do
         recent_notes = Attio::Note.list(
           params: {
             filter: {
-              created_at: { "$gte": (Time.now - 3600).iso8601 }
+              created_at: {"$gte": (Time.now - 3600).iso8601}
             }
           }
         )
-        
-        expect(recent_notes.all? { |n| 
-          Time.parse(n.created_at) >= (Time.now - 3600) 
+
+        expect(recent_notes.all? { |n|
+          Time.parse(n.created_at) >= (Time.now - 3600)
         }).to be true
       end
     end
@@ -179,7 +203,7 @@ RSpec.describe "Notes Integration", :integration do
     it "retrieves a specific note" do
       VCR.use_cassette("notes/retrieve") do
         retrieved = Attio::Note.retrieve(note.id)
-        
+
         expect(retrieved.id).to eq(note.id)
         expect(retrieved.content).to eq("Test note for retrieval")
       end
@@ -188,7 +212,7 @@ RSpec.describe "Notes Integration", :integration do
     it "includes creator information" do
       VCR.use_cassette("notes/retrieve_with_creator") do
         retrieved = Attio::Note.retrieve(note.id)
-        
+
         expect(retrieved.created_by).to be_present
         expect(retrieved.created_by[:type]).to eq("workspace-member")
         expect(retrieved.created_by[:id]).to be_present
@@ -214,7 +238,7 @@ RSpec.describe "Notes Integration", :integration do
       VCR.use_cassette("notes/update_content") do
         note.content = "Updated content with new information"
         note.save
-        
+
         # Verify update
         updated = Attio::Note.retrieve(note.id)
         expect(updated.content).to eq("Updated content with new information")
@@ -226,7 +250,7 @@ RSpec.describe "Notes Integration", :integration do
         note.format = "markdown"
         note.content = "# Updated as Markdown\n\nNow with **formatting**!"
         note.save
-        
+
         updated = Attio::Note.retrieve(note.id)
         expect(updated.format).to eq("markdown")
         expect(updated.content).to include("# Updated as Markdown")
@@ -253,7 +277,7 @@ RSpec.describe "Notes Integration", :integration do
         result = note.destroy
         expect(result).to be true
         expect(note).to be_frozen
-        
+
         # Verify deletion
         expect {
           Attio::Note.retrieve(note.id)
@@ -280,7 +304,7 @@ RSpec.describe "Notes Integration", :integration do
             ]
           }
         )
-        
+
         expect(note.metadata).to be_present
         expect(note.metadata["attachments"]).to be_an(Array)
       end
@@ -290,7 +314,7 @@ RSpec.describe "Notes Integration", :integration do
   describe "bulk note operations" do
     it "creates multiple notes efficiently" do
       VCR.use_cassette("notes/bulk_create") do
-        notes_data = 5.times.map do |i|
+        notes_data = Array.new(5) do |i|
           {
             parent_object: "people",
             parent_record_id: person.id,
@@ -298,11 +322,11 @@ RSpec.describe "Notes Integration", :integration do
             format: "plaintext"
           }
         end
-        
+
         notes = notes_data.map { |data| Attio::Note.create(**data) }
-        
+
         expect(notes.size).to eq(5)
-        expect(notes.all? { |n| n.is_a?(Attio::Note) }).to be true
+        expect(notes.all?(Attio::Note)).to be true
       end
     end
   end

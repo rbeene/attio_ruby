@@ -44,27 +44,46 @@ RSpec.describe Attio::OAuth::Client do
   end
 
   describe "#authorization_url" do
-    it "generates a valid authorization URL" do
-      result = client.authorization_url
-      
-      expect(result).to be_a(Hash)
-      expect(result[:url]).to include("https://app.attio.com/authorize")
-      expect(result[:url]).to include("client_id=#{client_id}")
-      expect(result[:url]).to include("redirect_uri=#{CGI.escape(redirect_uri)}")
-      expect(result[:url]).to include("response_type=code")
-      expect(result[:state]).not_to be_nil
+    describe "generating authorization URL" do
+      let(:result) { client.authorization_url }
+
+      it "returns a hash with URL and state" do
+        expect(result).to be_a(Hash)
+        expect(result).to have_key(:url)
+        expect(result).to have_key(:state)
+      end
+
+      it "uses the correct OAuth endpoint" do
+        expect(result[:url]).to include("https://app.attio.com/authorize")
+      end
+
+      it "includes the client ID" do
+        expect(result[:url]).to include("client_id=#{client_id}")
+      end
+
+      it "includes the encoded redirect URI" do
+        expect(result[:url]).to include("redirect_uri=#{CGI.escape(redirect_uri)}")
+      end
+
+      it "includes the response type" do
+        expect(result[:url]).to include("response_type=code")
+      end
+
+      it "generates a state value" do
+        expect(result[:state]).not_to be_nil
+      end
     end
 
     it "includes custom scopes" do
       result = client.authorization_url(scopes: %w[record:read record:write])
-      
+
       expect(result[:url]).to include("scope=record%3Aread+record%3Awrite")
     end
 
     it "includes custom state" do
       custom_state = "custom_state_123"
       result = client.authorization_url(state: custom_state)
-      
+
       expect(result[:url]).to include("state=#{custom_state}")
       expect(result[:state]).to eq(custom_state)
     end
@@ -93,9 +112,9 @@ RSpec.describe Attio::OAuth::Client do
 
     it "exchanges code for token" do
       allow(connection_manager).to receive(:execute).and_return(response)
-      
+
       token = client.exchange_code_for_token(code: auth_code)
-      
+
       expect(token).to be_a(Attio::OAuth::Token)
       expect(token.access_token).to eq("access_123")
       expect(token.refresh_token).to eq("refresh_123")
@@ -110,7 +129,7 @@ RSpec.describe Attio::OAuth::Client do
         expect(params["client_secret"]).to eq(client_secret)
         response
       end
-      
+
       client.exchange_code_for_token(code: auth_code)
     end
 
@@ -138,9 +157,9 @@ RSpec.describe Attio::OAuth::Client do
 
     it "refreshes the token" do
       allow(connection_manager).to receive(:execute).and_return(response)
-      
+
       token = client.refresh_token(refresh_token)
-      
+
       expect(token).to be_a(Attio::OAuth::Token)
       expect(token.access_token).to eq("new_access_123")
     end
@@ -152,7 +171,7 @@ RSpec.describe Attio::OAuth::Client do
         expect(params["refresh_token"]).to eq(refresh_token)
         response
       end
-      
+
       client.refresh_token(refresh_token)
     end
   end
@@ -161,23 +180,23 @@ RSpec.describe Attio::OAuth::Client do
     let(:token) { "access_123" }
 
     it "revokes a token string" do
-      allow(connection_manager).to receive(:execute).and_return({ status: 200 })
-      
+      allow(connection_manager).to receive(:execute).and_return({status: 200})
+
       result = client.revoke_token(token)
       expect(result).to be true
     end
 
     it "revokes a Token object" do
       token_obj = Attio::OAuth::Token.new(access_token: "access_123")
-      allow(connection_manager).to receive(:execute).and_return({ status: 200 })
-      
+      allow(connection_manager).to receive(:execute).and_return({status: 200})
+
       result = client.revoke_token(token_obj)
       expect(result).to be true
     end
 
     it "returns false on error" do
       allow(connection_manager).to receive(:execute).and_raise(Attio::Errors::Base)
-      
+
       result = client.revoke_token(token)
       expect(result).to be false
     end
@@ -200,9 +219,9 @@ RSpec.describe Attio::OAuth::Client do
 
     it "introspects a token" do
       allow(connection_manager).to receive(:execute).and_return(response)
-      
+
       result = client.introspect_token(token)
-      
+
       expect(result[:active]).to be true
       expect(result[:scope]).to eq("record:read record:write")
     end

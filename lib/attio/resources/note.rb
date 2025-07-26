@@ -18,7 +18,7 @@ module Attio
     end
 
     attr_reader :parent_object, :parent_record_id, :content, :format,
-                :created_by_actor, :content_plaintext
+      :created_by_actor, :content_plaintext
 
     def initialize(attributes = {}, opts = {})
       super
@@ -33,7 +33,7 @@ module Attio
     # Get the parent record
     def parent_record(opts = {})
       return nil unless parent_object && parent_record_id
-      
+
       Record.retrieve(
         object: parent_object,
         record_id: parent_record_id,
@@ -73,7 +73,7 @@ module Attio
         query_params = params.dup
         query_params[:parent_object] = parent_object if parent_object
         query_params[:parent_record_id] = parent_record_id if parent_record_id
-        
+
         request = RequestBuilder.build(
           method: :GET,
           path: resource_path,
@@ -81,10 +81,10 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         APIOperations::List::ListObject.new(parsed, self, query_params, opts)
       end
 
@@ -93,14 +93,14 @@ module Attio
         validate_parent!(parent_object, parent_record_id)
         validate_content!(content)
         validate_format!(format)
-        
+
         params = {
           parent_object: parent_object,
           parent_record_id: parent_record_id,
           content: content,
           format: format
         }
-        
+
         request = RequestBuilder.build(
           method: :POST,
           path: resource_path,
@@ -108,10 +108,10 @@ module Attio
           headers: opts[:headers] || {},
           api_key: opts[:api_key]
         )
-        
+
         response = connection_manager.execute(request)
         parsed = ResponseParser.parse(response, request)
-        
+
         new(parsed, opts)
       end
 
@@ -131,7 +131,7 @@ module Attio
         if parent_object.nil? || parent_object.to_s.empty?
           raise ArgumentError, "parent_object is required"
         end
-        
+
         if parent_record_id.nil? || parent_record_id.to_s.empty?
           raise ArgumentError, "parent_record_id is required"
         end
@@ -146,7 +146,7 @@ module Attio
       def validate_format!(format)
         valid_formats = %w[plaintext html]
         unless valid_formats.include?(format.to_s)
-          raise ArgumentError, "Invalid format: #{format}. Valid formats: #{valid_formats.join(', ')}"
+          raise ArgumentError, "Invalid format: #{format}. Valid formats: #{valid_formats.join(", ")}"
         end
       end
     end
@@ -166,11 +166,11 @@ module Attio
 
     def strip_html(html)
       return html unless html.is_a?(String)
-      
+
       # Basic HTML stripping (production apps should use a proper HTML parser)
       html.gsub(/<[^>]+>/, " ")
-          .gsub(/\s+/, " ")
-          .strip
+        .gsub(/\s+/, " ")
+        .strip
     end
   end
 end
