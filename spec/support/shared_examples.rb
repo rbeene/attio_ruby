@@ -20,7 +20,7 @@ RSpec.shared_examples "a listable resource" do
   end
 
   before do
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
     allow(connection_manager).to receive(:execute).and_return(list_response)
   end
 
@@ -61,7 +61,7 @@ RSpec.shared_examples "a retrievable resource" do
   end
 
   before do
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
     allow(connection_manager).to receive(:execute).and_return(retrieve_response)
   end
 
@@ -92,7 +92,7 @@ RSpec.shared_examples "a creatable resource" do
   end
 
   before do
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
     allow(connection_manager).to receive(:execute).and_return(create_response)
   end
 
@@ -127,7 +127,7 @@ RSpec.shared_examples "an updatable resource" do
   end
 
   before do
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
     allow(connection_manager).to receive(:execute).and_return(update_response)
   end
 
@@ -159,7 +159,7 @@ RSpec.shared_examples "a deletable resource" do
   end
 
   before do
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
     allow(connection_manager).to receive(:execute).and_return(delete_response)
   end
 

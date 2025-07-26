@@ -6,7 +6,7 @@ RSpec.describe Attio::Record do
 
   before do
     Attio.configure { |c| c.api_key = api_key }
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
   end
 
   describe ".list" do
@@ -29,7 +29,7 @@ RSpec.describe Attio::Record do
 
       records = described_class.list(object: "people")
 
-      expect(records).to be_a(Attio::APIOperations::List::ListObject)
+      expect(records).to be_a(Attio::APIResource::ListObject)
       expect(records.count).to eq(2)
       expect(records.first.id).to eq("123")
     end
@@ -201,7 +201,7 @@ RSpec.describe Attio::Record do
 
       expect do
         record_without_id.save
-      end.to raise_error(Attio::Errors::InvalidRequestError, "Cannot update a record without an ID")
+      end.to raise_error(Attio::InvalidRequestError, "Cannot update a record without an ID")
     end
   end
 

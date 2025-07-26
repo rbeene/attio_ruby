@@ -14,7 +14,7 @@ RSpec.describe Attio::OAuth::Client do
   let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
 
   before do
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
   end
 
   describe "#initialize" do
@@ -197,7 +197,7 @@ RSpec.describe Attio::OAuth::Client do
     end
 
     it "returns false on error" do
-      allow(connection_manager).to receive(:execute).and_raise(Attio::Errors::Base)
+      allow(connection_manager).to receive(:execute).and_raise(Attio::Error)
 
       result = client.revoke_token(token)
       expect(result).to be false

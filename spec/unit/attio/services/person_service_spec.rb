@@ -6,7 +6,7 @@ RSpec.describe Attio::Services::PersonService do
 
   before do
     Attio.configure { |c| c.api_key = "test_key" }
-    allow(Attio::Util::ConnectionManager).to receive(:new).and_return(connection_manager)
+    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
   end
 
   describe "#find_by_email" do
