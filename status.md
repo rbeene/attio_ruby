@@ -2,7 +2,7 @@
 
 ## Current Progress
 
-### Sprint 0: Foundation Setup (Week 1) - IN PROGRESS
+### Sprint 0: Foundation Setup (Week 1) - COMPLETED ✅
 
 #### Completed Tasks ✅
 1. **Project Initialization**
@@ -16,9 +16,25 @@
    - .gitignore configured
    - Ruby version set to 3.4.3
 
-#### In Progress 🚧
-2. **Core Configuration Module** - Need to implement
-3. **Error Hierarchy Implementation** - Need to implement
+2. **Core Configuration Module** 
+   - Implemented `Attio::Configuration` class with thread-safe operations
+   - Added support for all configuration options (api_key, timeout, etc.)
+   - Integrated environment variable support
+   - Implemented comprehensive validation
+
+3. **Error Hierarchy Implementation**
+   - Created base error class with rich context (request/response details)
+   - Implemented all client error subclasses (4xx status codes)
+   - Implemented all server error subclasses (5xx status codes)
+   - Added connection error types for network issues
+   - Created error factory for automatic error class selection
+   - All errors support JSON serialization
+
+4. **Code Quality**
+   - Fixed all RuboCop violations
+   - All tests passing
+   - Proper frozen string literal comments
+   - Clean code structure following Ruby best practices
 
 ### File Structure Created
 ```
