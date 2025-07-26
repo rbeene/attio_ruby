@@ -11,7 +11,7 @@ require "json"
 # Demonstrates efficient bulk data operations
 
 Attio.configure do |config|
-  config.api_key = ENV["ATTIO_API_KEY"]
+  config.api_key = ENV.fetch("ATTIO_API_KEY", nil)
   config.debug = true if ENV["DEBUG"]
 end
 
@@ -22,7 +22,7 @@ puts
 puts "1. Batch Creating Records:"
 batch_service = Attio::Services::BatchService.new(
   batch_size: 50,
-  on_progress: ->(progress) {
+  on_progress: lambda { |progress|
     print "\r  Progress: #{progress[:completed]}/#{progress[:total]} " \
           "(#{(progress[:completed].to_f / progress[:total] * 100).round(1)}%)"
   }
@@ -34,8 +34,8 @@ people_data = 10.times.map do |i|
     values: {
       name: "Test Person #{i + 1}",
       email_addresses: "test#{i + 1}@example.com",
-      phone_numbers: "+1-555-#{sprintf('%04d', i + 1)}",
-      job_title: ["Engineer", "Manager", "Designer", "Analyst"].sample
+      phone_numbers: "+1-555-#{format('%04d', i + 1)}",
+      job_title: %w[Engineer Manager Designer Analyst].sample
     }
   }
 end
@@ -45,8 +45,8 @@ companies_data = 5.times.map do |i|
     values: {
       name: "Test Company #{i + 1}",
       domains: "company#{i + 1}.com",
-      industry: ["Technology", "Finance", "Healthcare", "Retail"].sample,
-      company_size: ["1-10", "11-50", "51-200", "201-500"].sample
+      industry: %w[Technology Finance Healthcare Retail].sample,
+      company_size: %w[1-10 11-50 51-200 201-500].sample
     }
   }
 end
@@ -71,7 +71,7 @@ update_data = people.map do |person|
     record_id: person.id,
     values: {
       job_title: "Senior #{person[:job_title] || 'Professional'}",
-      tags: ["batch-updated", "example"]
+      tags: %w[batch-updated example]
     }
   }
 end
@@ -87,7 +87,7 @@ puts "3. Batch Import from CSV:"
 
 # Create sample CSV data
 csv_data = CSV.generate do |csv|
-  csv << ["name", "email", "company", "job_title", "phone"]
+  csv << %w[name email company job_title phone]
   csv << ["Alice Cooper", "alice@rockband.com", "Rock Industries", "Lead Singer", "+1-555-1111"]
   csv << ["Bob Dylan", "bob@folk.com", "Folk Music Co", "Songwriter", "+1-555-2222"]
   csv << ["Charlie Parker", "charlie@jazz.com", "Jazz Enterprises", "Saxophonist", "+1-555-3333"]
@@ -116,7 +116,7 @@ puts "4. Batch Delete Operations:"
 # Find records with specific tag
 tagged_people = Attio::Record.list(
   object: "people",
-  params: { 
+  params: {
     q: "tag:batch-updated",
     limit: 100
   }
@@ -144,8 +144,8 @@ mixed_data = [
 ]
 
 batch_service_with_errors = Attio::Services::BatchService.new(
-  on_progress: ->(p) { print "." },
-  on_error: ->(error, item) {
+  on_progress: ->(_p) { print "." },
+  on_error: lambda { |error, item|
     puts "\n  Error: #{error.message} for item: #{item[:values]}"
   }
 )
@@ -165,7 +165,7 @@ puts "6. Batch Export to JSON:"
 # Export all people created in this session
 all_people = Attio::Record.list(
   object: "people",
-  params: { 
+  params: {
     q: "created_at:>1hour",
     limit: 1000
   }
@@ -201,14 +201,14 @@ if people_for_relationships.any? && companies.any?
     {
       record_id: person.id,
       values: {
-        company: [{ 
-          target_object: "companies", 
-          target_record: companies.sample.id 
+        company: [{
+          target_object: "companies",
+          target_record: companies.sample.id
         }]
       }
     }
   end
-  
+
   rel_results = batch_service.update_records("people" => relationship_updates)
   puts "  Updated #{rel_results[:success].size} person-company relationships"
 else
@@ -224,7 +224,7 @@ parallel_batch = Attio::Services::BatchService.new(
   batch_size: 25,
   parallel: true,
   max_threads: 4,
-  on_progress: ->(p) {
+  on_progress: lambda { |p|
     puts "  Thread #{Thread.current.object_id}: Processed batch #{p[:batch]}"
   }
 )
@@ -251,18 +251,18 @@ puts
 puts "9. Batch Upsert (Find or Create):"
 
 upsert_data = [
-  { 
+  {
     matching_attribute: "email_addresses",
-    values: { 
-      name: "John Upsert", 
+    values: {
+      name: "John Upsert",
       email_addresses: "john.upsert@example.com",
       job_title: "Updated Title"
     }
   },
-  { 
+  {
     matching_attribute: "email_addresses",
-    values: { 
-      name: "Jane Upsert", 
+    values: {
+      name: "Jane Upsert",
       email_addresses: "jane.upsert@example.com",
       job_title: "New Title"
     }
@@ -295,7 +295,7 @@ if ENV["CLEANUP"]
     object: "people",
     params: { q: "email:*@example.com", limit: 1000 }
   )
-  
+
   if cleanup_people.any?
     cleanup_results = batch_service.delete_records(
       "people" => cleanup_people.map(&:id)

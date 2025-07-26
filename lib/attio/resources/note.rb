@@ -69,7 +69,7 @@ module Attio
 
     class << self
       # List notes for a specific record
-      def list(parent_object: nil, parent_record_id: nil, params = {}, opts = {})
+      def list(params = {}, parent_object: nil, parent_record_id: nil, **opts)
         query_params = params.dup
         query_params[:parent_object] = parent_object if parent_object
         query_params[:parent_record_id] = parent_record_id if parent_record_id
@@ -89,7 +89,7 @@ module Attio
       end
 
       # Create a note
-      def create(parent_object:, parent_record_id:, content:, format: "plaintext", opts: {})
+      def create(content:, parent_object:, parent_record_id:, format: "plaintext", **opts)
         validate_parent!(parent_object, parent_record_id)
         validate_content!(content)
         validate_format!(format)
@@ -116,7 +116,7 @@ module Attio
       end
 
       # Get notes for a record
-      def for_record(object:, record_id:, params = {}, opts = {})
+      def for_record(params = {}, object:, record_id:, **opts)
         list(
           parent_object: object,
           parent_record_id: record_id,

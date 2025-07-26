@@ -62,7 +62,7 @@ module Attio
 
     class << self
       # List entries in a list
-      def list(list_id:, params = {}, opts = {})
+      def list(params = {}, list_id:, **opts)
         validate_list_id!(list_id)
         
         request = RequestBuilder.build(

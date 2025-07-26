@@ -83,7 +83,7 @@ module Attio
 
     class << self
       # List attributes for an object
-      def list(object: nil, params = {}, opts = {})
+      def list(params = {}, object: nil, **opts)
         query_params = params.dup
         query_params[:object] = object if object
         
@@ -102,7 +102,7 @@ module Attio
       end
 
       # Create an attribute
-      def create(object:, params = {}, opts = {})
+      def create(params = {}, object:, **opts)
         validate_object_identifier!(object)
         validate_type!(params[:type] || params["type"])
         validate_type_config!(params)

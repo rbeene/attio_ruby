@@ -11,7 +11,7 @@ require "dotenv/load"
 # Performance benchmarks for Attio Ruby gem
 
 Attio.configure do |config|
-  config.api_key = ENV["ATTIO_API_KEY"]
+  config.api_key = ENV.fetch("ATTIO_API_KEY", nil)
   config.timeout = 30
 end
 
@@ -136,7 +136,7 @@ batch_mem = measure_memory do
   records = 100.times.map do |i|
     { values: { name: "Batch #{i}", email_addresses: "batch#{i}@example.com" } }
   end
-  
+
   Attio::Record.create_batch(object: "people", records: records)
 end
 
@@ -196,6 +196,7 @@ manual_time = Benchmark.realtime do
     )
     all_records.concat(records.to_a)
     break unless records.has_next_page?
+
     page += 1
   end
 end
@@ -266,7 +267,7 @@ Benchmark.bm(30) do |x|
   x.report("Find by email (with cache):") do
     # First call loads cache
     person_service.find_by_email("cached@example.com")
-    
+
     # Subsequent calls use cache
     50.times do
       person_service.find_by_email("cached@example.com")
@@ -313,19 +314,15 @@ Benchmark.ips do |x|
   end
 
   x.report("Error handling (404)") do
-    begin
-      Attio::Object.retrieve("nonexistent")
-    rescue Attio::Errors::NotFoundError
-      # Expected error
-    end
+    Attio::Object.retrieve("nonexistent")
+  rescue Attio::Errors::NotFoundError
+    # Expected error
   end
 
   x.report("Error handling (validation)") do
-    begin
-      Attio::Record.create(object: "people", values: { email_addresses: "invalid" })
-    rescue Attio::Errors::InvalidRequestError
-      # Expected error
-    end
+    Attio::Record.create(object: "people", values: { email_addresses: "invalid" })
+  rescue Attio::Errors::InvalidRequestError
+    # Expected error
   end
 
   x.compare!

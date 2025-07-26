@@ -23,12 +23,10 @@ modules = %w[
 
 puts "Checking modules..."
 modules.each do |mod|
-  begin
-    mod.split("::").inject(Object) { |o, c| o.const_get(c) }
-    puts "✓ #{mod}"
-  rescue NameError => e
-    puts "✗ #{mod}: #{e.message}"
-  end
+  mod.split("::").inject(Object) { |o, c| o.const_get(c) }
+  puts "✓ #{mod}"
+rescue NameError => e
+  puts "✗ #{mod}: #{e.message}"
 end
 puts
 
@@ -43,7 +41,7 @@ begin
   puts "  API Key: #{Attio.api_key[0..10]}..."
   puts "  API Base: #{Attio.api_base}"
   puts "  API Version: #{Attio.api_version}"
-rescue => e
+rescue StandardError => e
   puts "✗ Configuration failed: #{e.message}"
 end
 puts

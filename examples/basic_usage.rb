@@ -9,7 +9,7 @@ require "dotenv/load"
 
 # Configure the client
 Attio.configure do |config|
-  config.api_key = ENV["ATTIO_API_KEY"]
+  config.api_key = ENV.fetch("ATTIO_API_KEY", nil)
   # Optional configurations
   # config.api_base = "https://api.attio.com"
   # config.timeout = 30
@@ -30,13 +30,13 @@ puts
 # 2. Working with Records (People)
 puts "2. Creating a Person:"
 person = Attio::Record.create(
-  object: "people",
   values: {
     name: "John Doe",
     email_addresses: "john@example.com",
     phone_numbers: "+1-555-0123",
     job_title: "Software Engineer"
-  }
+  },
+  object: "people"
 )
 puts "  Created: #{person[:name]} (ID: #{person.id})"
 puts
@@ -44,11 +44,11 @@ puts
 # 3. Searching for Records
 puts "3. Searching for People:"
 people = Attio::Record.list(
-  object: "people",
-  params: {
+  {
     q: "john",
     limit: 5
-  }
+  },
+  object: "people"
 )
 puts "  Found #{people.count} people matching 'john'"
 people.each do |p|
@@ -59,13 +59,13 @@ puts
 # 4. Working with Companies
 puts "4. Creating a Company:"
 company = Attio::Record.create(
-  object: "companies",
   values: {
     name: "Acme Corporation",
     domains: "acme.com",
     industry: "Technology",
     company_size: "50-100"
-  }
+  },
+  object: "companies"
 )
 puts "  Created: #{company[:name]} (ID: #{company.id})"
 puts
@@ -87,13 +87,13 @@ list = Attio::List.create(
 puts "  Created list: #{list.name}"
 
 # Add person to list
-entry = list.add_record(person.id)
+list.add_record(person.id)
 puts "  Added #{person[:name]} to #{list.name}"
 puts
 
 # 7. Adding Notes
 puts "7. Adding a Note:"
-note = Attio::Note.create(
+Attio::Note.create(
   parent_object: "people",
   parent_record_id: person.id,
   content: "Had a great meeting about the new project. Very interested in our solution.",
@@ -133,7 +133,7 @@ puts
 # 10. Batch Operations
 puts "10. Batch Operations:"
 batch_service = Attio::Services::BatchService.new(
-  on_progress: ->(progress) { print "." }
+  on_progress: ->(_progress) { print "." }
 )
 
 puts "  Creating multiple records in batch..."

@@ -1,3 +1,6 @@
+inherit_gem:
+  standard: config/base.yml
+
 require:
   - standard
   - rubocop-rspec
@@ -6,19 +9,20 @@ plugins:
   - rubocop-performance
 
 AllCops:
-  TargetRubyVersion: 3.0
+  TargetRubyVersion: 3.3  # RuboCop doesn't support 3.4 yet, use 3.3
   NewCops: enable
   SuggestExtensions: false
   Exclude:
     - 'vendor/**/*'
     - 'spec/fixtures/**/*'
     - 'attio-ruby-*.gem'
+    - 'attio-ruby-*/**/*'
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
 Metrics/MethodLength:
-  Max: 20
+  Max: 30
   Exclude:
     - 'spec/**/*'
 
@@ -26,6 +30,28 @@ Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
     - '*.gemspec'
+    - 'examples/**/*'
+    - 'benchmarks/**/*'
+
+Metrics/ClassLength:
+  Max: 200
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/AbcSize:
+  Max: 25
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+Metrics/PerceivedComplexity:
+  Max: 10
+
+# Allow more parameters for API methods
+Metrics/ParameterLists:
+  Max: 6
 
 # API method naming conventions
 Naming/PredicateName:
@@ -43,3 +69,29 @@ Gemspec/OrderedDependencies:
 # Documentation for simple modules is often unnecessary
 Style/Documentation:
   Enabled: false
+
+# RSpec Configuration
+RSpec/ExampleLength:
+  Max: 20
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/DescribeClass:
+  Exclude:
+    - 'spec/integration/**/*'
+
+# Allow global variables in examples
+Style/GlobalVars:
+  Exclude:
+    - 'examples/**/*'
+
+# Allow trailing whitespace to be fixed 
+Layout/TrailingWhitespace:
+  Enabled: true
+  AutoCorrect: true
+
+# Allow trailing empty lines to be fixed
+Layout/TrailingEmptyLines:
+  Enabled: true
+  AutoCorrect: true

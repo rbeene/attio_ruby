@@ -10,7 +10,7 @@ require "dotenv/load"
 # Memory profiling for Attio Ruby gem
 
 Attio.configure do |config|
-  config.api_key = ENV["ATTIO_API_KEY"]
+  config.api_key = ENV.fetch("ATTIO_API_KEY", nil)
 end
 
 puts "=== Attio Ruby Gem Memory Profile ==="
@@ -22,37 +22,37 @@ puts
 def profile_memory(description, &block)
   puts "\n#{description}"
   puts "-" * 50
-  
+
   GC.start
   before_slots = GC.stat[:heap_live_slots]
-  
+
   report = MemoryProfiler.report(&block)
-  
+
   GC.start
   after_slots = GC.stat[:heap_live_slots]
-  
+
   puts "Memory allocated: #{(report.total_allocated_memsize / 1_048_576.0).round(2)} MB"
   puts "Memory retained: #{(report.total_retained_memsize / 1_048_576.0).round(2)} MB"
   puts "Objects allocated: #{report.total_allocated}"
   puts "Objects retained: #{report.total_retained}"
   puts "Heap growth: #{after_slots - before_slots} slots"
-  
+
   # Top memory allocations
   puts "\nTop 5 memory allocations by gem:"
   report.allocated_memory_by_gem.sort_by { |_, v| -v }.first(5).each do |gem, bytes|
     puts "  #{gem}: #{(bytes / 1024.0).round(2)} KB"
   end
-  
+
   puts "\nTop 5 memory allocations by file:"
   report.allocated_memory_by_file.sort_by { |_, v| -v }.first(5).each do |file, bytes|
     puts "  #{File.basename(file)}: #{(bytes / 1024.0).round(2)} KB"
   end
-  
+
   puts "\nTop 5 object allocations by class:"
   report.allocated_objects_by_class.sort_by { |_, v| -v }.first(5).each do |klass, count|
     puts "  #{klass}: #{count} objects"
   end
-  
+
   report
 end
 
@@ -61,7 +61,7 @@ profile_memory("1. Configuration and Initialization") do
   # Reset and reconfigure
   Attio.reset!
   Attio.configure do |config|
-    config.api_key = ENV["ATTIO_API_KEY"]
+    config.api_key = ENV.fetch("ATTIO_API_KEY", nil)
     config.timeout = 30
     config.max_retries = 3
     config.debug = false
@@ -96,7 +96,7 @@ end
 # 5. Pagination Memory Usage
 profile_memory("5. Auto-Pagination (200 records)") do
   count = 0
-  Attio::Record.list(object: "people", params: { limit: 50 }).auto_paging_each do |record|
+  Attio::Record.list(object: "people", params: { limit: 50 }).auto_paging_each do |_record|
     count += 1
     break if count >= 200
   end
@@ -112,14 +112,14 @@ profile_memory("6. Batch Create (50 records)") do
       }
     }
   end
-  
+
   Attio::Record.create_batch(object: "people", records: records)
 end
 
 # 7. Service Layer Memory Usage
 profile_memory("7. Service Layer Operations") do
   service = Attio::Services::PersonService.new
-  
+
   # Multiple operations
   5.times do |i|
     service.find_or_create_by_email(
@@ -127,7 +127,7 @@ profile_memory("7. Service Layer Operations") do
       defaults: { name: "Service Test #{i}" }
     )
   end
-  
+
   # Search operations
   service.search_by_name("Test")
   service.find_by_email("service1@memory.com")
@@ -137,21 +137,21 @@ end
 profile_memory("8. Error Handling") do
   # Generate various errors
   errors = []
-  
+
   # 404 error
   begin
     Attio::Object.retrieve("nonexistent")
   rescue Attio::Errors::NotFoundError => e
     errors << e
   end
-  
+
   # Validation error
   begin
     Attio::Record.create(object: "people", values: { email_addresses: "invalid" })
   rescue Attio::Errors::InvalidRequestError => e
     errors << e
   end
-  
+
   # Network error simulation
   begin
     # Force a timeout
@@ -167,7 +167,7 @@ end
 # 9. Concurrent Operations Memory
 profile_memory("9. Concurrent Operations") do
   require "concurrent"
-  
+
   promises = 10.times.map do |i|
     Concurrent::Promise.execute do
       Attio::Record.create(
@@ -179,7 +179,7 @@ profile_memory("9. Concurrent Operations") do
       )
     end
   end
-  
+
   # Wait for all to complete
   promises.map(&:value!)
 end
@@ -192,17 +192,17 @@ puts "=" * 50
 memory_samples = []
 object_samples = []
 
-10.times do |iteration|
+10.times do |_iteration|
   GC.start
   memory_samples << (GC.stat[:heap_live_slots] * 40.0 / 1_048_576)
   object_samples << ObjectSpace.count_objects[:TOTAL]
-  
+
   # Perform operations
   100.times do
     list = Attio::Record.list(object: "people", params: { limit: 10 })
     list.to_a
   end
-  
+
   print "."
 end
 puts
@@ -231,7 +231,7 @@ puts "=" * 50
 before_gc = GC.stat[:heap_live_slots]
 
 1000.times do
-  record = Attio::Record.new(
+  Attio::Record.new(
     id: "test_#{rand(1000)}",
     object: "people",
     values: { name: "Temp" }

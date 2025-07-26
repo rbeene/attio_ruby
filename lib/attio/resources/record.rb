@@ -31,7 +31,7 @@ module Attio
 
     class << self
       # List records with filtering and sorting
-      def list(object:, params = {}, opts = {})
+      def list(params = {}, object:, **opts)
         validate_object_identifier!(object)
         
         # Build query parameters
@@ -56,7 +56,7 @@ module Attio
       alias all list
 
       # Create a new record
-      def create(object:, values:, opts = {})
+      def create(values:, object:, **opts)
         validate_object_identifier!(object)
         validate_values!(values)
         
@@ -80,7 +80,7 @@ module Attio
       end
 
       # Retrieve a specific record
-      def retrieve(object:, record_id:, opts = {})
+      def retrieve(record_id:, object:, **opts)
         validate_object_identifier!(object)
         validate_id!(record_id)
         
@@ -101,7 +101,7 @@ module Attio
       alias find retrieve
 
       # Batch create records
-      def create_batch(object:, records:, opts = {})
+      def create_batch(records:, object:, **opts)
         validate_object_identifier!(object)
         raise ArgumentError, "Records must be an array" unless records.is_a?(Array)
         
@@ -123,7 +123,7 @@ module Attio
       end
 
       # Search records by attribute values
-      def search(object:, query:, attributes: nil, opts = {})
+      def search(query:, object:, attributes: nil, **opts)
         params = {
           q: query,
           attributes: attributes
