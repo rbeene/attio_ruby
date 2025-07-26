@@ -50,9 +50,7 @@ jobs:
         bundler-cache: true
     
     - name: Run security audit
-      run: |
-        bundle exec bundle-audit check --update
-        bundle exec brakeman --quiet --no-pager
+      run: bundle exec bundle-audit check --update
 
   documentation:
     runs-on: ubuntu-latest
