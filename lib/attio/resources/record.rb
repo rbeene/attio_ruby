@@ -1,17 +1,12 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "../api_operations/list"
-require_relative "../api_operations/retrieve"
-require_relative "../api_operations/create"
-require_relative "../api_operations/update"
-require_relative "../api_operations/delete"
+require_relative "../api_resource"
 
 module Attio
-  class Record < Resources::Base
-    include APIOperations::Update
-    include APIOperations::Delete
-
+  class Record < APIResource
+    # Record doesn't use standard CRUD operations due to object parameter requirement
+    # We'll define custom methods instead
+    
     def self.resource_path
       "/objects"
     end
@@ -19,10 +14,8 @@ module Attio
     attr_reader :attio_object_id, :object_api_slug
 
     def initialize(attributes = {}, opts = {})
-      # Let parent normalize attributes first
       super
-
-      # Now we can safely use symbol keys only since parent normalized them
+      
       normalized_attrs = normalize_attributes(attributes)
       @attio_object_id = normalized_attrs[:object_id]
       @object_api_slug = normalized_attrs[:object_api_slug]
@@ -34,25 +27,15 @@ module Attio
     end
 
     class << self
-      # List records with filtering and sorting
+      # List records for an object
       def list(params = {}, object:, **opts)
         validate_object_identifier!(object)
 
-        # Build query parameters
         query_params = build_query_params(params)
 
-        request = Util::RequestBuilder.build(
-          method: :POST,
-          path: "#{resource_path}/#{object}/records/query",
-          params: query_params,
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
+        response = execute_request(:POST, "#{resource_path}/#{object}/records/query", query_params, opts)
 
-        response = connection_manager.execute(request)
-        parsed = Util::ResponseParser.parse(response, request)
-
-        APIOperations::List::ListObject.new(parsed, self, params.merge(object: object), opts)
+        APIResource::ListObject.new(response, self, params.merge(object: object), opts)
       end
       alias_method :all, :list
 
@@ -61,26 +44,17 @@ module Attio
         validate_object_identifier!(object)
         validate_values!(values)
 
-        request = Util::RequestBuilder.build(
-          method: :POST,
-          path: "#{resource_path}/#{object}/records",
-          params: {
-            data: {
-              values: normalize_values(values)
-            }
-          },
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
+        params = {
+          data: {
+            values: normalize_values(values)
+          }
+        }
 
-        response = connection_manager.execute(request)
-        parsed = Util::ResponseParser.parse(response, request)
+        response = execute_request(:POST, "#{resource_path}/#{object}/records", params, opts)
 
-        # Ensure object info is included in the record data
-        record_data = parsed[:data] || {}
-        if record_data.is_a?(Hash)
-          record_data[:object_api_slug] ||= object
-        end
+        # Ensure object info is included
+        record_data = response[:data] || {}
+        record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
 
         new(record_data, opts)
       end
@@ -90,19 +64,9 @@ module Attio
         validate_object_identifier!(object)
         validate_id!(record_id)
 
-        request = Util::RequestBuilder.build(
-          method: :GET,
-          path: "#{resource_path}/#{object}/records/#{record_id}",
-          params: {},
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
+        response = execute_request(:GET, "#{resource_path}/#{object}/records/#{record_id}", {}, opts)
 
-        response = connection_manager.execute(request)
-        parsed = Util::ResponseParser.parse(response, request)
-
-        # Ensure object info is included in the record data
-        record_data = parsed[:data] || {}
+        record_data = response[:data] || {}
         record_data[:object_api_slug] ||= object
 
         new(record_data, opts)
@@ -113,33 +77,24 @@ module Attio
       # Batch create records
       def create_batch(records:, object:, **opts)
         validate_object_identifier!(object)
-        raise ArgumentError, "Records must be an array" unless records.is_a?(Array)
+        validate_batch!(records)
 
-        request = Util::RequestBuilder.build(
-          method: :POST,
-          path: "#{resource_path}/batch",
-          params: {
-            object: object,
-            data: records.map { |r| {values: normalize_values(r[:values] || r["values"])} }
-          },
-          headers: opts[:headers] || {},
-          api_key: opts[:api_key]
-        )
+        params = {
+          object: object,
+          data: records.map { |r| { values: normalize_values(r[:values] || r) } }
+        }
 
-        response = connection_manager.execute(request)
-        parsed = Util::ResponseParser.parse(response, request)
+        response = execute_request(:POST, "#{resource_path}/batch", params, opts)
 
-        parsed[:data].map { |record_data| new(record_data, opts) }
+        (response[:data] || []).map do |record_data|
+          record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
+          new(record_data, opts)
+        end
       end
 
-      # Search records by attribute values
-      def search(query:, object:, attributes: nil, **opts)
-        params = {
-          q: query,
-          attributes: attributes
-        }.compact
-
-        list(object: object, params: params, opts: opts)
+      # Search records
+      def search(query, object:, **opts)
+        list({ q: query }, object: object, **opts)
       end
 
       private
@@ -148,66 +103,24 @@ module Attio
         raise ArgumentError, "Object identifier is required" if object.nil? || object.to_s.empty?
       end
 
-      def validate_id!(id)
-        raise ArgumentError, "Record ID is required" if id.nil? || id.to_s.empty?
-      end
-
       def validate_values!(values)
-        raise ArgumentError, "Values must be a hash" unless values.is_a?(Hash)
+        raise ArgumentError, "Values must be a Hash" unless values.is_a?(Hash)
       end
 
-      def normalize_values(values)
-        values.transform_values do |value|
-          case value
-          when String, Numeric, TrueClass, FalseClass, NilClass
-            # Wrap scalar values in Attio format
-            {value: value}
-          when Array
-            # Handle array values (for multi-select, etc.)
-            value.map { |v| normalize_single_value(v) }
-          when Hash
-            # Already in correct format or needs normalization
-            if value.key?(:value) || value.key?("value")
-              value
-            else
-              {value: value}
-            end
-          else
-            {value: value.to_s}
-          end
-        end
-      end
-
-      def normalize_single_value(value)
-        case value
-        when Hash
-          value
-        else
-          {value: value}
-        end
+      def validate_batch!(records)
+        raise ArgumentError, "Records must be an array" unless records.is_a?(Array)
+        raise ArgumentError, "Records cannot be empty" if records.empty?
       end
 
       def build_query_params(params)
         query_params = {}
-
-        # Filtering
-        if params[:filter]
-          query_params[:filter] = build_filter(params[:filter])
-        end
-
-        # Sorting
-        if params[:sort] || params[:order_by]
-          query_params[:sort] = build_sort(params[:sort] || params[:order_by])
-        end
-
-        # Pagination
+        
+        query_params[:filter] = build_filter(params[:filter]) if params[:filter]
+        query_params[:sort] = build_sort(params[:sort]) if params[:sort]
         query_params[:limit] = params[:limit] if params[:limit]
         query_params[:cursor] = params[:cursor] if params[:cursor]
-
-        # Search
         query_params[:q] = params[:q] if params[:q]
-        query_params[:attributes] = params[:attributes] if params[:attributes]
-
+        
         query_params
       end
 
@@ -215,9 +128,8 @@ module Attio
         case filter
         when Hash
           filter
-        when String
-          # Parse simple filter strings like "status:active"
-          parse_filter_string(filter)
+        when Array
+          { "$and" => filter }
         else
           filter
         end
@@ -226,116 +138,138 @@ module Attio
       def build_sort(sort)
         case sort
         when String
-          # Handle "created_at:desc" format
-          if sort.include?(":")
-            field, direction = sort.split(":", 2)
-            {field: field, direction: direction}
-          else
-            {field: sort, direction: "asc"}
-          end
+          parse_sort_string(sort)
         when Hash
           sort
-        when Array
-          sort.map { |s| build_sort(s) }
         else
           sort
         end
       end
 
-      def parse_filter_string(filter_string)
-        # Simple parser for "attribute:value" format
-        filters = {}
-        filter_string.split(",").each do |condition|
-          key, value = condition.split(":", 2)
-          filters[key.strip] = value.strip if key && value
-        end
-        filters
+      def parse_sort_string(sort_string)
+        field, direction = sort_string.split(":")
+        {
+          field: field,
+          direction: direction || "asc"
+        }
       end
 
-      def connection_manager
-        Attio.connection_manager
+      def normalize_values(values)
+        values.transform_values do |value|
+          case value
+          when Array
+            value.map { |v| normalize_single_value(v) }
+          else
+            normalize_single_value(value)
+          end
+        end
+      end
+
+      def normalize_single_value(value)
+        case value
+        when Hash
+          value
+        when NilClass
+          nil
+        else
+          { value: value }
+        end
       end
     end
 
     # Instance methods
 
-    def save(opts = {})
-      if id.nil?
-        raise Errors::InvalidRequestError, "Cannot update a record without an ID"
-      end
-
-      if object_api_slug.nil?
-        raise Errors::InvalidRequestError, "Cannot update a record without object information"
-      end
+    # Save changes to the record
+    def save(**opts)
+      raise InvalidRequestError, "Cannot update a record without an ID" unless persisted?
+      raise InvalidRequestError, "Cannot save without object context" unless object_api_slug
+      
+      return self unless changed?
 
       params = {
-        values: prepare_values_for_update
+        data: {
+          values: prepare_values_for_update
+        }
       }
 
-      request = Util::RequestBuilder.build(
-        method: :PATCH,
-        path: "#{self.class.resource_path}/#{object_api_slug}/records/#{id}",
-        params: {data: params},
-        headers: opts[:headers] || {},
-        api_key: opts[:api_key] || @opts[:api_key]
-      )
+      response = self.class.send(:execute_request, :PATCH, resource_path, params, opts)
 
-      response = connection_manager.execute(request)
-      parsed = Util::ResponseParser.parse(response, request)
-
-      update_from(parsed[:data])
+      update_from(response[:data] || response)
       reset_changes!
       self
     end
 
-    # Get associated lists
-    def lists
-      List.list(record_id: id)
+    # Add this record to a list
+    def add_to_list(list_id, **opts)
+      ListEntry.create(list_id: list_id, record_id: id, **opts)
     end
 
-    # Add to list
-    def add_to_list(list_id)
-      ListEntry.create(list_id: list_id, record_id: id)
+    # Get lists containing this record
+    def lists(**opts)
+      raise InvalidRequestError, "Cannot get lists without an ID" unless persisted?
+      
+      # This is a simplified implementation - in reality you'd need to query the API
+      # for lists that contain this record
+      List.list(record_id: id, **opts)
     end
 
-    # Remove from list
-    def remove_from_list(list_id, entry_id)
-      ListEntry.delete(list_id: list_id, entry_id: entry_id)
+    def resource_path
+      raise InvalidRequestError, "Cannot generate path without object context" unless object_api_slug
+      "#{self.class.resource_path}/#{object_api_slug}/records/#{id}"
     end
 
     def to_h
-      super.merge(
-        object_id: object_id,
-        object_api_slug: object_api_slug
-      ).compact
+      values = @attributes.reject { |k, _| %i[id created_at object_id object_api_slug].include?(k) }
+      
+      {
+        id: id,
+        object_id: attio_object_id,
+        object_api_slug: object_api_slug,
+        created_at: created_at&.iso8601,
+        values: values
+      }.compact
+    end
+
+    def inspect
+      values_preview = @attributes.take(3).map { |k, v| "#{k}: #{v.inspect}" }.join(", ")
+      values_preview += "..." if @attributes.size > 3
+      
+      "#<#{self.class.name}:#{object_id} id=#{id.inspect} object=#{object_api_slug.inspect} values={#{values_preview}}>"
     end
 
     private
 
     def process_values(values)
+      return unless values.is_a?(Hash)
+      
       values.each do |key, value_data|
-        # Extract the actual value from Attio's format
-        actual_value = extract_value(value_data)
-        @attributes[key.to_sym] = actual_value
-        @original_attributes[key.to_sym] = deep_copy(actual_value)
+        extracted_value = extract_value(value_data)
+        @attributes[key.to_sym] = extracted_value
+        @original_attributes[key.to_sym] = deep_copy(extracted_value)
       end
     end
 
     def extract_value(value_data)
       case value_data
+      when Array
+        extracted = value_data.map { |v| extract_single_value(v) }
+        extracted.length == 1 ? extracted.first : extracted
+      else
+        extract_single_value(value_data)
+      end
+    end
+
+    def extract_single_value(value_data)
+      case value_data
       when Hash
         if value_data.key?(:value) || value_data.key?("value")
           value_data[:value] || value_data["value"]
         elsif value_data.key?(:target_object) || value_data.key?("target_object")
-          # Handle reference values
+          # Reference value
           value_data[:target_object] || value_data["target_object"]
         else
           value_data
         end
-      when Array
-        extracted = value_data.map { |v| extract_value(v) }
-        # If it's a single value array, return just the value
-        (extracted.length == 1) ? extracted.first : extracted
       else
         value_data
       end
@@ -343,12 +277,8 @@ module Attio
 
     def prepare_values_for_update
       changed_attributes.transform_values do |value|
-        self.class.send(:normalize_values, {key: value})[:key]
+        self.class.send(:normalize_values, { key: value })[:key]
       end
-    end
-
-    def resource_path
-      "#{self.class.resource_path}/#{id}"
     end
   end
 end
