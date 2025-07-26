@@ -1,0 +1,62 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# rspec failure tracking
+.rspec_status
+
+# Ignore Gemfile.lock for libraries
+Gemfile.lock
+
+# RubyMine/IntelliJ
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Environment variables
+.env
+.env.*
+
+# VCR cassettes for testing
+spec/fixtures/vcr_cassettes/
+
+# Local test files
+test.rb
+scratch.rb
+
+# Logs
+*.log
+
+# Ruby version managers
+.ruby-version
+.ruby-gemset
+.rvmrc
+
+# Bundler config
+.bundle/config
+
+# Built gems
+*.gem
+
+# Documentation
+.yardoc/
+doc/
+rdoc/
+
+# Test coverage
+coverage/
+
+# Performance profiling
+*.prof
+
+# Debugging
+.byebug_history

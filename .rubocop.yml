@@ -1,0 +1,45 @@
+require:
+  - standard
+  - rubocop-rspec
+
+plugins:
+  - rubocop-performance
+
+AllCops:
+  TargetRubyVersion: 3.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'spec/fixtures/**/*'
+    - 'attio-ruby-*.gem'
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Metrics/MethodLength:
+  Max: 20
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - '*.gemspec'
+
+# API method naming conventions
+Naming/PredicateName:
+  AllowedMethods:
+    - is_required
+    - is_unique
+
+# Disable some cops for gemspec
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+Gemspec/OrderedDependencies:
+  Enabled: false
+
+# Documentation for simple modules is often unnecessary
+Style/Documentation:
+  Enabled: false
