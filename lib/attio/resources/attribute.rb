@@ -77,7 +77,15 @@ module Attio
     def archive(**opts)
       raise InvalidRequestError, "Cannot archive an attribute without an ID" unless persisted?
 
-      response = self.class.execute_request(:POST, "#{resource_path}/archive", {}, opts)
+      # Use object-scoped path for archive
+      attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+      path = if id.is_a?(Hash) && id["object_id"]
+        "objects/#{id["object_id"]}/attributes/#{attribute_id}/archive"
+      else
+        "#{resource_path}/archive"
+      end
+
+      response = self.class.execute_request(:POST, path, {}, opts)
       response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]
@@ -89,7 +97,15 @@ module Attio
     def unarchive(**opts)
       raise InvalidRequestError, "Cannot unarchive an attribute without an ID" unless persisted?
 
-      response = self.class.execute_request(:POST, "#{resource_path}/unarchive", {}, opts)
+      # Use object-scoped path for unarchive
+      attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+      path = if id.is_a?(Hash) && id["object_id"]
+        "objects/#{id["object_id"]}/attributes/#{attribute_id}/unarchive"
+      else
+        "#{resource_path}/unarchive"
+      end
+
+      response = self.class.execute_request(:POST, path, {}, opts)
       response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]

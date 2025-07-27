@@ -1,29 +1,41 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "webmock/rspec"
 
 RSpec.describe Attio::Attribute do
   let(:attribute_id) { "attribute_123" }
   let(:object_id) { "object_456" }
   let(:attribute_data) do
     {
-      "id" => {"attribute_id" => attribute_id, "object_id" => object_id},
-      "api_slug" => "test_attribute",
-      "name" => "Test Attribute",
+      "id" => {
+        "workspace_id" => "a96c9c20-442b-43cd-a94b-3d4683051661",
+        "object_id" => object_id,
+        "attribute_id" => attribute_id
+      },
+      "title" => "Test Attribute",
       "description" => "A test attribute",
+      "api_slug" => "test_attribute",
       "type" => "text",
+      "is_system_attribute" => false,
+      "is_writable" => true,
       "is_required" => false,
       "is_unique" => false,
+      "is_multiselect" => false,
       "is_default_value_enabled" => true,
-      "default_value" => "default",
-      "options" => nil,
-      "object_id" => object_id,
-      "object_api_slug" => "companies",
-      "parent_object_id" => nil,
-      "created_by_actor" => {"type" => "user", "id" => "user_123"},
       "is_archived" => false,
-      "archived_at" => nil,
-      "title" => "Test Attribute"
+      "default_value" => "default",
+      "relationship" => nil,
+      "created_at" => "2025-07-27T14:06:20.785000000Z",
+      "config" => {
+        "currency" => {
+          "default_currency_code" => nil,
+          "display_type" => nil
+        },
+        "record_reference" => {
+          "allowed_object_ids" => nil
+        }
+      }
     }
   end
 
@@ -75,14 +87,15 @@ RSpec.describe Attio::Attribute do
     subject(:attribute_instance) { described_class.new(attribute_data) }
 
     it "sets identification attributes correctly" do
-      expect(attribute_instance.id).to eq({"attribute_id" => attribute_id, "object_id" => object_id})
+      expect(attribute_instance.id).to eq({
+        "workspace_id" => "a96c9c20-442b-43cd-a94b-3d4683051661",
+        "object_id" => object_id,
+        "attribute_id" => attribute_id
+      })
       expect(attribute_instance.api_slug).to eq("test_attribute")
-      expect(attribute_instance.attio_object_id).to eq(object_id)
-      expect(attribute_instance.object_api_slug).to eq("companies")
     end
 
     it "sets descriptive attributes correctly" do
-      expect(attribute_instance.name).to eq("Test Attribute")
       expect(attribute_instance.title).to eq("Test Attribute")
       expect(attribute_instance.description).to eq("A test attribute")
       expect(attribute_instance.type).to eq("text")
@@ -93,14 +106,10 @@ RSpec.describe Attio::Attribute do
       expect(attribute_instance.is_unique).to be false
       expect(attribute_instance.is_default_value_enabled).to be true
       expect(attribute_instance.default_value).to eq("default")
-      expect(attribute_instance.options).to be_nil
     end
 
     it "sets metadata attributes correctly" do
-      expect(attribute_instance.parent_object_id).to be_nil
-      expect(attribute_instance.created_by_actor).to eq("type" => "user", "id" => "user_123")
       expect(attribute_instance.is_archived).to be false
-      expect(attribute_instance.archived_at).to be_nil
     end
 
     context "with archived attribute" do
@@ -133,7 +142,7 @@ RSpec.describe Attio::Attribute do
       end
 
       it "archives the attribute" do
-        stub_request(:post, "https://api.attio.com/v2/attributes/#{attribute_id}/archive")
+        stub_request(:post, "https://api.attio.com/v2/objects/#{object_id}/attributes/#{attribute_id}/archive")
           .to_return(
             status: 200,
             body: {data: archived_response}.to_json,
@@ -177,7 +186,7 @@ RSpec.describe Attio::Attribute do
       end
 
       it "unarchives the attribute" do
-        stub_request(:post, "https://api.attio.com/v2/attributes/#{attribute_id}/unarchive")
+        stub_request(:post, "https://api.attio.com/v2/objects/#{object_id}/attributes/#{attribute_id}/unarchive")
           .to_return(
             status: 200,
             body: {data: unarchived_response}.to_json,
@@ -264,13 +273,19 @@ RSpec.describe Attio::Attribute do
 
     it "includes all expected keys" do
       hash = attribute.to_h
-      # Keys that should always be present
-      required_keys = %i[
-        api_slug name description type is_required is_unique
-        is_default_value_enabled default_value object_id
-        object_api_slug created_by_actor is_archived
-      ]
-      expect(hash.keys).to include(*required_keys)
+      # Keys that should always be present based on documented API
+      expect(hash.keys).to include(
+        :id,
+        :title,
+        :description,
+        :api_slug,
+        :type,
+        :is_required,
+        :is_unique,
+        :is_default_value_enabled,
+        :default_value,
+        :is_archived
+      )
 
       # Optional keys that may be removed by compact
       expect(hash).to have_key(:id) # ID comes from super
@@ -280,9 +295,7 @@ RSpec.describe Attio::Attribute do
     it "returns correct identification values" do
       hash = attribute.to_h
       expect(hash[:api_slug]).to eq("test_attribute")
-      expect(hash[:name]).to eq("Test Attribute")
-      expect(hash[:object_id]).to eq(object_id)
-      expect(hash[:object_api_slug]).to eq("companies")
+      expect(hash[:title]).to eq("Test Attribute")
     end
 
     it "returns correct configuration values" do
@@ -302,10 +315,7 @@ RSpec.describe Attio::Attribute do
 
     it "returns correct metadata values" do
       hash = attribute.to_h
-      expect(hash[:parent_object_id]).to be_nil
-      expect(hash[:created_by_actor]).to eq("type" => "user", "id" => "user_123")
       expect(hash[:is_archived]).to be false
-      expect(hash[:archived_at]).to be_nil
     end
 
     context "with archived_at timestamp" do

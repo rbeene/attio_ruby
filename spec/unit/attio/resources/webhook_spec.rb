@@ -4,16 +4,6 @@ require "spec_helper"
 require "webmock/rspec"
 
 RSpec.describe Attio::Webhook do
-  before do
-    # Disable VCR for these unit tests to use WebMock instead
-    VCR.turn_off!
-    WebMock.enable!
-  end
-
-  after do
-    VCR.turn_on!
-  end
-
   let(:webhook_data) do
     {
       "id" => {
