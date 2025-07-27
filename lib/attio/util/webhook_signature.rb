@@ -23,7 +23,11 @@ module Attio
           expected_signature = calculate_signature(payload, timestamp, secret)
 
           # Constant-time comparison to prevent timing attacks
-          secure_compare(signature, expected_signature)
+          unless secure_compare(signature, expected_signature)
+            raise SignatureVerificationError, "Invalid signature"
+          end
+          
+          true
         rescue => e
           raise SignatureVerificationError, "Webhook signature verification failed: #{e.message}"
         end
@@ -141,12 +145,15 @@ module Attio
           case request
           when Hash
             request[:headers] || request["headers"] || {}
-          when defined?(Rack::Request) && Rack::Request
-            request.env.select { |k, _| k.start_with?("HTTP_") }.transform_keys { |k| k.sub(/^HTTP_/, "").downcase }
-          when defined?(ActionDispatch::Request) && ActionDispatch::Request
-            request.headers.to_h
           else
-            raise ArgumentError, "Unsupported request type: #{request.class}"
+            if defined?(Rack::Request) && request.is_a?(Rack::Request)
+              request.env.select { |k, _| k.start_with?("HTTP_") }.transform_keys { |k| k.sub(/^HTTP_/, "").downcase.tr("_", "-") }
+            elsif defined?(ActionDispatch::Request) && request.is_a?(ActionDispatch::Request)
+              # Support Rails apps IF they're using this gem - we don't require Rails
+              request.headers.to_h
+            else
+              raise ArgumentError, "Unsupported request type: #{request.class}"
+            end
           end
         end
 
@@ -154,13 +161,16 @@ module Attio
           case request
           when Hash
             request[:body] || request["body"] || ""
-          when defined?(Rack::Request) && Rack::Request
-            request.body.rewind
-            request.body.read
-          when defined?(ActionDispatch::Request) && ActionDispatch::Request
-            request.raw_post
           else
-            raise ArgumentError, "Unsupported request type: #{request.class}"
+            if defined?(Rack::Request) && request.is_a?(Rack::Request)
+              request.body.rewind
+              request.body.read
+            elsif defined?(ActionDispatch::Request) && request.is_a?(ActionDispatch::Request)
+              # Support Rails apps IF they're using this gem - we don't require Rails
+              request.raw_post
+            else
+              raise ArgumentError, "Unsupported request type: #{request.class}"
+            end
           end
         end
       end
