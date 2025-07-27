@@ -89,7 +89,7 @@ Attio.configure do |config|
   
   # Optional
   config.api_base = "https://api.attio.com" # Default
-  config.api_version = "v1" # Default
+  config.api_version = "v2" # Default
   config.timeout = 30 # Request timeout in seconds
   config.max_retries = 3 # Number of retries for failed requests
   config.debug = false # Enable debug logging
@@ -301,8 +301,8 @@ entries.each do |entry|
   puts entry.record_id
 end
 
-# Remove from list
-list.remove_record("person_id")
+# Remove from list (requires entry_id, not record_id)
+list.remove_record("entry_id")
 
 # Delete list
 list.destroy

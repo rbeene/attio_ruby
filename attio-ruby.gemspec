@@ -5,8 +5,8 @@ require_relative "lib/attio/version"
 Gem::Specification.new do |spec|
   spec.name = "attio-ruby"
   spec.version = Attio::VERSION
-  spec.authors = ["Attio Team"]
-  spec.email = ["support@attio.com"]
+  spec.authors = ["Your Name"]
+  spec.email = ["your.email@example.com"]
 
   spec.summary = "Ruby client library for the Attio API"
   spec.description = "A comprehensive Ruby client library for the Attio CRM API with OAuth support, type safety, and extensive test coverage"
