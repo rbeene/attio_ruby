@@ -149,7 +149,7 @@ token = oauth_client.exchange_code_for_token(code: params[:code])
 
 # Use the token
 Attio.configure do |config|
-  config.api_key = token.access_token
+  config.api_key = token.access_token  # Access token from the exchange_code_for_token response
 end
 ```
 
@@ -198,7 +198,7 @@ company = Attio::Record.create(
     industry: "Technology",
     employees: [{ 
       target_object: "people", 
-      target_record: person.id 
+      target_record: "rec_789def012"  # Replace with actual person record ID
     }]
   }
 )
@@ -210,7 +210,7 @@ company = Attio::Record.create(
 # Get a specific record
 person = Attio::Record.retrieve(
   object: "people",
-  record_id: "person_id"
+  record_id: "rec_456def789"  # Replace with actual record ID
 )
 
 # Access attributes
@@ -229,7 +229,7 @@ person.save
 # Or update directly
 Attio::Record.update(
   object: "people",
-  record_id: person.id,
+  record_id: "rec_456def789",  # Replace with actual record ID
   values: { job_title: "CTO" }
 )
 ```
@@ -277,7 +277,7 @@ end
 person.destroy
 
 # Or delete by ID
-Attio::Record.delete(object: "people", record_id: "person_id")
+Attio::Record.delete(object: "people", record_id: "rec_123abc456")  # Replace with actual record ID
 ```
 
 ### Lists and List Entries
@@ -292,7 +292,7 @@ list = Attio::List.create(
 )
 
 # Add records to a list
-entry = list.add_record("person_id")
+entry = list.add_record("rec_789def012")  # Replace with actual record ID
 
 # List entries
 entries = list.entries
@@ -301,7 +301,7 @@ entries.each do |entry|
 end
 
 # Remove from list (requires entry_id, not record_id)
-list.remove_record("entry_id")
+list.remove_record("ent_456ghi789")  # Replace with actual list entry ID
 
 # Delete list
 list.destroy
@@ -315,7 +315,7 @@ Add notes to records to track interactions and important information.
 # Create a note
 note = Attio::Note.create(
   parent_object: "people",
-  parent_record_id: person.id,
+  parent_record_id: "rec_123abc456",  # Replace with actual record ID
   content: "Had a great meeting about the new project.",
   format: "plaintext" # or "markdown"
 )
@@ -323,7 +323,7 @@ note = Attio::Note.create(
 # List notes for a record
 notes = Attio::Note.list(
   parent_object: "people",
-  parent_record_id: person.id
+  parent_record_id: "rec_123abc456"  # Replace with actual record ID
 )
 
 # Notes are immutable - create a new note instead of updating
@@ -390,14 +390,14 @@ token = oauth.exchange_code_for_token(
 )
 
 # Token refresh
-new_token = oauth.refresh_token(token.refresh_token)
+new_token = oauth.refresh_token("rtok_xyz789ghi012")  # Replace with actual refresh token
 
 # Token introspection
-info = oauth.introspect_token(token.access_token)
+info = oauth.introspect_token("tok_abc123def456")  # Replace with actual access token
 puts info[:active] # => true
 
 # Token revocation
-oauth.revoke_token(token.access_token)
+oauth.revoke_token("tok_abc123def456")  # Replace with actual access token
 ```
 
 
