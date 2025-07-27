@@ -20,9 +20,6 @@ A Ruby SDK for the [Attio API](https://attio.com/docs). This gem provides a simp
   - [Webhooks](#webhooks)
 - [Advanced Features](#advanced-features)
   - [OAuth 2.0](#oauth-20)
-  - [Service Classes](#service-classes)
-  - [Batch Operations](#batch-operations)
-  - [Caching](#caching)
   - [Error Handling](#error-handling)
 - [Examples](#examples)
 - [Testing](#testing)
@@ -259,10 +256,12 @@ executives = Attio::Record.list(
 )
 
 # Pagination
-people.each_page do |page|
+page = people
+while page.has_more?
   page.each do |person|
     puts person[:name]
   end
+  page = page.next_page
 end
 
 # Auto-pagination
@@ -327,9 +326,8 @@ notes = Attio::Note.list(
   parent_record_id: person.id
 )
 
-# Update a note
-note.content = "Updated meeting notes"
-note.save
+# Notes are immutable - create a new note instead of updating
+# To "update" a note, you would delete the old one and create a new one
 
 # Delete a note
 note.destroy
@@ -351,17 +349,18 @@ webhook = Attio::Webhook.create(
 webhooks = Attio::Webhook.list
 
 # Update webhook
-webhook.active = false
+webhook[:active] = false
 webhook.save
 
 # Delete webhook
 webhook.destroy
 
 # Verify webhook signatures
-verifier = Attio::Webhook::SignatureVerifier.new(ENV['WEBHOOK_SECRET'])
-if verifier.verify(request.body.read, request.headers['Attio-Signature'])
-  # Process webhook
-end
+Attio::Util::WebhookSignature.verify!(
+  payload: request.body.read,
+  signature: request.headers['Attio-Signature'],
+  secret: ENV['WEBHOOK_SECRET']
+)
 ```
 
 ## Advanced Features
@@ -401,145 +400,6 @@ puts info[:active] # => true
 oauth.revoke_token(token.access_token)
 ```
 
-### Service Classes
-
-Service classes provide high-level business logic and common patterns.
-
-#### PersonService
-
-```ruby
-service = Attio::Services::PersonService.new
-
-# Find or create by email
-person = service.find_or_create_by_email(
-  "john@example.com",
-  defaults: {
-    name: "John Doe",
-    job_title: "Engineer"
-  }
-)
-
-# Search by various criteria
-people = service.search_by_name("John")
-people = service.search_by_company("company_id")
-people = service.search_by_email_domain("example.com")
-
-# Merge duplicate records
-service.merge("primary_person_id", ["duplicate_id_1", "duplicate_id_2"])
-
-# Bulk operations with transactions
-service.transaction do
-  service.create_many([
-    { name: "Person 1", email_addresses: "p1@example.com" },
-    { name: "Person 2", email_addresses: "p2@example.com" }
-  ])
-end
-```
-
-#### CompanyService
-
-```ruby
-service = Attio::Services::CompanyService.new
-
-# Find or create by domain
-company = service.find_or_create_by_domain(
-  "acme.com",
-  defaults: {
-    name: "Acme Corp",
-    industry: "Technology"
-  }
-)
-
-# Enrich company data
-enriched = service.enrich_from_domain("example.com")
-
-# Find related people
-employees = service.find_employees("company_id")
-```
-
-### Batch Operations
-
-Efficiently process large amounts of data:
-
-```ruby
-batch = Attio::Services::BatchService.new(
-  batch_size: 50,
-  parallel: true,
-  max_threads: 4,
-  on_progress: ->(progress) {
-    puts "Processed #{progress[:completed]}/#{progress[:total]}"
-  },
-  on_error: ->(error, item) {
-    puts "Error: #{error.message}"
-  }
-)
-
-# Batch create
-results = batch.create_records(
-  "people" => [
-    { values: { name: "Person 1", email_addresses: "p1@example.com" } },
-    { values: { name: "Person 2", email_addresses: "p2@example.com" } }
-  ],
-  "companies" => [
-    { values: { name: "Company 1", domains: "c1.com" } }
-  ]
-)
-
-puts "Created: #{results[:success].size}"
-puts "Failed: #{results[:failed].size}"
-
-# Batch update
-batch.update_records(
-  "people" => [
-    { record_id: "id1", values: { job_title: "CEO" } },
-    { record_id: "id2", values: { job_title: "CTO" } }
-  ]
-)
-
-# Batch delete
-batch.delete_records(
-  "people" => ["id1", "id2", "id3"]
-)
-
-# Batch upsert
-batch.upsert_records(
-  "people" => [
-    { 
-      matching_attribute: "email_addresses",
-      values: { 
-        name: "John Doe", 
-        email_addresses: "john@example.com" 
-      }
-    }
-  ]
-)
-```
-
-### Caching
-
-Improve performance with built-in caching:
-
-```ruby
-# Memory cache (default)
-cache = Attio::Util::Cache::Memory.new(ttl: 300) # 5 minutes
-
-# Redis cache
-require 'redis'
-cache = Attio::Util::Cache::Redis.new(
-  client: Redis.new,
-  ttl: 3600, # 1 hour
-  namespace: "attio"
-)
-
-# Use with service classes
-service = Attio::Services::PersonService.new(cache: cache)
-
-# First call hits API
-person = service.find_by_email("john@example.com")
-
-# Subsequent calls use cache
-person = service.find_by_email("john@example.com") # From cache
-```
 
 ### Error Handling
 
@@ -551,19 +411,20 @@ begin
     object: "people",
     values: { email_addresses: "invalid-email" }
   )
-rescue Attio::Errors::InvalidRequestError => e
+rescue Attio::InvalidRequestError => e
   puts "Validation error: #{e.message}"
-  puts "Field errors: #{e.json_body['errors']}"
-rescue Attio::Errors::AuthenticationError => e
+  puts "HTTP status: #{e.code}"
+  puts "Request ID: #{e.request_id}"
+rescue Attio::AuthenticationError => e
   puts "Auth failed: #{e.message}"
   puts "Request ID: #{e.request_id}"
-rescue Attio::Errors::RateLimitError => e
-  puts "Rate limited. Retry after: #{e.retry_after}"
-rescue Attio::Errors::ConnectionError => e
+rescue Attio::RateLimitError => e
+  puts "Rate limited: #{e.message}"
+rescue Attio::ConnectionError => e
   puts "Network error: #{e.message}"
-rescue Attio::Errors::APIError => e
+rescue Attio::Error => e
   puts "API error: #{e.message}"
-  puts "HTTP status: #{e.http_status}"
+  puts "HTTP status: #{e.code}"
   puts "Request ID: #{e.request_id}"
 end
 ```
@@ -608,8 +469,6 @@ The gem is optimized for performance:
 - Connection pooling for HTTP keep-alive
 - Automatic retry with exponential backoff
 - Efficient pagination with auto-paging
-- Batch operations for bulk processing
-- Optional caching layer
 - Thread-safe operations
 
 Run benchmarks:
