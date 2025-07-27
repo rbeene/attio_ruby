@@ -26,7 +26,7 @@ module Attio
           unless secure_compare(signature, expected_signature)
             raise SignatureVerificationError, "Invalid signature"
           end
-          
+
           true
         rescue => e
           raise SignatureVerificationError, "Webhook signature verification failed: #{e.message}"

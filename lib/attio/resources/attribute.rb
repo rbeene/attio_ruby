@@ -78,7 +78,7 @@ module Attio
       raise InvalidRequestError, "Cannot archive an attribute without an ID" unless persisted?
 
       response = self.class.send(:execute_request, :POST, "#{resource_path}/archive", {}, opts)
-      response_data = response.is_a?(Hash) && response["data"] ? response["data"] : response
+      response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]
       @archived_at = parse_timestamp(response_data[:archived_at] || response_data["archived_at"])
@@ -90,7 +90,7 @@ module Attio
       raise InvalidRequestError, "Cannot unarchive an attribute without an ID" unless persisted?
 
       response = self.class.send(:execute_request, :POST, "#{resource_path}/unarchive", {}, opts)
-      response_data = response.is_a?(Hash) && response["data"] ? response["data"] : response
+      response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]
       @archived_at = parse_timestamp(response_data[:archived_at] || response_data["archived_at"])
@@ -164,7 +164,7 @@ module Attio
           response = execute_request(:GET, "#{resource_path}/#{attribute_id}", {}, opts)
         end
 
-        new(response.is_a?(Hash) && response["data"] ? response["data"] : response, opts)
+        new((response.is_a?(Hash) && response["data"]) ? response["data"] : response, opts)
       end
 
       # Override update to handle object-scoped attributes
@@ -184,7 +184,7 @@ module Attio
           response = execute_request(:PATCH, "#{resource_path}/#{attribute_id}", prepared_params, opts)
         end
 
-        new(response.is_a?(Hash) && response["data"] ? response["data"] : response, opts)
+        new((response.is_a?(Hash) && response["data"]) ? response["data"] : response, opts)
       end
 
       # Override create to handle validation and object parameter
@@ -252,7 +252,7 @@ module Attio
 
         prepared_params = prepare_params_for_create(params)
         response = execute_request(:POST, "objects/#{object}/attributes", prepared_params, opts)
-        new(response.is_a?(Hash) && response["data"] ? response["data"] : response, opts)
+        new((response.is_a?(Hash) && response["data"]) ? response["data"] : response, opts)
       end
 
       # List attributes for a specific object

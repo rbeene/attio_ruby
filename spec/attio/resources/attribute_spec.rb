@@ -95,14 +95,14 @@ RSpec.describe Attio::Attribute do
     end
 
     context "with archived attribute" do
+      subject { described_class.new(archived_data) }
+
       let(:archived_data) do
         attribute_data.merge(
           "is_archived" => true,
           "archived_at" => "2024-01-15T10:30:00Z"
         )
       end
-
-      subject { described_class.new(archived_data) }
 
       it "sets archived fields correctly" do
         expect(subject.is_archived).to be true
@@ -330,8 +330,7 @@ RSpec.describe Attio::Attribute do
 
       context "when changed" do
         before do
-          allow(attribute).to receive(:changed?).and_return(true)
-          allow(attribute).to receive(:changed_attributes).and_return({name: "Updated Name"})
+          allow(attribute).to receive_messages(changed?: true, changed_attributes: {name: "Updated Name"})
         end
 
         it "calls update with the ID and changed attributes" do

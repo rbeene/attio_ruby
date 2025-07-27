@@ -181,7 +181,7 @@ RSpec.describe Attio::Record do
   describe ".retrieve" do
     it "retrieves a specific record" do
       record_id = "a9ccd85f-921f-49c1-8b0a-80b2ae723056"
-      
+
       retrieve_response = {
         "data" => {
           "id" => {
@@ -217,7 +217,7 @@ RSpec.describe Attio::Record do
 
   describe ".update" do
     let(:record_id) { "a9ccd85f-921f-49c1-8b0a-80b2ae723056" }
-    
+
     let(:updated_person_values) do
       {name: {first_name: "Updated", last_name: "UpdatedVCR", full_name: "Updated UpdatedVCR"}}
     end

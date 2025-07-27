@@ -28,7 +28,7 @@ Each resource section below links to the corresponding API responses in our docu
 - **Records**: [API Responses](docs/api_responses/records.md) ✅ List (Companies/People), Create
 - **Webhooks**: [API Responses](docs/api_responses/webhooks.md) ✅ List, Create
 - **Workspace Members**: [API Responses](docs/api_responses/workspace_members.md) ✅ List, Retrieve
-- **Notes**: [API Responses](docs/api_responses/notes.md) ✅ List
+- **Notes**: [API Responses](docs/api_responses/notes.md) ✅ Create
 - **Errors**: [API Responses](docs/api_responses/errors.md) ✅ 404, 422, 400, 401
 - **Pagination**: [API Responses](docs/api_responses/pagination.md) ✅ First Page
 
@@ -199,10 +199,10 @@ stub_request(:get, "https://api.attio.com/v2/objects/people/records")
 ### 7. Notes (`spec/attio/resources/note_spec.rb`)
 
 **Documented Operations:**
-- `GET /v2/notes` - [View Response](docs/api_responses/notes.md#list-notes)
+- `POST /v2/notes` - [View Response](docs/api_responses/notes.md#create-note)
 
 **Missing Operations:**
-- `POST /v2/notes` - Create
+- `GET /v2/notes` - List
 - `GET /v2/notes/{note_id}` - Retrieve
 - `PATCH /v2/notes/{note_id}` - Update
 - `DELETE /v2/notes/{note_id}` - Delete

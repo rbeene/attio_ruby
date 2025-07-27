@@ -19,7 +19,7 @@ RSpec.describe Attio::Util::WebhookSignature do
       it "re-raises as SignatureVerificationError" do
         # Force an ArgumentError to be caught and re-raised
         allow(described_class).to receive(:validate_inputs!).and_raise(ArgumentError, "Test error")
-        
+
         expect {
           described_class.verify!(
             payload: payload,
@@ -44,7 +44,7 @@ RSpec.describe Attio::Util::WebhookSignature do
       end
 
       it "accepts hash payload and converts to JSON" do
-        hash_payload = { event: "record.created", data: { id: "123" } }
+        hash_payload = {event: "record.created", data: {id: "123"}}
         json_payload = JSON.generate(hash_payload)
         signed_payload = "#{timestamp}.#{json_payload}"
         hmac = OpenSSL::HMAC.hexdigest("SHA256", secret, signed_payload)
@@ -257,7 +257,7 @@ RSpec.describe Attio::Util::WebhookSignature do
     end
 
     it "calculates correct signature for hash payload" do
-      hash_payload = { event: "test", data: { id: 123 } }
+      hash_payload = {event: "test", data: {id: 123}}
       signature = described_class.calculate_signature(hash_payload, timestamp, secret)
       json_payload = JSON.generate(hash_payload)
       expected = "v1=#{OpenSSL::HMAC.hexdigest("SHA256", secret, "#{timestamp}.#{json_payload}")}"
@@ -272,7 +272,7 @@ RSpec.describe Attio::Util::WebhookSignature do
           "x-attio-signature" => "v1=abc123",
           "x-attio-timestamp" => "1234567890"
         }
-        
+
         result = described_class.extract_from_headers(headers)
         expect(result[:signature]).to eq("v1=abc123")
         expect(result[:timestamp]).to eq("1234567890")
@@ -283,7 +283,7 @@ RSpec.describe Attio::Util::WebhookSignature do
           "X-ATTIO-SIGNATURE" => "v1=abc123",
           "X-ATTIO-TIMESTAMP" => "1234567890"
         }
-        
+
         result = described_class.extract_from_headers(headers)
         expect(result[:signature]).to eq("v1=abc123")
         expect(result[:timestamp]).to eq("1234567890")
@@ -294,7 +294,7 @@ RSpec.describe Attio::Util::WebhookSignature do
           "X_ATTIO_SIGNATURE" => "v1=abc123",
           "X_ATTIO_TIMESTAMP" => "1234567890"
         }
-        
+
         result = described_class.extract_from_headers(headers)
         expect(result[:signature]).to eq("v1=abc123")
         expect(result[:timestamp]).to eq("1234567890")
@@ -303,16 +303,16 @@ RSpec.describe Attio::Util::WebhookSignature do
 
     context "with missing headers" do
       it "raises error for missing signature" do
-        headers = { "x-attio-timestamp" => "1234567890" }
-        
+        headers = {"x-attio-timestamp" => "1234567890"}
+
         expect {
           described_class.extract_from_headers(headers)
         }.to raise_error(Attio::Util::WebhookSignature::SignatureVerificationError, /Missing signature header/)
       end
 
       it "raises error for missing timestamp" do
-        headers = { "x-attio-signature" => "v1=abc123" }
-        
+        headers = {"x-attio-signature" => "v1=abc123"}
+
         expect {
           described_class.extract_from_headers(headers)
         }.to raise_error(Attio::Util::WebhookSignature::SignatureVerificationError, /Missing timestamp header/)
@@ -351,35 +351,35 @@ RSpec.describe Attio::Util::WebhookSignature do
 
       context "with hash request" do
         it "verifies valid request" do
-          request = { headers: headers, body: payload }
+          request = {headers: headers, body: payload}
           expect(handler.verify_request(request)).to be true
         end
 
         it "raises error for invalid signature" do
-          request = { 
+          request = {
             headers: headers.merge("x-attio-signature" => "v1=invalid"),
             body: payload
           }
-          
+
           expect {
             handler.verify_request(request)
           }.to raise_error(Attio::Util::WebhookSignature::SignatureVerificationError)
         end
 
         it "handles string keys" do
-          request = { "headers" => headers, "body" => payload }
+          request = {"headers" => headers, "body" => payload}
           expect(handler.verify_request(request)).to be true
         end
 
         it "handles missing headers hash" do
-          request = { body: payload }
+          request = {body: payload}
           expect {
             handler.verify_request(request)
           }.to raise_error(Attio::Util::WebhookSignature::SignatureVerificationError)
         end
-        
+
         it "handles string headers key" do
-          request = { "headers" => headers, "body" => payload }
+          request = {"headers" => headers, "body" => payload}
           expect(handler.verify_request(request)).to be true
         end
       end
@@ -401,14 +401,13 @@ RSpec.describe Attio::Util::WebhookSignature do
               "x-attio-signature" => valid_signature,
               "x-attio-timestamp" => timestamp
             },
-            raw_post: payload
-          )
-          
+            raw_post: payload)
+
           # Temporarily stub the constant to simulate Rails environment
           stub_const("ActionDispatch::Request", Class.new)
           allow(mock_request).to receive(:is_a?).with(Hash).and_return(false)
           allow(mock_request).to receive(:is_a?).with(ActionDispatch::Request).and_return(true)
-          
+
           expect(handler.verify_request(mock_request)).to be true
         end
       end
@@ -421,17 +420,16 @@ RSpec.describe Attio::Util::WebhookSignature do
             env: {
               "HTTP_X_ATTIO_SIGNATURE" => valid_signature,
               "HTTP_X_ATTIO_TIMESTAMP" => timestamp
-            }
-          )
-          
+            })
+
           # Mock the type checks
           allow(rack_request).to receive(:is_a?).and_return(false)
           allow(rack_request).to receive(:is_a?).with(Hash).and_return(false)
-          
+
           # Stub Rack::Request to make defined? work
           stub_const("Rack::Request", Class.new)
           allow(rack_request).to receive(:is_a?).with(Rack::Request).and_return(true)
-          
+
           expect(handler.verify_request(rack_request)).to be true
         end
       end
@@ -449,21 +447,21 @@ RSpec.describe Attio::Util::WebhookSignature do
       end
 
       it "parses and returns JSON with symbols" do
-        request = { headers: headers, body: json_payload }
+        request = {headers: headers, body: json_payload}
         result = handler.parse_and_verify(request)
-        
-        expect(result).to eq({ event: "test", data: { id: 123 } })
+
+        expect(result).to eq({event: "test", data: {id: 123}})
       end
 
       it "raises error for invalid JSON" do
-        request = { headers: headers, body: "invalid json {" }
-        
+        request = {headers: headers, body: "invalid json {"}
+
         # Need to create valid signature for invalid JSON
         invalid_json = "invalid json {"
         signed_payload = "#{timestamp}.#{invalid_json}"
         hmac = OpenSSL::HMAC.hexdigest("SHA256", secret, signed_payload)
         request[:headers]["x-attio-signature"] = "v1=#{hmac}"
-        
+
         expect {
           handler.parse_and_verify(request)
         }.to raise_error(Attio::Util::WebhookSignature::SignatureVerificationError, /Invalid JSON payload/)
@@ -474,7 +472,7 @@ RSpec.describe Attio::Util::WebhookSignature do
           headers: headers.merge("x-attio-signature" => "v1=invalid"),
           body: json_payload
         }
-        
+
         expect {
           handler.parse_and_verify(request)
         }.to raise_error(Attio::Util::WebhookSignature::SignatureVerificationError)

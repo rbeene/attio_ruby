@@ -239,7 +239,7 @@ RSpec.describe Attio::OAuth::ScopeValidator do
     it "groups scopes by resource type" do
       scopes = ["record:read", "record:write", "object:read", "user:read"]
       result = described_class.group_by_resource(scopes)
-      
+
       expect(result).to eq(
         "record" => ["record:read", "record:write"],
         "object" => ["object:read"],
