@@ -2,7 +2,7 @@
 
 RSpec.describe Attio do
   before do
-    described_class.configure do |config|
+    Attio.configure do |config|
       config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
     end
   end

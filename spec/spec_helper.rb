@@ -12,7 +12,7 @@ Dir[File.join(__dir__, "support", "**", "*.rb")].sort.each { |f| require f }
 # Configure VCR
 VCR.configure do |config|
   config.cassette_library_dir = "spec/fixtures/vcr_cassettes"
-  config.hook_into :faraday
+  config.hook_into :webmock
   config.configure_rspec_metadata!
 
   # Filter sensitive data
