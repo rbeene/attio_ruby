@@ -74,24 +74,33 @@ RSpec.describe Attio::Attribute do
   describe "#initialize" do
     subject(:attribute_instance) { described_class.new(attribute_data) }
 
-    it "sets all attributes correctly" do
+    it "sets identification attributes correctly" do
       expect(attribute_instance.id).to eq({"attribute_id" => attribute_id, "object_id" => object_id})
       expect(attribute_instance.api_slug).to eq("test_attribute")
+      expect(attribute_instance.attio_object_id).to eq(object_id)
+      expect(attribute_instance.object_api_slug).to eq("companies")
+    end
+
+    it "sets descriptive attributes correctly" do
       expect(attribute_instance.name).to eq("Test Attribute")
+      expect(attribute_instance.title).to eq("Test Attribute")
       expect(attribute_instance.description).to eq("A test attribute")
       expect(attribute_instance.type).to eq("text")
+    end
+
+    it "sets configuration attributes correctly" do
       expect(attribute_instance.is_required).to be false
       expect(attribute_instance.is_unique).to be false
       expect(attribute_instance.is_default_value_enabled).to be true
       expect(attribute_instance.default_value).to eq("default")
       expect(attribute_instance.options).to be_nil
-      expect(attribute_instance.attio_object_id).to eq(object_id)
-      expect(attribute_instance.object_api_slug).to eq("companies")
+    end
+
+    it "sets metadata attributes correctly" do
       expect(attribute_instance.parent_object_id).to be_nil
       expect(attribute_instance.created_by_actor).to eq("type" => "user", "id" => "user_123")
       expect(attribute_instance.is_archived).to be false
       expect(attribute_instance.archived_at).to be_nil
-      expect(attribute_instance.title).to eq("Test Attribute")
     end
 
     context "with archived attribute" do
@@ -253,20 +262,46 @@ RSpec.describe Attio::Attribute do
   describe "#to_h" do
     let(:attribute) { described_class.new(attribute_data) }
 
-    it "returns a hash representation of the attribute" do
+    it "includes all expected keys" do
       hash = attribute.to_h
+      # Keys that should always be present
+      required_keys = %i[
+        api_slug name description type is_required is_unique
+        is_default_value_enabled default_value object_id
+        object_api_slug created_by_actor is_archived
+      ]
+      expect(hash.keys).to include(*required_keys)
+      
+      # Optional keys that may be removed by compact
+      expect(hash).to have_key(:id) # ID comes from super
+      expect(hash).to have_key(:title) # title comes from super
+    end
 
+    it "returns correct identification values" do
+      hash = attribute.to_h
       expect(hash[:api_slug]).to eq("test_attribute")
       expect(hash[:name]).to eq("Test Attribute")
-      expect(hash[:description]).to eq("A test attribute")
+      expect(hash[:object_id]).to eq(object_id)
+      expect(hash[:object_api_slug]).to eq("companies")
+    end
+
+    it "returns correct configuration values" do
+      hash = attribute.to_h
       expect(hash[:type]).to eq("text")
       expect(hash[:is_required]).to be false
       expect(hash[:is_unique]).to be false
       expect(hash[:is_default_value_enabled]).to be true
       expect(hash[:default_value]).to eq("default")
+    end
+
+    it "returns correct description and options" do
+      hash = attribute.to_h
+      expect(hash[:description]).to eq("A test attribute")
       expect(hash[:options]).to be_nil
-      expect(hash[:object_id]).to eq(object_id)
-      expect(hash[:object_api_slug]).to eq("companies")
+    end
+
+    it "returns correct metadata values" do
+      hash = attribute.to_h
       expect(hash[:parent_object_id]).to be_nil
       expect(hash[:created_by_actor]).to eq("type" => "user", "id" => "user_123")
       expect(hash[:is_archived]).to be false
@@ -296,13 +331,17 @@ RSpec.describe Attio::Attribute do
       it "returns the correct path" do
         expect(attribute.resource_path).to eq("attributes/#{attribute_id}")
       end
+    end
 
-      context "with simple ID" do
-        let(:simple_attribute) { described_class.new(attribute_data.merge("id" => "simple_123")) }
+    context "when persisted with simple ID" do
+      let(:simple_attribute) { described_class.new(attribute_data.merge("id" => "simple_123")) }
 
-        it "returns the correct path" do
-          expect(simple_attribute.resource_path).to eq("attributes/simple_123")
-        end
+      before do
+        allow(simple_attribute).to receive(:persisted?).and_return(true)
+      end
+
+      it "returns the correct path" do
+        expect(simple_attribute.resource_path).to eq("attributes/simple_123")
       end
     end
 
@@ -323,37 +362,33 @@ RSpec.describe Attio::Attribute do
   describe "#save" do
     let(:attribute) { described_class.new(attribute_data) }
 
-    context "when persisted" do
+    context "when persisted and changed" do
       before do
         allow(attribute).to receive(:persisted?).and_return(true)
+        allow(attribute).to receive_messages(changed?: true, changed_attributes: {name: "Updated Name"})
       end
 
-      context "when changed" do
-        before do
-          allow(attribute).to receive_messages(changed?: true, changed_attributes: {name: "Updated Name"})
-        end
+      it "calls update with the ID and changed attributes" do
+        allow(described_class).to receive(:update).with(
+          attribute.id,
+          {name: "Updated Name"}
+        ).and_return(attribute)
 
-        it "calls update with the ID and changed attributes" do
-          allow(described_class).to receive(:update).with(
-            attribute.id,
-            {name: "Updated Name"}
-          ).and_return(attribute)
+        result = attribute.save
+        expect(result).to eq(attribute)
+      end
+    end
 
-          result = attribute.save
-          expect(result).to eq(attribute)
-        end
+    context "when persisted but not changed" do
+      before do
+        allow(attribute).to receive(:persisted?).and_return(true)
+        allow(attribute).to receive(:changed?).and_return(false)
       end
 
-      context "when not changed" do
-        before do
-          allow(attribute).to receive(:changed?).and_return(false)
-        end
-
-        it "returns self without calling update" do
-          expect(described_class).not_to receive(:update)
-          result = attribute.save
-          expect(result).to eq(attribute)
-        end
+      it "returns self without calling update" do
+        expect(described_class).not_to receive(:update)
+        result = attribute.save
+        expect(result).to eq(attribute)
       end
     end
 

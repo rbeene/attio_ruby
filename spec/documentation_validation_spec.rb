@@ -14,9 +14,15 @@ RSpec.describe "README documentation validation" do
 
   describe "Quick Start examples" do
     it "validates configuration syntax" do
+      # Reset configuration to test reconfiguration
+      Attio.instance_variable_set(:@config, nil)
+
+      # Ensure ENV is not returning empty string
+      api_key = ENV["ATTIO_API_KEY"].to_s.empty? ? "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf" : ENV["ATTIO_API_KEY"]
+
       expect {
         Attio.configure do |config|
-          config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+          config.api_key = api_key
         end
       }.not_to raise_error
     end

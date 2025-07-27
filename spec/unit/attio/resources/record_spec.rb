@@ -3,7 +3,6 @@
 require "spec_helper"
 
 RSpec.describe Attio::Record do
-
   describe ".list" do
     let(:list_response) do
       {
