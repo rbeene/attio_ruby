@@ -18,7 +18,7 @@ First off, thank you for considering contributing to the Attio Ruby SDK! It's pe
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to support@attio.com.
+This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code.
 
 ## Getting Started
 
@@ -119,15 +119,15 @@ Describe the tests that you ran to verify your changes.
 
 2. **Clone and setup the repository**
    ```bash
-   git clone https://github.com/yourusername/attio-ruby.git
-   cd attio-ruby
+   git clone https://github.com/rbeene/attio_ruby.git
+   cd attio_ruby
    bundle install
    ```
 
 3. **Set up environment variables**
    ```bash
-   cp .env.example .env
-   # Edit .env with your test API credentials
+   # Create a .env file with your test API credentials
+   echo "ATTIO_API_KEY=your_test_api_key" > .env
    ```
 
 4. **Run tests to verify setup**
@@ -287,7 +287,7 @@ Update the README when adding:
    ```ruby
    # lib/attio/version.rb
    module Attio
-     VERSION = "1.1.0"  # Follow semantic versioning
+     VERSION = "0.2.0"  # Follow semantic versioning
    end
    ```
 
@@ -299,20 +299,20 @@ Update the README when adding:
 3. **Create release commit**
    ```bash
    git add -A
-   git commit -m "Release version 1.1.0"
+   git commit -m "Release version 0.2.0"
    git push origin main
    ```
 
 4. **Create and push tag**
    ```bash
-   git tag -a v1.1.0 -m "Release version 1.1.0"
-   git push origin v1.1.0
+   git tag -a v0.2.0 -m "Release version 0.2.0"
+   git push origin v0.2.0
    ```
 
 5. **Build and release gem**
    ```bash
    gem build attio-ruby.gemspec
-   gem push attio-ruby-1.1.0.gem
+   gem push attio-ruby-0.2.0.gem
    ```
 
 6. **Create GitHub release**
