@@ -187,7 +187,7 @@ RSpec.describe Attio::Error do
       it "creates generic Error for non-standard status" do
         response = {status: 999}
         error = Attio::ErrorFactory.from_response(response)
-        expect(error).to be_a(Attio::Error)
+        expect(error).to be_a(Attio::Error) # rubocop:disable RSpec/DescribedClass
         expect(error).not_to be_a(Attio::ClientError)
         expect(error).not_to be_a(Attio::ServerError)
       end
@@ -274,7 +274,7 @@ RSpec.describe Attio::Error do
   # Test inheritance hierarchy
   describe "error inheritance" do
     it "ClientError inherits from Error" do
-      expect(Attio::ClientError.new("test")).to be_a(Attio::Error)
+      expect(Attio::ClientError.new("test")).to be_a(Attio::Error) # rubocop:disable RSpec/DescribedClass
     end
 
     describe "client error inheritance" do
@@ -312,11 +312,11 @@ RSpec.describe Attio::Error do
     end
 
     it "ServerError inherits from Error" do
-      expect(Attio::ServerError.new("test")).to be_a(Attio::Error)
+      expect(Attio::ServerError.new("test")).to be_a(Attio::Error) # rubocop:disable RSpec/DescribedClass
     end
 
     it "ConnectionError inherits from Error" do
-      expect(Attio::ConnectionError.new("test")).to be_a(Attio::Error)
+      expect(Attio::ConnectionError.new("test")).to be_a(Attio::Error) # rubocop:disable RSpec/DescribedClass
     end
 
     it "specific connection errors inherit from ConnectionError" do
@@ -325,7 +325,7 @@ RSpec.describe Attio::Error do
     end
 
     it "ConfigurationError inherits from Error" do
-      expect(Attio::ConfigurationError.new("test")).to be_a(Attio::Error)
+      expect(Attio::ConfigurationError.new("test")).to be_a(Attio::Error) # rubocop:disable RSpec/DescribedClass
     end
   end
 end
