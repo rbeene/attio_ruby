@@ -271,7 +271,7 @@ RSpec.describe Attio::Attribute do
         object_api_slug created_by_actor is_archived
       ]
       expect(hash.keys).to include(*required_keys)
-      
+
       # Optional keys that may be removed by compact
       expect(hash).to have_key(:id) # ID comes from super
       expect(hash).to have_key(:title) # title comes from super

@@ -18,7 +18,13 @@ module Attio
       super
 
       normalized_attrs = normalize_attributes(attributes)
-      @attio_object_id = normalized_attrs[:object_id]
+      
+      # Extract object_id from nested ID if present
+      if @id.is_a?(Hash)
+        @attio_object_id = @id["object_id"] || @id[:object_id]
+      end
+      
+      @attio_object_id ||= normalized_attrs[:object_id]
       @object_api_slug = normalized_attrs[:object_api_slug]
 
       # Process values into attributes
@@ -179,8 +185,8 @@ module Attio
       end
 
       # Search records
-      def search(query, object:, **)
-        list({q: query}, object: object, **)
+      def search(query, object:, **opts)
+        list(object: object, q: query, **opts)
       end
 
       private
@@ -319,15 +325,19 @@ module Attio
     end
 
     def to_h
-      values = @attributes.except(:id, :created_at, :object_id, :object_api_slug)
+      values_hash = @attributes.except(:id, :created_at, :object_id, :object_api_slug, :values)
 
-      {
+      result = {
         id: id,
-        object_id: attio_object_id,
         object_api_slug: object_api_slug,
         created_at: created_at&.iso8601,
-        values: values
-      }.compact
+        values: values_hash
+      }
+      
+      # Add object_id if available
+      result[:object_id] = attio_object_id if attio_object_id
+      
+      result.compact
     end
 
     def inspect
