@@ -18,12 +18,12 @@ module Attio
       super
 
       normalized_attrs = normalize_attributes(attributes)
-      
+
       # Extract object_id from nested ID if present
       if @id.is_a?(Hash)
         @attio_object_id = @id["object_id"] || @id[:object_id]
       end
-      
+
       @attio_object_id ||= normalized_attrs[:object_id]
       @object_api_slug = normalized_attrs[:object_api_slug]
 
@@ -333,10 +333,10 @@ module Attio
         created_at: created_at&.iso8601,
         values: values_hash
       }
-      
+
       # Add object_id if available
       result[:object_id] = attio_object_id if attio_object_id
-      
+
       result.compact
     end
 
