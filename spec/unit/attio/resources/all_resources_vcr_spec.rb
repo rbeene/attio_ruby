@@ -56,10 +56,10 @@ RSpec.describe Attio do
     end
 
     it "creates a new list", :vcr do
-      VCR.use_cassette("list/create") do
+      VCR.use_cassette("list/create", vcr_options_for_create) do
         result = described_class.create({
           object: "people",
-          name: "VCR Test List"
+          name: unique_test_name("VCR Test List")
         })
         expect(result).to be_a(described_class)
         expect(result.persisted?).to be true
@@ -111,10 +111,10 @@ RSpec.describe Attio do
     end
 
     it "creates a new attribute", :vcr do
-      VCR.use_cassette("attribute/create") do
+      VCR.use_cassette("attribute/create", vcr_options_for_create) do
         result = described_class.create({
           object: "people",
-          name: "VCR Test Field",
+          name: unique_test_name("VCR Test Field"),
           type: "text",
           description: "A test field created by VCR"
         })
