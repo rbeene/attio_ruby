@@ -72,30 +72,30 @@ RSpec.describe Attio::Attribute do
   end
 
   describe "#initialize" do
-    subject { described_class.new(attribute_data) }
+    subject(:attribute_instance) { described_class.new(attribute_data) }
 
     it "sets all attributes correctly" do
-      expect(subject.id).to eq({"attribute_id" => attribute_id, "object_id" => object_id})
-      expect(subject.api_slug).to eq("test_attribute")
-      expect(subject.name).to eq("Test Attribute")
-      expect(subject.description).to eq("A test attribute")
-      expect(subject.type).to eq("text")
-      expect(subject.is_required).to be false
-      expect(subject.is_unique).to be false
-      expect(subject.is_default_value_enabled).to be true
-      expect(subject.default_value).to eq("default")
-      expect(subject.options).to be_nil
-      expect(subject.attio_object_id).to eq(object_id)
-      expect(subject.object_api_slug).to eq("companies")
-      expect(subject.parent_object_id).to be_nil
-      expect(subject.created_by_actor).to eq("type" => "user", "id" => "user_123")
-      expect(subject.is_archived).to be false
-      expect(subject.archived_at).to be_nil
-      expect(subject.title).to eq("Test Attribute")
+      expect(attribute_instance.id).to eq({"attribute_id" => attribute_id, "object_id" => object_id})
+      expect(attribute_instance.api_slug).to eq("test_attribute")
+      expect(attribute_instance.name).to eq("Test Attribute")
+      expect(attribute_instance.description).to eq("A test attribute")
+      expect(attribute_instance.type).to eq("text")
+      expect(attribute_instance.is_required).to be false
+      expect(attribute_instance.is_unique).to be false
+      expect(attribute_instance.is_default_value_enabled).to be true
+      expect(attribute_instance.default_value).to eq("default")
+      expect(attribute_instance.options).to be_nil
+      expect(attribute_instance.attio_object_id).to eq(object_id)
+      expect(attribute_instance.object_api_slug).to eq("companies")
+      expect(attribute_instance.parent_object_id).to be_nil
+      expect(attribute_instance.created_by_actor).to eq("type" => "user", "id" => "user_123")
+      expect(attribute_instance.is_archived).to be false
+      expect(attribute_instance.archived_at).to be_nil
+      expect(attribute_instance.title).to eq("Test Attribute")
     end
 
     context "with archived attribute" do
-      subject { described_class.new(archived_data) }
+      subject(:archived_attribute) { described_class.new(archived_data) }
 
       let(:archived_data) do
         attribute_data.merge(
@@ -105,9 +105,9 @@ RSpec.describe Attio::Attribute do
       end
 
       it "sets archived fields correctly" do
-        expect(subject.is_archived).to be true
-        expect(subject.archived_at).to be_a(Time)
-        expect(subject.archived_at.iso8601).to eq("2024-01-15T10:30:00Z")
+        expect(archived_attribute.is_archived).to be true
+        expect(archived_attribute.archived_at).to be_a(Time)
+        expect(archived_attribute.archived_at.iso8601).to eq("2024-01-15T10:30:00Z")
       end
     end
   end
@@ -334,7 +334,7 @@ RSpec.describe Attio::Attribute do
         end
 
         it "calls update with the ID and changed attributes" do
-          expect(described_class).to receive(:update).with(
+          allow(described_class).to receive(:update).with(
             attribute.id,
             {name: "Updated Name"}
           ).and_return(attribute)

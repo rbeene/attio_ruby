@@ -3,9 +3,6 @@
 require "spec_helper"
 
 RSpec.describe Attio::Record do
-  # Disable VCR for these WebMock tests
-  before { VCR.turn_off! }
-  after { VCR.turn_on! }
 
   describe ".list" do
     let(:list_response) do

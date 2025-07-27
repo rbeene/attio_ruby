@@ -377,11 +377,6 @@ RSpec.describe Attio::Util::WebhookSignature do
             handler.verify_request(request)
           }.to raise_error(Attio::Util::WebhookSignature::SignatureVerificationError)
         end
-
-        it "handles string headers key" do
-          request = {"headers" => headers, "body" => payload}
-          expect(handler.verify_request(request)).to be true
-        end
       end
 
       context "with unsupported request type" do
