@@ -9,14 +9,14 @@ module Attio
 
     def initialize(attributes = {}, opts = {})
       super
-      
+
       normalized_attrs = normalize_attributes(attributes)
-      
+
       # Extract specific entry attributes
       @parent_record_id = normalized_attrs[:parent_record_id]
       @parent_object = normalized_attrs[:parent_object]
       @entry_values = normalized_attrs[:entry_values] || {}
-      
+
       # Extract list_id from nested ID structure
       if normalized_attrs[:id].is_a?(Hash)
         @list_id = normalized_attrs[:id][:list_id]
@@ -31,7 +31,7 @@ module Attio
       # List entries for a list
       def list(list: nil, **params)
         validate_list_identifier!(list)
-        
+
         response = execute_request(:POST, "#{resource_path}/#{list}/entries/query", params, {})
         APIResource::ListObject.new(response, self, params.merge(list: list), params)
       end
@@ -75,7 +75,7 @@ module Attio
             entry_values: entry_values || {}
           }
         }
-        
+
         # Add mode parameter for append operations
         if mode == "append"
           request_params[:mode] = "append"

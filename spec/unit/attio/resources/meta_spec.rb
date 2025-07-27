@@ -31,51 +31,51 @@ RSpec.describe Attio::Meta do
     end
 
     before do
-      allow(Attio::Meta).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to /v2/self" do
-      expect(Attio::Meta).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "self",
         {},
         {}
       )
 
-      Attio::Meta.identify
+      described_class.identify
     end
 
     it "returns a Meta instance" do
-      result = Attio::Meta.identify
-      expect(result).to be_a(Attio::Meta)
+      result = described_class.identify
+      expect(result).to be_a(described_class)
     end
 
     it "accepts optional parameters" do
-      expect(Attio::Meta).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "self",
         {},
-        { api_key: "custom-key" }
+        {api_key: "custom-key"}
       )
 
-      Attio::Meta.identify(api_key: "custom-key")
+      described_class.identify(api_key: "custom-key")
     end
   end
 
   describe ".self" do
     it "is an alias for identify" do
-      expect(Attio::Meta.method(:self)).to eq(Attio::Meta.method(:identify))
+      expect(described_class.method(:self)).to eq(described_class.method(:identify))
     end
   end
 
   describe ".current" do
     it "is an alias for identify" do
-      expect(Attio::Meta.method(:current)).to eq(Attio::Meta.method(:identify))
+      expect(described_class.method(:current)).to eq(described_class.method(:identify))
     end
   end
 
   describe "instance methods" do
-    let(:meta) { Attio::Meta.new(meta_data) }
+    let(:meta) { described_class.new(meta_data) }
 
     describe "#workspace" do
       it "returns the workspace information" do
@@ -148,42 +148,42 @@ RSpec.describe Attio::Meta do
 
     describe "#has_scope?" do
       it "returns true for existing scopes" do
-        expect(meta.has_scope?("record:read")).to eq(true)
-        expect(meta.has_scope?("record:write")).to eq(true)
+        expect(meta.has_scope?("record:read")).to be(true)
+        expect(meta.has_scope?("record:write")).to be(true)
       end
 
       it "returns false for non-existing scopes" do
-        expect(meta.has_scope?("admin:write")).to eq(false)
+        expect(meta.has_scope?("admin:write")).to be(false)
       end
 
       it "handles symbol input" do
-        expect(meta.has_scope?(:record_read)).to eq(true)
+        expect(meta.has_scope?(:record_read)).to be(true)
       end
     end
 
     describe "#can_read?" do
       it "returns true when has read scopes" do
-        expect(meta.can_read?("record")).to eq(true)
+        expect(meta.can_read?("record")).to be(true)
       end
 
       it "returns false when missing read scopes" do
-        expect(meta.can_read?("admin")).to eq(false)
+        expect(meta.can_read?("admin")).to be(false)
       end
     end
 
     describe "#can_write?" do
       it "returns true when has write scopes" do
-        expect(meta.can_write?("record")).to eq(true)
+        expect(meta.can_write?("record")).to be(true)
       end
 
       it "returns false when missing write scopes" do
-        expect(meta.can_write?("list")).to eq(false)
+        expect(meta.can_write?("list")).to be(false)
       end
     end
 
     describe "#immutable?" do
       it "returns true since meta is read-only" do
-        expect(meta.immutable?).to eq(true)
+        expect(meta.immutable?).to be(true)
       end
     end
 

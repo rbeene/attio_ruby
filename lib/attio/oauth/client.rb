@@ -101,7 +101,7 @@ module Attio
         end
 
         response.success?
-      rescue => e
+      rescue
         # Token might already be revoked or other error
         false
       end
@@ -161,7 +161,7 @@ module Attio
       def make_token_request(params)
         conn = Faraday.new(url: TOKEN_URL) do |faraday|
           faraday.request :url_encoded
-          faraday.response :json, parser_options: { symbolize_names: true }
+          faraday.response :json, parser_options: {symbolize_names: true}
           faraday.adapter Faraday.default_adapter
         end
 
@@ -179,13 +179,17 @@ module Attio
 
       def create_oauth_connection
         Faraday.new(url: "https://api.attio.com") do |faraday|
-          faraday.response :json, parser_options: { symbolize_names: true }
+          faraday.response :json, parser_options: {symbolize_names: true}
           faraday.adapter Faraday.default_adapter
         end
       end
 
       def handle_oauth_error(response)
-        error_body = response.body rescue {}
+        error_body = begin
+          response.body
+        rescue
+          {}
+        end
         error_message = if error_body.is_a?(Hash)
           error_body[:error_description] || error_body[:error] || "OAuth error"
         else

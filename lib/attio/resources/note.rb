@@ -12,7 +12,7 @@ module Attio
 
     # Read-only attributes - notes are immutable
     attr_reader :parent_object, :parent_record_id, :content, :format,
-                :created_by_actor, :content_plaintext
+      :created_by_actor, :content_plaintext
 
     def initialize(attributes = {}, opts = {})
       super
@@ -104,7 +104,7 @@ module Attio
           content: params[:content],
           format: params[:format]
         }
-        
+
         prepared_params = prepare_params_for_create(normalized_params)
         response = execute_request(:POST, resource_path, prepared_params, opts)
         new(response["data"] || response, opts)

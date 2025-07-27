@@ -4,7 +4,7 @@ module ClientHelpers
   def stub_client_request(method, path, response_body, status: 200)
     client = instance_double(Attio::Client)
     allow(Attio).to receive(:client).and_return(client)
-    
+
     allow(client).to receive(method).with(path, anything) do |_, params|
       if response_body.is_a?(Proc)
         response_body.call(params)
@@ -12,7 +12,7 @@ module ClientHelpers
         response_body
       end
     end
-    
+
     client
   end
 
@@ -21,7 +21,7 @@ module ClientHelpers
       .to_return(
         status: status,
         body: response_body.to_json,
-        headers: { 'Content-Type' => 'application/json' }
+        headers: {"Content-Type" => "application/json"}
       )
   end
 end

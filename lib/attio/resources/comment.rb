@@ -25,7 +25,7 @@ module Attio
           thread_id: thread_id
         }
       }
-      
+
       # Only add created_at if provided
       request_params[:data][:created_at] = created_at if created_at
 
@@ -40,7 +40,7 @@ module Attio
     def resolved_at
       value = @attributes[:resolved_at]
       return nil if value.nil?
-      
+
       case value
       when Time
         value
@@ -64,7 +64,7 @@ module Attio
     # Override destroy to use the correct comment ID
     def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a comment without an ID" unless persisted?
-      
+
       comment_id = extract_comment_id
       self.class.send(:execute_request, :DELETE, "#{self.class.resource_path}/#{comment_id}", {}, opts)
       @attributes.clear

@@ -107,12 +107,12 @@ RSpec.describe Attio::OAuth::Client do
             client_id: client_id,
             client_secret: client_secret
           },
-          headers: { "Accept" => "application/json" }
+          headers: {"Accept" => "application/json"}
         )
         .to_return(
           status: 200,
           body: token_response.to_json,
-          headers: { "Content-Type" => "application/json" }
+          headers: {"Content-Type" => "application/json"}
         )
     end
 
@@ -156,12 +156,12 @@ RSpec.describe Attio::OAuth::Client do
             client_id: client_id,
             client_secret: client_secret
           },
-          headers: { "Accept" => "application/json" }
+          headers: {"Accept" => "application/json"}
         )
         .to_return(
           status: 200,
           body: token_response.to_json,
-          headers: { "Content-Type" => "application/json" }
+          headers: {"Content-Type" => "application/json"}
         )
     end
 
@@ -185,7 +185,7 @@ RSpec.describe Attio::OAuth::Client do
       stub_request(:post, "https://api.attio.com/v2/oauth/revoke")
         .with(
           body: /token=#{token}/,
-          headers: { "Content-Type" => "application/x-www-form-urlencoded" }
+          headers: {"Content-Type" => "application/x-www-form-urlencoded"}
         )
         .to_return(status: 200, body: "")
     end
@@ -230,12 +230,12 @@ RSpec.describe Attio::OAuth::Client do
       stub_request(:post, "https://api.attio.com/v2/oauth/introspect")
         .with(
           body: /token=#{token}/,
-          headers: { "Content-Type" => "application/x-www-form-urlencoded" }
+          headers: {"Content-Type" => "application/x-www-form-urlencoded"}
         )
         .to_return(
           status: 200,
           body: introspection_response.to_json,
-          headers: { "Content-Type" => "application/json" }
+          headers: {"Content-Type" => "application/json"}
         )
     end
 

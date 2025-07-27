@@ -7,18 +7,18 @@ module Attio
 
     def initialize(message, response = nil)
       @response = response
-      
+
       if response
         @code = response[:status]
         @request_id = extract_request_id(response)
-        
+
         # Try to extract a better error message from the response
         if response[:body].is_a?(Hash)
           api_message = response[:body][:error] || response[:body][:message]
           message = "#{message}: #{api_message}" if api_message
         end
       end
-      
+
       super(message)
     end
 
@@ -32,14 +32,20 @@ module Attio
 
   # Client errors (4xx)
   class ClientError < Error; end
-  
+
   # Specific client errors
   class BadRequestError < ClientError; end          # 400
+
   class AuthenticationError < ClientError; end      # 401
+
   class ForbiddenError < ClientError; end          # 403
+
   class NotFoundError < ClientError; end           # 404
+
   class ConflictError < ClientError; end           # 409
+
   class UnprocessableEntityError < ClientError; end # 422
+
   class RateLimitError < ClientError               # 429
     attr_reader :retry_after
 
@@ -59,10 +65,12 @@ module Attio
 
   # Server errors (5xx)
   class ServerError < Error; end
-  
+
   # Connection errors
   class ConnectionError < Error; end
+
   class TimeoutError < ConnectionError; end
+
   class NetworkError < ConnectionError; end
 
   # Configuration errors
@@ -99,7 +107,7 @@ module Attio
       when Faraday::ConnectionFailed, SocketError, Errno::ECONNREFUSED
         NetworkError.new("Network error: #{exception.message}")
       when Faraday::ClientError
-        from_response({ status: exception.response_status, body: exception.response_body })
+        from_response({status: exception.response_status, body: exception.response_body})
       else
         ConnectionError.new("Connection error: #{exception.message}")
       end

@@ -17,11 +17,11 @@ module Attio
       # Query params should be part of the request, not opts
       query_params = params.slice(:record_id, :object, :entry_id, :list, :limit, :offset)
       opts = params.except(:record_id, :object, :entry_id, :list, :limit, :offset)
-      
+
       response = execute_request(:GET, resource_path, query_params, opts)
       ListObject.new(response, self, params, opts)
     end
-    
+
     class << self
       alias_method :all, :list
     end

@@ -51,14 +51,14 @@ module Attio
 
       def configure
         raise ConfigurationError, "Configuration has already been finalized" if frozen?
-        
+
         @mutex.synchronize do
           yield(self) if block_given?
           validate!
           @configured = true
         end
       end
-      
+
       # Call this to make configuration immutable
       def finalize!
         @mutex.synchronize do
@@ -90,7 +90,7 @@ module Attio
 
       def apply_env_vars!
         raise ConfigurationError, "Cannot modify frozen configuration" if frozen?
-        
+
         @mutex.synchronize do
           @api_key = ENV.fetch("ATTIO_API_KEY", @api_key)
           @api_base = ENV.fetch("ATTIO_API_BASE", @api_base)
@@ -105,7 +105,7 @@ module Attio
 
           if ENV.key?("ATTIO_LOGGER")
             logger_class = ENV["ATTIO_LOGGER"]
-            @logger = logger_class == "STDOUT" ? Logger.new(STDOUT) : nil
+            @logger = (logger_class == "STDOUT") ? Logger.new($stdout) : nil
           end
         end
       end

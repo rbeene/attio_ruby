@@ -12,14 +12,14 @@ module Attio
 
     # Define known attributes with proper accessors
     attr_attio :name, :workspace_access
-    
+
     # Read-only attributes
     attr_reader :api_slug, :attio_object_id, :object_api_slug,
-                :created_by_actor, :workspace_id
+      :created_by_actor, :workspace_id
 
     def initialize(attributes = {}, opts = {})
       super
-      
+
       # Now we can safely use symbol keys only since parent normalized them
       normalized_attrs = normalize_attributes(attributes)
       @api_slug = normalized_attrs[:api_slug]
@@ -61,7 +61,7 @@ module Attio
     # Add a record to this list
     def add_record(record_id, **opts)
       client = Attio.client(api_key: opts[:api_key])
-      client.post("/lists/#{id}/entries", { record_id: record_id })
+      client.post("/lists/#{id}/entries", {record_id: record_id})
     end
 
     # Remove a record from this list
@@ -72,7 +72,7 @@ module Attio
 
     # Check if a record is in this list
     def contains_record?(record_id, **opts)
-      entries({ record_id: record_id }, **opts).any?
+      entries({record_id: record_id}, **opts).any?
     end
 
     # Get the count of entries
@@ -97,10 +97,10 @@ module Attio
       # Override create to handle special parameters
       def prepare_params_for_create(params)
         validate_object_identifier!(params[:object])
-        
+
         # Generate api_slug from name if not provided
-        api_slug = params[:api_slug] || params[:name].downcase.gsub(/[^a-z0-9]+/, '_')
-        
+        api_slug = params[:api_slug] || params[:name].downcase.gsub(/[^a-z0-9]+/, "_")
+
         {
           data: {
             name: params[:name],

@@ -5,7 +5,7 @@ require_relative "../api_resource"
 module Attio
   class Meta < APIResource
     # Meta only supports the identify endpoint (no CRUD operations)
-    
+
     def self.resource_path
       "self"
     end
@@ -57,7 +57,7 @@ module Attio
 
     # Check if token has a specific scope
     def has_scope?(scope)
-      scope_str = scope.to_s.gsub("_", ":")
+      scope_str = scope.to_s.tr("_", ":")
       scopes.include?(scope_str)
     end
 

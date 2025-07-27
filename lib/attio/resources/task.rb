@@ -6,7 +6,7 @@ module Attio
   class Task < APIResource
     # Don't use api_operations for list since we need custom handling
     api_operations :create, :retrieve, :update, :delete
-    
+
     def self.resource_path
       "tasks"
     end
@@ -16,11 +16,11 @@ module Attio
       # Query params should be part of the request, not opts
       query_params = params.slice(:limit, :offset, :sort, :linked_object, :linked_record_id, :assignee, :is_completed)
       opts = params.except(:limit, :offset, :sort, :linked_object, :linked_record_id, :assignee, :is_completed)
-      
+
       response = execute_request(:GET, resource_path, query_params, opts)
       ListObject.new(response, self, params, opts)
     end
-    
+
     class << self
       alias_method :all, :list
     end
@@ -38,13 +38,13 @@ module Attio
           assignees: params[:assignees] || []
         }
       }
-      
+
       # Only add optional fields if provided
       request_params[:data][:deadline_at] = params[:deadline_at] if params[:deadline_at]
 
       # Remove the params that we've already included in request_params
       opts = params.except(:content, :format, :deadline_at, :is_completed, :linked_records, :assignees)
-      
+
       response = execute_request(:POST, resource_path, request_params, opts)
       new(response["data"] || response, opts)
     end
@@ -52,14 +52,14 @@ module Attio
     # Override update to use PATCH with data wrapper
     def self.update(id, **params)
       validate_id!(id)
-      
+
       request_params = {
         data: params.slice(:content, :format, :deadline_at, :is_completed, :linked_records, :assignees).compact
       }
 
       # Remove the params that we've already included in request_params
       opts = params.except(:content, :format, :deadline_at, :is_completed, :linked_records, :assignees)
-      
+
       response = execute_request(:PATCH, "#{resource_path}/#{id}", request_params, opts)
       new(response["data"] || response, opts)
     end
@@ -71,7 +71,7 @@ module Attio
     def deadline_at
       value = @attributes[:deadline_at]
       return nil if value.nil?
-      
+
       case value
       when Time
         value
@@ -116,7 +116,7 @@ module Attio
     # Override destroy to use the correct task ID
     def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a task without an ID" unless persisted?
-      
+
       task_id = extract_task_id
       self.class.send(:execute_request, :DELETE, "#{self.class.resource_path}/#{task_id}", {}, opts)
       @attributes.clear

@@ -8,6 +8,8 @@ module Attio
 
     attr_reader :id, :created_at, :metadata
 
+    SKIP_KEYS = %i[id created_at _metadata].freeze
+
     def initialize(attributes = {}, opts = {})
       @attributes = {}
       @original_attributes = {}
@@ -26,9 +28,8 @@ module Attio
         @metadata = normalized_attrs[:_metadata] || {}
 
         # Process all attributes
-        skip_keys = %i[id created_at _metadata]
         normalized_attrs.each do |key, value|
-          next if skip_keys.include?(key)
+          next if SKIP_KEYS.include?(key)
 
           @attributes[key] = process_attribute_value(value)
           @original_attributes[key] = deep_copy(process_attribute_value(value))
@@ -154,12 +155,12 @@ module Attio
       normalized = normalize_attributes(response)
       @id = normalized[:id] if normalized[:id]
       @created_at = parse_timestamp(normalized[:created_at]) if normalized[:created_at]
-      
+
       normalized.each do |key, value|
-        next if %i[id created_at _metadata].include?(key)
+        next if SKIP_KEYS.include?(key)
         @attributes[key] = process_attribute_value(value)
       end
-      
+
       reset_changes!
       self
     end
@@ -199,7 +200,7 @@ module Attio
       # Example: api_operations :list, :create, :retrieve, :update, :delete
       def api_operations(*operations)
         @supported_operations = operations
-        
+
         operations.each do |operation|
           case operation
           when :list
@@ -241,7 +242,7 @@ module Attio
       # Execute HTTP request
       def execute_request(method, path, params = {}, opts = {})
         client = Attio.client(api_key: opts[:api_key])
-        
+
         case method
         when :GET
           client.get(path, params)
@@ -285,7 +286,7 @@ module Attio
           response = execute_request(:GET, resource_path, params, opts)
           ListObject.new(response, self, params, opts)
         end
-        
+
         singleton_class.send(:alias_method, :all, :list)
       end
 
@@ -303,7 +304,7 @@ module Attio
           response = execute_request(:GET, "#{resource_path}/#{id}", {}, opts)
           new(response["data"] || response, opts)
         end
-        
+
         singleton_class.send(:alias_method, :get, :retrieve)
         singleton_class.send(:alias_method, :find, :retrieve)
       end
@@ -323,7 +324,7 @@ module Attio
           execute_request(:DELETE, "#{resource_path}/#{id}", {}, opts)
           true
         end
-        
+
         singleton_class.send(:alias_method, :destroy, :delete)
       end
     end
@@ -452,13 +453,10 @@ module Attio
         # Handle Attio's nested ID structure
         # Objects have { workspace_id: "...", object_id: "..." }
         # Records have { workspace_id: "...", object_id: "...", record_id: "..." }
-        id_value
       when String
         # Simple string ID
-        id_value
-      else
-        id_value
       end
+      id_value
     end
 
     def deep_copy(obj)

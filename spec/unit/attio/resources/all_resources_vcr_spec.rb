@@ -3,7 +3,7 @@
 RSpec.describe "All Attio Resources" do
   before do
     Attio.configure do |config|
-      config.api_key = ENV['ATTIO_API_KEY'] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
     end
   end
 
@@ -70,7 +70,7 @@ RSpec.describe "All Attio Resources" do
         expect do
           described_class.create({
             target_url: "https://example.com/webhook/vcr",
-            subscriptions: [{ event_type: "record.created" }]
+            subscriptions: [{event_type: "record.created"}]
           })
         end.to raise_error(Attio::BadRequestError)
       end
@@ -80,7 +80,7 @@ RSpec.describe "All Attio Resources" do
   describe Attio::Attribute do
     it "lists attributes for an object", :vcr do
       VCR.use_cassette("attribute/list") do
-        result = described_class.list({ object: "people" })
+        result = described_class.list({object: "people"})
         expect(result).to be_a(Attio::APIResource::ListObject)
         expect(result.first).to be_a(described_class) if result.any?
       end

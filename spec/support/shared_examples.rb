@@ -14,11 +14,11 @@ RSpec.shared_examples "a listable resource" do
 
   before do
     stub_request(:get, "https://api.attio.com#{described_class.resource_path}")
-      .with(headers: { "Authorization" => "Bearer test_api_key" })
+      .with(headers: {"Authorization" => "Bearer test_api_key"})
       .to_return(
         status: 200,
         body: JSON.generate(list_response),
-        headers: { "Content-Type" => "application/json" }
+        headers: {"Content-Type" => "application/json"}
       )
   end
 
@@ -56,11 +56,11 @@ RSpec.shared_examples "a retrievable resource" do
 
   before do
     stub_request(:get, "https://api.attio.com#{described_class.resource_path}/123")
-      .with(headers: { "Authorization" => "Bearer test_api_key" })
+      .with(headers: {"Authorization" => "Bearer test_api_key"})
       .to_return(
         status: 200,
         body: JSON.generate(retrieve_response),
-        headers: { "Content-Type" => "application/json" }
+        headers: {"Content-Type" => "application/json"}
       )
   end
 
@@ -90,13 +90,13 @@ RSpec.shared_examples "a creatable resource" do
   before do
     stub_request(:post, "https://api.attio.com#{described_class.resource_path}")
       .with(
-        headers: { "Authorization" => "Bearer test_api_key" },
-        body: { name: "New Item" }.to_json
+        headers: {"Authorization" => "Bearer test_api_key"},
+        body: {name: "New Item"}.to_json
       )
       .to_return(
         status: 200,
         body: JSON.generate(create_response),
-        headers: { "Content-Type" => "application/json" }
+        headers: {"Content-Type" => "application/json"}
       )
   end
 
@@ -126,13 +126,13 @@ RSpec.shared_examples "an updatable resource" do
   before do
     stub_request(:patch, "https://api.attio.com#{described_class.resource_path}/123")
       .with(
-        headers: { "Authorization" => "Bearer test_api_key" },
-        body: { name: "Updated" }.to_json
+        headers: {"Authorization" => "Bearer test_api_key"},
+        body: {name: "Updated"}.to_json
       )
       .to_return(
         status: 200,
         body: JSON.generate(update_response),
-        headers: { "Content-Type" => "application/json" }
+        headers: {"Content-Type" => "application/json"}
       )
   end
 
@@ -156,7 +156,7 @@ end
 RSpec.shared_examples "a deletable resource" do
   before do
     stub_request(:delete, "https://api.attio.com#{described_class.resource_path}/123")
-      .with(headers: { "Authorization" => "Bearer test_api_key" })
+      .with(headers: {"Authorization" => "Bearer test_api_key"})
       .to_return(status: 204, body: "")
   end
 

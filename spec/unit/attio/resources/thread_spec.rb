@@ -45,24 +45,24 @@ RSpec.describe Attio::Thread do
     end
 
     before do
-      allow(Attio::Thread).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to the correct endpoint" do
-      expect(Attio::Thread).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "threads",
         {},
         {}
       )
 
-      Attio::Thread.list
+      described_class.list
     end
 
     it "returns a ListObject" do
-      result = Attio::Thread.list
+      result = described_class.list
       expect(result).to be_a(Attio::APIResource::ListObject)
-      expect(result.data.first).to be_a(Attio::Thread)
+      expect(result.data.first).to be_a(described_class)
     end
 
     it "accepts query parameters for filtering by record" do
@@ -73,14 +73,14 @@ RSpec.describe Attio::Thread do
         offset: 0
       }
 
-      expect(Attio::Thread).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "threads",
         query_params,
         {}
       )
 
-      Attio::Thread.list(**query_params)
+      described_class.list(**query_params)
     end
 
     it "accepts query parameters for filtering by entry" do
@@ -91,14 +91,14 @@ RSpec.describe Attio::Thread do
         offset: 0
       }
 
-      expect(Attio::Thread).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "threads",
         query_params,
         {}
       )
 
-      Attio::Thread.list(**query_params)
+      described_class.list(**query_params)
     end
   end
 
@@ -110,33 +110,33 @@ RSpec.describe Attio::Thread do
     end
 
     before do
-      allow(Attio::Thread).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to the correct endpoint" do
-      expect(Attio::Thread).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "threads/#{thread_id}",
         {},
         {}
       )
 
-      Attio::Thread.retrieve(thread_id)
+      described_class.retrieve(thread_id)
     end
 
     it "returns a Thread instance" do
-      result = Attio::Thread.retrieve(thread_id)
-      expect(result).to be_a(Attio::Thread)
+      result = described_class.retrieve(thread_id)
+      expect(result).to be_a(described_class)
       expect(result.id).to eq(thread_data[:id])
     end
 
     it "requires thread_id" do
-      expect { Attio::Thread.retrieve(nil) }.to raise_error(ArgumentError, "ID is required")
+      expect { described_class.retrieve(nil) }.to raise_error(ArgumentError, "ID is required")
     end
   end
 
   describe "instance methods" do
-    let(:thread) { Attio::Thread.new(thread_data) }
+    let(:thread) { described_class.new(thread_data) }
 
     describe "#comments" do
       it "returns the comments array" do
@@ -160,12 +160,12 @@ RSpec.describe Attio::Thread do
 
     describe "#has_comments?" do
       it "returns true when thread has comments" do
-        expect(thread.has_comments?).to eq(true)
+        expect(thread.has_comments?).to be(true)
       end
 
       it "returns false when thread has no comments" do
-        empty_thread = Attio::Thread.new(thread_data.merge(comments: []))
-        expect(empty_thread.has_comments?).to eq(false)
+        empty_thread = described_class.new(thread_data.merge(comments: []))
+        expect(empty_thread.has_comments?).to be(false)
       end
     end
 
@@ -175,7 +175,7 @@ RSpec.describe Attio::Thread do
       end
 
       it "returns nil for empty thread" do
-        empty_thread = Attio::Thread.new(thread_data.merge(comments: []))
+        empty_thread = described_class.new(thread_data.merge(comments: []))
         expect(empty_thread.first_comment).to be_nil
       end
     end
@@ -186,14 +186,14 @@ RSpec.describe Attio::Thread do
       end
 
       it "returns nil for empty thread" do
-        empty_thread = Attio::Thread.new(thread_data.merge(comments: []))
+        empty_thread = described_class.new(thread_data.merge(comments: []))
         expect(empty_thread.last_comment).to be_nil
       end
     end
 
     describe "#immutable?" do
       it "returns true since threads are read-only" do
-        expect(thread.immutable?).to eq(true)
+        expect(thread.immutable?).to be(true)
       end
     end
 

@@ -12,7 +12,7 @@ module Attio
 
     # Read-only attributes - workspace members are immutable via API
     attr_reader :email_address, :first_name, :last_name, :avatar_url,
-                :access_level, :status, :invited_at, :last_accessed_at
+      :access_level, :status, :invited_at, :last_accessed_at
 
     def initialize(attributes = {}, opts = {})
       super
@@ -90,8 +90,8 @@ module Attio
         # and then fetch the workspace member details
         self_response = execute_request(:GET, "self", {}, opts)
         member_id = self_response[:authorized_by_workspace_member_id]
-        workspace_id = self_response[:workspace_id]
-        
+        self_response[:workspace_id]
+
         # Now fetch the actual workspace member
         members = list(**opts)
         members.find { |m| m.id[:workspace_member_id] == member_id }

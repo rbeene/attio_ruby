@@ -7,7 +7,7 @@ module Attio
     # Record doesn't use standard CRUD operations due to object parameter requirement
     # We'll define custom methods instead
     api_operations :delete
-    
+
     def self.resource_path
       "objects"
     end
@@ -16,7 +16,7 @@ module Attio
 
     def initialize(attributes = {}, opts = {})
       super
-      
+
       normalized_attrs = normalize_attributes(attributes)
       @attio_object_id = normalized_attrs[:object_id]
       @object_api_slug = normalized_attrs[:object_api_slug]
@@ -76,7 +76,7 @@ module Attio
       # Retrieve a specific record
       def retrieve(record_id: nil, object: nil, **opts)
         validate_object_identifier!(object)
-        
+
         # Extract simple ID if it's a nested hash
         simple_record_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
         validate_id!(simple_record_id)
@@ -94,7 +94,7 @@ module Attio
       # Update a record
       def update(record_id: nil, object: nil, data: nil, **opts)
         validate_object_identifier!(object)
-        
+
         # Extract simple ID if it's a nested hash
         simple_record_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
         validate_id!(simple_record_id)
@@ -121,7 +121,7 @@ module Attio
         request_params = {
           data: records.map do |record|
             values = record[:data] ? record[:data][:values] : record[:values] || record
-            { values: normalize_values(values) }
+            {values: normalize_values(values)}
           end
         }
 
@@ -133,7 +133,7 @@ module Attio
         end
       end
 
-      # Batch update records  
+      # Batch update records
       def batch_update(object: nil, records: nil, **opts)
         validate_object_identifier!(object)
         validate_batch!(records)
@@ -142,11 +142,11 @@ module Attio
           data: records.map do |record|
             record_id = record[:record_id] || record[:id]
             simple_record_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
-            
+
             values = record[:data] ? record[:data][:values] : record[:values]
-            
+
             {
-              id: { record_id: simple_record_id },
+              id: {record_id: simple_record_id},
               values: normalize_values(values)
             }
           end
@@ -167,7 +167,7 @@ module Attio
 
         params = {
           object: object,
-          data: records.map { |r| { values: normalize_values(r[:values] || r) } }
+          data: records.map { |r| {values: normalize_values(r[:values] || r)} }
         }
 
         response = execute_request(:POST, "#{resource_path}/batch", params, opts)
@@ -180,7 +180,7 @@ module Attio
 
       # Search records
       def search(query, object:, **opts)
-        list({ q: query }, object: object, **opts)
+        list({q: query}, object: object, **opts)
       end
 
       private
@@ -200,13 +200,13 @@ module Attio
 
       def build_query_params(params)
         query_params = {}
-        
+
         query_params[:filter] = build_filter(params[:filter]) if params[:filter]
         query_params[:sort] = build_sort(params[:sort]) if params[:sort]
         query_params[:limit] = params[:limit] if params[:limit]
         query_params[:cursor] = params[:cursor] if params[:cursor]
         query_params[:q] = params[:q] if params[:q]
-        
+
         query_params
       end
 
@@ -215,7 +215,7 @@ module Attio
         when Hash
           filter
         when Array
-          { "$and" => filter }
+          {"$and" => filter}
         else
           filter
         end
@@ -258,7 +258,7 @@ module Attio
         when NilClass
           nil
         else
-          { value: value }
+          {value: value}
         end
       end
     end
@@ -269,7 +269,7 @@ module Attio
     def save(**opts)
       raise InvalidRequestError, "Cannot update a record without an ID" unless persisted?
       raise InvalidRequestError, "Cannot save without object context" unless object_api_slug
-      
+
       return self unless changed?
 
       params = {
@@ -294,7 +294,7 @@ module Attio
     # Get lists containing this record
     def lists(**opts)
       raise InvalidRequestError, "Cannot get lists without an ID" unless persisted?
-      
+
       # This is a simplified implementation - in reality you'd need to query the API
       # for lists that contain this record
       List.list(record_id: id, **opts)
@@ -319,8 +319,8 @@ module Attio
     end
 
     def to_h
-      values = @attributes.reject { |k, _| %i[id created_at object_id object_api_slug].include?(k) }
-      
+      values = @attributes.except(:id, :created_at, :object_id, :object_api_slug)
+
       {
         id: id,
         object_id: attio_object_id,
@@ -333,7 +333,7 @@ module Attio
     def inspect
       values_preview = @attributes.take(3).map { |k, v| "#{k}: #{v.inspect}" }.join(", ")
       values_preview += "..." if @attributes.size > 3
-      
+
       "#<#{self.class.name}:#{object_id} id=#{id.inspect} object=#{object_api_slug.inspect} values={#{values_preview}}>"
     end
 
@@ -341,7 +341,7 @@ module Attio
 
     def process_values(values)
       return unless values.is_a?(Hash)
-      
+
       values.each do |key, value_data|
         extracted_value = extract_value(value_data)
         @attributes[key.to_sym] = extracted_value
@@ -353,7 +353,7 @@ module Attio
       case value_data
       when Array
         extracted = value_data.map { |v| extract_single_value(v) }
-        extracted.length == 1 ? extracted.first : extracted
+        (extracted.length == 1) ? extracted.first : extracted
       else
         extract_single_value(value_data)
       end
@@ -377,7 +377,7 @@ module Attio
 
     def prepare_values_for_update
       changed_attributes.transform_values do |value|
-        self.class.send(:normalize_values, { key: value })[:key]
+        self.class.send(:normalize_values, {key: value})[:key]
       end
     end
   end

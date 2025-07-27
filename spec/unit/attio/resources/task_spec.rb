@@ -42,24 +42,24 @@ RSpec.describe Attio::Task do
     end
 
     before do
-      allow(Attio::Task).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to the correct endpoint" do
-      expect(Attio::Task).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "tasks",
         {},
         {}
       )
 
-      Attio::Task.list
+      described_class.list
     end
 
     it "returns a ListObject" do
-      result = Attio::Task.list
+      result = described_class.list
       expect(result).to be_a(Attio::APIResource::ListObject)
-      expect(result.data.first).to be_a(Attio::Task)
+      expect(result.data.first).to be_a(described_class)
     end
 
     it "accepts query parameters" do
@@ -73,14 +73,14 @@ RSpec.describe Attio::Task do
         sort: "created_at:desc"
       }
 
-      expect(Attio::Task).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "tasks",
         query_params,
         {}
       )
 
-      Attio::Task.list(**query_params)
+      described_class.list(**query_params)
     end
   end
 
@@ -113,29 +113,29 @@ RSpec.describe Attio::Task do
     end
 
     before do
-      allow(Attio::Task).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a POST request with the correct data structure" do
-      expect(Attio::Task).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :POST,
         "tasks",
-        { data: create_params },
+        {data: create_params},
         {}
       )
 
-      Attio::Task.create(**create_params)
+      described_class.create(**create_params)
     end
 
     it "returns a Task instance" do
-      result = Attio::Task.create(**create_params)
-      expect(result).to be_a(Attio::Task)
+      result = described_class.create(**create_params)
+      expect(result).to be_a(described_class)
       expect(result.content_plaintext).to eq("Complete the integration")
     end
 
     it "requires content parameter" do
       create_params.delete(:content)
-      expect { Attio::Task.create(**create_params) }.to raise_error(ArgumentError, "Content is required")
+      expect { described_class.create(**create_params) }.to raise_error(ArgumentError, "Content is required")
     end
   end
 
@@ -147,28 +147,28 @@ RSpec.describe Attio::Task do
     end
 
     before do
-      allow(Attio::Task).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to the correct endpoint" do
-      expect(Attio::Task).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "tasks/#{task_id}",
         {},
         {}
       )
 
-      Attio::Task.retrieve(task_id)
+      described_class.retrieve(task_id)
     end
 
     it "returns a Task instance" do
-      result = Attio::Task.retrieve(task_id)
-      expect(result).to be_a(Attio::Task)
+      result = described_class.retrieve(task_id)
+      expect(result).to be_a(described_class)
       expect(result.id).to eq(task_data[:id])
     end
 
     it "requires task_id" do
-      expect { Attio::Task.retrieve(nil) }.to raise_error(ArgumentError, "ID is required")
+      expect { described_class.retrieve(nil) }.to raise_error(ArgumentError, "ID is required")
     end
   end
 
@@ -191,51 +191,51 @@ RSpec.describe Attio::Task do
     end
 
     before do
-      allow(Attio::Task).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a PATCH request with the correct data" do
-      expect(Attio::Task).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :PATCH,
         "tasks/#{task_id}",
-        { data: update_params },
+        {data: update_params},
         {}
       )
 
-      Attio::Task.update(task_id, **update_params)
+      described_class.update(task_id, **update_params)
     end
 
     it "returns an updated Task instance" do
-      result = Attio::Task.update(task_id, **update_params)
-      expect(result).to be_a(Attio::Task)
-      expect(result.is_completed).to eq(true)
+      result = described_class.update(task_id, **update_params)
+      expect(result).to be_a(described_class)
+      expect(result.is_completed).to be(true)
     end
   end
 
   describe ".delete" do
     before do
-      allow(Attio::Task).to receive(:execute_request).and_return({})
+      allow(described_class).to receive(:execute_request).and_return({})
     end
 
     it "sends a DELETE request to the correct endpoint" do
-      expect(Attio::Task).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :DELETE,
         "tasks/#{task_id}",
         {},
         {}
       )
 
-      Attio::Task.delete(task_id)
+      described_class.delete(task_id)
     end
 
     it "returns true on success" do
-      result = Attio::Task.delete(task_id)
-      expect(result).to eq(true)
+      result = described_class.delete(task_id)
+      expect(result).to be(true)
     end
   end
 
   describe "instance methods" do
-    let(:task) { Attio::Task.new(task_data) }
+    let(:task) { described_class.new(task_data) }
 
     describe "#content_plaintext" do
       it "returns the task content" do
@@ -252,7 +252,7 @@ RSpec.describe Attio::Task do
 
     describe "#is_completed" do
       it "returns the completion status" do
-        expect(task.is_completed).to eq(false)
+        expect(task.is_completed).to be(false)
       end
     end
 
@@ -279,37 +279,37 @@ RSpec.describe Attio::Task do
 
     describe "#complete!" do
       before do
-        allow(Attio::Task).to receive(:execute_request).and_return(
+        allow(described_class).to receive(:execute_request).and_return(
           "data" => task_data.merge(is_completed: true)
         )
       end
 
       it "marks the task as completed" do
-        expect(Attio::Task).to receive(:execute_request).with(
+        expect(described_class).to receive(:execute_request).with(
           :PATCH,
           "tasks/#{task_id}",
-          { data: { is_completed: true } },
+          {data: {is_completed: true}},
           {}
         )
 
         result = task.complete!
-        expect(result.is_completed).to eq(true)
+        expect(result.is_completed).to be(true)
       end
     end
 
     describe "#save" do
       before do
         task.is_completed = true
-        allow(Attio::Task).to receive(:execute_request).and_return(
+        allow(described_class).to receive(:execute_request).and_return(
           "data" => task_data.merge(is_completed: true)
         )
       end
 
       it "updates the task with changed values" do
-        expect(Attio::Task).to receive(:execute_request).with(
+        expect(described_class).to receive(:execute_request).with(
           :PATCH,
           "tasks/#{task_id}",
-          { data: { is_completed: true } },
+          {data: {is_completed: true}},
           {}
         )
 
@@ -319,18 +319,18 @@ RSpec.describe Attio::Task do
 
     describe "#destroy" do
       before do
-        allow(Attio::Task).to receive(:execute_request).and_return({})
+        allow(described_class).to receive(:execute_request).and_return({})
       end
 
       it "deletes the task" do
-        expect(Attio::Task).to receive(:execute_request).with(
+        expect(described_class).to receive(:execute_request).with(
           :DELETE,
           "tasks/#{task_id}",
           {},
           {}
         )
 
-        expect(task.destroy).to eq(true)
+        expect(task.destroy).to be(true)
       end
     end
   end

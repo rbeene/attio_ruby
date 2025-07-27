@@ -48,52 +48,52 @@ RSpec.describe Attio::Comment do
     end
 
     before do
-      allow(Attio::Comment).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a POST request with the correct data structure" do
-      expect(Attio::Comment).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :POST,
         "comments",
-        { data: create_params },
+        {data: create_params},
         {}
       )
 
-      Attio::Comment.create(**create_params)
+      described_class.create(**create_params)
     end
 
     it "returns a Comment instance" do
-      result = Attio::Comment.create(**create_params)
-      expect(result).to be_a(Attio::Comment)
+      result = described_class.create(**create_params)
+      expect(result).to be_a(described_class)
       expect(result.content_plaintext).to eq("This is a test comment")
     end
 
     it "requires content parameter" do
       create_params.delete(:content)
-      expect { Attio::Comment.create(**create_params) }.to raise_error(ArgumentError, "Content is required")
+      expect { described_class.create(**create_params) }.to raise_error(ArgumentError, "Content is required")
     end
 
     it "requires thread_id parameter" do
       create_params.delete(:thread_id)
-      expect { Attio::Comment.create(**create_params) }.to raise_error(ArgumentError, "Thread ID is required")
+      expect { described_class.create(**create_params) }.to raise_error(ArgumentError, "Thread ID is required")
     end
 
     it "requires author parameter" do
       create_params.delete(:author)
-      expect { Attio::Comment.create(**create_params) }.to raise_error(ArgumentError, "Author is required")
+      expect { described_class.create(**create_params) }.to raise_error(ArgumentError, "Author is required")
     end
 
     it "allows created_at to be specified" do
       create_params[:created_at] = "2024-06-01T12:00:00Z"
-      
-      expect(Attio::Comment).to receive(:execute_request).with(
+
+      expect(described_class).to receive(:execute_request).with(
         :POST,
         "comments",
-        { data: create_params },
+        {data: create_params},
         {}
       )
 
-      Attio::Comment.create(**create_params)
+      described_class.create(**create_params)
     end
   end
 
@@ -105,59 +105,59 @@ RSpec.describe Attio::Comment do
     end
 
     before do
-      allow(Attio::Comment).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to the correct endpoint" do
-      expect(Attio::Comment).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "comments/#{comment_id}",
         {},
         {}
       )
 
-      Attio::Comment.retrieve(comment_id)
+      described_class.retrieve(comment_id)
     end
 
     it "returns a Comment instance" do
-      result = Attio::Comment.retrieve(comment_id)
-      expect(result).to be_a(Attio::Comment)
+      result = described_class.retrieve(comment_id)
+      expect(result).to be_a(described_class)
       expect(result.id).to eq(comment_data[:id])
     end
 
     it "requires comment_id" do
-      expect { Attio::Comment.retrieve(nil) }.to raise_error(ArgumentError, "ID is required")
+      expect { described_class.retrieve(nil) }.to raise_error(ArgumentError, "ID is required")
     end
   end
 
   describe ".delete" do
     before do
-      allow(Attio::Comment).to receive(:execute_request).and_return({})
+      allow(described_class).to receive(:execute_request).and_return({})
     end
 
     it "sends a DELETE request to the correct endpoint" do
-      expect(Attio::Comment).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :DELETE,
         "comments/#{comment_id}",
         {},
         {}
       )
 
-      Attio::Comment.delete(comment_id)
+      described_class.delete(comment_id)
     end
 
     it "returns true on success" do
-      result = Attio::Comment.delete(comment_id)
-      expect(result).to eq(true)
+      result = described_class.delete(comment_id)
+      expect(result).to be(true)
     end
 
     it "requires comment_id" do
-      expect { Attio::Comment.delete(nil) }.to raise_error(ArgumentError, "ID is required")
+      expect { described_class.delete(nil) }.to raise_error(ArgumentError, "ID is required")
     end
   end
 
   describe "instance methods" do
-    let(:comment) { Attio::Comment.new(comment_data) }
+    let(:comment) { described_class.new(comment_data) }
 
     describe "#content_plaintext" do
       it "returns the comment content" do
@@ -198,7 +198,7 @@ RSpec.describe Attio::Comment do
       end
 
       it "returns a Time object when resolved" do
-        comment_with_resolution = Attio::Comment.new(
+        comment_with_resolution = described_class.new(
           comment_data.merge(resolved_at: "2024-01-02T00:00:00Z")
         )
         expect(comment_with_resolution.resolved_at).to be_a(Time)
@@ -207,9 +207,9 @@ RSpec.describe Attio::Comment do
 
     describe "#resolved_by" do
       it "returns the resolver information when resolved" do
-        comment_with_resolution = Attio::Comment.new(
+        comment_with_resolution = described_class.new(
           comment_data.merge(
-            resolved_by: { type: "workspace-member", id: "resolver-id" }
+            resolved_by: {type: "workspace-member", id: "resolver-id"}
           )
         )
         expect(comment_with_resolution.resolved_by).to be_a(Hash)
@@ -219,24 +219,24 @@ RSpec.describe Attio::Comment do
 
     describe "#destroy" do
       before do
-        allow(Attio::Comment).to receive(:execute_request).and_return({})
+        allow(described_class).to receive(:execute_request).and_return({})
       end
 
       it "deletes the comment" do
-        expect(Attio::Comment).to receive(:execute_request).with(
+        expect(described_class).to receive(:execute_request).with(
           :DELETE,
           "comments/#{comment_id}",
           {},
           {}
         )
 
-        expect(comment.destroy).to eq(true)
+        expect(comment.destroy).to be(true)
       end
     end
 
     describe "#immutable?" do
       it "returns true since comments are immutable" do
-        expect(comment.immutable?).to eq(true)
+        expect(comment.immutable?).to be(true)
       end
     end
 

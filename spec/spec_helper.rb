@@ -14,19 +14,19 @@ VCR.configure do |config|
   config.cassette_library_dir = "spec/fixtures/vcr_cassettes"
   config.hook_into :faraday
   config.configure_rspec_metadata!
-  
+
   # Filter sensitive data
-  config.filter_sensitive_data('<ATTIO_API_KEY>') { ENV['ATTIO_API_KEY'] }
-  config.filter_sensitive_data('<ATTIO_API_KEY>') { 'test_api_key' }
-  
+  config.filter_sensitive_data("<ATTIO_API_KEY>") { ENV["ATTIO_API_KEY"] }
+  config.filter_sensitive_data("<ATTIO_API_KEY>") { "test_api_key" }
+
   # Allow real HTTP connections for recording
   config.allow_http_connections_when_no_cassette = false
-  
+
   # Ignore OAuth requests (use WebMock for these)
   config.ignore_request do |request|
-    URI(request.uri).path.include?('/oauth/')
+    URI(request.uri).path.include?("/oauth/")
   end
-  
+
   # Default cassette options
   config.default_cassette_options = {
     record: :once,

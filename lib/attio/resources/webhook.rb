@@ -154,7 +154,7 @@ module Attio
       def validate_subscriptions!(subscriptions)
         raise ArgumentError, "subscriptions are required" if subscriptions.nil? || subscriptions.empty?
         raise ArgumentError, "subscriptions must be an array" unless subscriptions.is_a?(Array)
-        
+
         subscriptions.each do |sub|
           event_type = sub[:event_type] || sub["event_type"]
           raise ArgumentError, "Each subscription must have an event_type" unless event_type

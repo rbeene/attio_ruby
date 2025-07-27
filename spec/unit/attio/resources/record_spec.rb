@@ -3,7 +3,7 @@
 RSpec.describe Attio::Record do
   before do
     Attio.configure do |config|
-      config.api_key = ENV['ATTIO_API_KEY'] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
     end
   end
 
@@ -18,7 +18,7 @@ RSpec.describe Attio::Record do
 
     it "supports filtering" do
       VCR.use_cassette("record/list_people_with_filter") do
-        filter = { name: { "$contains" => "Test" } }
+        filter = {name: {"$contains" => "Test"}}
         result = described_class.list(object: "people", filter: filter, limit: 1)
         expect(result).to be_a(Attio::APIResource::ListObject)
       end
@@ -26,7 +26,7 @@ RSpec.describe Attio::Record do
 
     it "supports sorting" do
       VCR.use_cassette("record/list_people_with_sort") do
-        result = described_class.list(object: "people", sort: { field: "created_at", direction: "desc" }, limit: 2)
+        result = described_class.list(object: "people", sort: {field: "created_at", direction: "desc"}, limit: 2)
         expect(result).to be_a(Attio::APIResource::ListObject)
       end
     end
@@ -45,7 +45,7 @@ RSpec.describe Attio::Record do
             }
           }
         )
-        
+
         expect(result).to be_a(described_class)
         expect(result.id).not_to be_nil
         expect(result.persisted?).to be true
@@ -56,7 +56,7 @@ RSpec.describe Attio::Record do
       VCR.use_cassette("record/create_person_simple") do
         # Using deterministic test data
         result = described_class.create(
-          object: "people", 
+          object: "people",
           values: {
             name: {
               first_name: "Simple",
@@ -65,7 +65,7 @@ RSpec.describe Attio::Record do
             }
           }
         )
-        
+
         expect(result).to be_a(described_class)
         expect(result.id).not_to be_nil
       end
@@ -106,7 +106,7 @@ RSpec.describe Attio::Record do
           values: {
             name: {
               first_name: "Update",
-              last_name: "UpdateVCR", 
+              last_name: "UpdateVCR",
               full_name: "Update UpdateVCR"
             }
           }

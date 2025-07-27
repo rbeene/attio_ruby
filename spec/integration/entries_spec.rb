@@ -11,7 +11,7 @@ RSpec.describe "Entry Integration", :integration do
 
   let(:test_list_id) { "a1bd2c90-1c6d-4b1b-8c48-79ae46b5bc2c" } # Test API List
   let(:test_record_id) { "0174bfac-74b9-41de-b757-c6fa2a68ab00" } # Phone Test person
-  
+
   describe "entries" do
     let(:entry_data) do
       {
@@ -41,7 +41,7 @@ RSpec.describe "Entry Integration", :integration do
 
         expect(entries).to be_a(Attio::APIResource::ListObject)
         expect(entries).to respond_to(:each)
-        
+
         if entries.any?
           entry = entries.first
           expect(entry).to be_a(Attio::Entry)
@@ -54,7 +54,7 @@ RSpec.describe "Entry Integration", :integration do
       VCR.use_cassette("entries/retrieve_entry") do
         # First create an entry
         created = Attio::Entry.create(list: test_list_id, **entry_data)
-        
+
         # Then retrieve it
         entry = Attio::Entry.retrieve(
           list: test_list_id,
@@ -70,7 +70,7 @@ RSpec.describe "Entry Integration", :integration do
       VCR.use_cassette("entries/update_entry") do
         # First create an entry
         created = Attio::Entry.create(list: test_list_id, **entry_data)
-        
+
         # Then update it
         updated = Attio::Entry.update(
           list: test_list_id,
@@ -90,15 +90,15 @@ RSpec.describe "Entry Integration", :integration do
       VCR.use_cassette("entries/delete_entry") do
         # First create an entry
         created = Attio::Entry.create(list: test_list_id, **entry_data)
-        
+
         # Then delete it
         result = Attio::Entry.delete(
           list: test_list_id,
           entry_id: created.id[:entry_id]
         )
 
-        expect(result).to eq(true)
-        
+        expect(result).to be(true)
+
         # Verify it's deleted by trying to retrieve it
         expect {
           Attio::Entry.retrieve(
@@ -132,7 +132,7 @@ RSpec.describe "Entry Integration", :integration do
         VCR.use_cassette("entries/filter_by_status") do
           entries = Attio::Entry.list(
             list: test_list_id,
-            filter: { status: "active" },
+            filter: {status: "active"},
             limit: 5
           )
 
@@ -146,7 +146,7 @@ RSpec.describe "Entry Integration", :integration do
         VCR.use_cassette("entries/sort_by_created") do
           entries = Attio::Entry.list(
             list: test_list_id,
-            sorts: [{ attribute: "created_at", direction: "desc" }],
+            sorts: [{attribute: "created_at", direction: "desc"}],
             limit: 5
           )
 
@@ -160,7 +160,7 @@ RSpec.describe "Entry Integration", :integration do
         VCR.use_cassette("entries/save_entry") do
           # First create an entry
           entry = Attio::Entry.create(list: test_list_id, **entry_data)
-          
+
           # Modify and save
           entry.entry_values[:status] = "inactive"
           entry.save
@@ -179,11 +179,11 @@ RSpec.describe "Entry Integration", :integration do
           # First create an entry
           entry = Attio::Entry.create(list: test_list_id, **entry_data)
           entry_id = entry.id[:entry_id]
-          
+
           # Destroy it
           result = entry.destroy
-          expect(result).to eq(true)
-          
+          expect(result).to be(true)
+
           # Verify it's deleted
           expect {
             Attio::Entry.retrieve(list: test_list_id, entry_id: entry_id)

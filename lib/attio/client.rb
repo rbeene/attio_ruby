@@ -35,7 +35,7 @@ module Attio
     def request(method, path, params_or_body = {})
       response = connection.send(method) do |req|
         req.url path
-        
+
         case method
         when :get, :delete
           req.params = params_or_body if params_or_body.any?
@@ -56,7 +56,7 @@ module Attio
       ) do |faraday|
         faraday.request :json
         faraday.response :json, content_type: /\bjson$/
-        
+
         faraday.request :retry,
           max: Attio.configuration.max_retries,
           interval: 0.5,
@@ -64,10 +64,10 @@ module Attio
           exceptions: [Faraday::TimeoutError, Faraday::ConnectionFailed]
 
         faraday.response :logger, Attio.configuration.logger if Attio.configuration.debug
-        
+
         faraday.options.timeout = Attio.configuration.timeout
         faraday.options.open_timeout = Attio.configuration.open_timeout
-        
+
         faraday.ssl.verify = Attio.configuration.verify_ssl_certs
         faraday.ssl.ca_file = Attio.configuration.ca_bundle_path if Attio.configuration.ca_bundle_path
       end

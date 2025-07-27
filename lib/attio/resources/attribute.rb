@@ -51,13 +51,13 @@ module Attio
     end
 
     # Define known attributes with proper accessors
-    attr_attio :name, :description, :is_required, :is_unique, 
-               :is_default_value_enabled, :default_value, :options
+    attr_attio :name, :description, :is_required, :is_unique,
+      :is_default_value_enabled, :default_value, :options
 
     # Read-only attributes
     attr_reader :api_slug, :type, :attio_object_id, :object_api_slug,
-                :parent_object_id, :created_by_actor, :is_archived, :archived_at,
-                :title
+      :parent_object_id, :created_by_actor, :is_archived, :archived_at,
+      :title
 
     def initialize(attributes = {}, opts = {})
       super
@@ -148,7 +148,7 @@ module Attio
         # Extract simple ID if it's a nested hash
         attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
         validate_id!(attribute_id)
-        
+
         # For attributes, we need the object context - check if it's in the nested ID
         if id.is_a?(Hash) && id["object_id"]
           object_id = id["object_id"]
@@ -157,7 +157,7 @@ module Attio
           # Fall back to regular attributes endpoint
           response = execute_request(:GET, "#{resource_path}/#{attribute_id}", {}, opts)
         end
-        
+
         new(response["data"] || response, opts)
       end
 
@@ -166,7 +166,7 @@ module Attio
         # Extract simple ID if it's a nested hash
         attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
         validate_id!(attribute_id)
-        
+
         # For attributes, we need the object context
         if id.is_a?(Hash) && id["object_id"]
           object_id = id["object_id"]
@@ -177,7 +177,7 @@ module Attio
           prepared_params = prepare_params_for_update(params)
           response = execute_request(:PATCH, "#{resource_path}/#{attribute_id}", prepared_params, opts)
         end
-        
+
         new(response["data"] || response, opts)
       end
 
@@ -187,8 +187,8 @@ module Attio
         validate_type_config!(params)
 
         # Generate api_slug from name if not provided
-        api_slug = params[:api_slug] || params[:name].downcase.gsub(/[^a-z0-9]+/, '_')
-        
+        api_slug = params[:api_slug] || params[:name].downcase.gsub(/[^a-z0-9]+/, "_")
+
         {
           data: {
             title: params[:name] || params[:title],
@@ -219,7 +219,7 @@ module Attio
 
         update_params = params.slice(*updateable_fields)
         update_params[:options] = prepare_options(update_params[:options]) if update_params[:options]
-        
+
         # Wrap in data for API
         {
           data: update_params
@@ -231,7 +231,7 @@ module Attio
         if params[:object]
           object = params.delete(:object)
           validate_object_identifier!(object)
-          
+
           response = execute_request(:GET, "objects/#{object}/attributes", params, opts)
           APIResource::ListObject.new(response, self, params.merge(object: object), opts)
         else
@@ -243,7 +243,7 @@ module Attio
       def create(params = {}, **opts)
         object = params[:object]
         validate_object_identifier!(object)
-        
+
         prepared_params = prepare_params_for_create(params)
         response = execute_request(:POST, "objects/#{object}/attributes", prepared_params, opts)
         new(response["data"] || response, opts)

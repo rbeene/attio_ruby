@@ -31,46 +31,46 @@ RSpec.describe Attio::Entry do
     end
 
     before do
-      allow(Attio::Entry).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a POST request to the correct endpoint" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :POST,
         "lists/#{list_id}/entries/query",
         {},
         {}
       )
 
-      Attio::Entry.list(list: list_id)
+      described_class.list(list: list_id)
     end
 
     it "returns a ListObject" do
-      result = Attio::Entry.list(list: list_id)
+      result = described_class.list(list: list_id)
       expect(result).to be_a(Attio::APIResource::ListObject)
-      expect(result.data.first).to be_a(Attio::Entry)
+      expect(result.data.first).to be_a(described_class)
     end
 
     it "accepts query parameters" do
       query_params = {
-        filter: { status: "active" },
-        sorts: [{ attribute: "created_at", direction: "desc" }],
+        filter: {status: "active"},
+        sorts: [{attribute: "created_at", direction: "desc"}],
         limit: 10,
         offset: 0
       }
 
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :POST,
         "lists/#{list_id}/entries/query",
         query_params,
         {}
       )
 
-      Attio::Entry.list(list: list_id, **query_params)
+      described_class.list(list: list_id, **query_params)
     end
 
     it "requires a list parameter" do
-      expect { Attio::Entry.list }.to raise_error(ArgumentError, "List identifier is required")
+      expect { described_class.list }.to raise_error(ArgumentError, "List identifier is required")
     end
   end
 
@@ -93,32 +93,32 @@ RSpec.describe Attio::Entry do
     end
 
     before do
-      allow(Attio::Entry).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a POST request with the correct data structure" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :POST,
         "lists/#{list_id}/entries",
-        { data: create_params },
+        {data: create_params},
         {}
       )
 
-      Attio::Entry.create(list: list_id, **create_params)
+      described_class.create(list: list_id, **create_params)
     end
 
     it "returns an Entry instance" do
-      result = Attio::Entry.create(list: list_id, **create_params)
-      expect(result).to be_a(Attio::Entry)
+      result = described_class.create(list: list_id, **create_params)
+      expect(result).to be_a(described_class)
       expect(result.parent_record_id).to eq("test-record-id")
     end
 
     it "requires a list parameter" do
-      expect { Attio::Entry.create(**create_params) }.to raise_error(ArgumentError, "List identifier is required")
+      expect { described_class.create(**create_params) }.to raise_error(ArgumentError, "List identifier is required")
     end
 
     it "requires parent_record_id and parent_object" do
-      expect { Attio::Entry.create(list: list_id) }.to raise_error(ArgumentError, "parent_record_id and parent_object are required")
+      expect { described_class.create(list: list_id) }.to raise_error(ArgumentError, "parent_record_id and parent_object are required")
     end
   end
 
@@ -130,29 +130,29 @@ RSpec.describe Attio::Entry do
     end
 
     before do
-      allow(Attio::Entry).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to the correct endpoint" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "lists/#{list_id}/entries/#{entry_id}",
         {},
         {}
       )
 
-      Attio::Entry.retrieve(list: list_id, entry_id: entry_id)
+      described_class.retrieve(list: list_id, entry_id: entry_id)
     end
 
     it "returns an Entry instance" do
-      result = Attio::Entry.retrieve(list: list_id, entry_id: entry_id)
-      expect(result).to be_a(Attio::Entry)
+      result = described_class.retrieve(list: list_id, entry_id: entry_id)
+      expect(result).to be_a(described_class)
       expect(result.id).to eq(entry_data[:id])
     end
 
     it "requires both list and entry_id" do
-      expect { Attio::Entry.retrieve(list: list_id) }.to raise_error(ArgumentError, "Entry ID is required")
-      expect { Attio::Entry.retrieve(entry_id: entry_id) }.to raise_error(ArgumentError, "List identifier is required")
+      expect { described_class.retrieve(list: list_id) }.to raise_error(ArgumentError, "Entry ID is required")
+      expect { described_class.retrieve(entry_id: entry_id) }.to raise_error(ArgumentError, "List identifier is required")
     end
   end
 
@@ -173,56 +173,56 @@ RSpec.describe Attio::Entry do
     end
 
     before do
-      allow(Attio::Entry).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a PATCH request with the correct data" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :PATCH,
         "lists/#{list_id}/entries/#{entry_id}",
-        { data: update_params },
+        {data: update_params},
         {}
       )
 
-      Attio::Entry.update(list: list_id, entry_id: entry_id, **update_params)
+      described_class.update(list: list_id, entry_id: entry_id, **update_params)
     end
 
     it "supports append mode for multiselect values" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :PATCH,
         "lists/#{list_id}/entries/#{entry_id}",
-        { data: update_params, mode: "append" },
+        {data: update_params, mode: "append"},
         {}
       )
 
-      Attio::Entry.update(list: list_id, entry_id: entry_id, mode: "append", **update_params)
+      described_class.update(list: list_id, entry_id: entry_id, mode: "append", **update_params)
     end
 
     it "returns an updated Entry instance" do
-      result = Attio::Entry.update(list: list_id, entry_id: entry_id, **update_params)
-      expect(result).to be_a(Attio::Entry)
+      result = described_class.update(list: list_id, entry_id: entry_id, **update_params)
+      expect(result).to be_a(described_class)
     end
   end
 
   describe ".delete" do
     before do
-      allow(Attio::Entry).to receive(:execute_request).and_return({})
+      allow(described_class).to receive(:execute_request).and_return({})
     end
 
     it "sends a DELETE request to the correct endpoint" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :DELETE,
         "lists/#{list_id}/entries/#{entry_id}",
         {},
         {}
       )
 
-      Attio::Entry.delete(list: list_id, entry_id: entry_id)
+      described_class.delete(list: list_id, entry_id: entry_id)
     end
 
     it "returns true on success" do
-      result = Attio::Entry.delete(list: list_id, entry_id: entry_id)
-      expect(result).to eq(true)
+      result = described_class.delete(list: list_id, entry_id: entry_id)
+      expect(result).to be(true)
     end
   end
 
@@ -244,23 +244,23 @@ RSpec.describe Attio::Entry do
     end
 
     before do
-      allow(Attio::Entry).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a PUT request to the correct endpoint" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :PUT,
         "lists/#{list_id}/entries",
-        { data: assert_params },
+        {data: assert_params},
         {}
       )
 
-      Attio::Entry.assert_by_parent(list: list_id, **assert_params)
+      described_class.assert_by_parent(list: list_id, **assert_params)
     end
 
     it "returns an Entry instance" do
-      result = Attio::Entry.assert_by_parent(list: list_id, **assert_params)
-      expect(result).to be_a(Attio::Entry)
+      result = described_class.assert_by_parent(list: list_id, **assert_params)
+      expect(result).to be_a(described_class)
     end
   end
 
@@ -269,35 +269,35 @@ RSpec.describe Attio::Entry do
     let(:response) do
       {
         "data" => [
-          { value: "option1", label: "Option 1" },
-          { value: "option2", label: "Option 2" }
+          {value: "option1", label: "Option 1"},
+          {value: "option2", label: "Option 2"}
         ]
       }
     end
 
     before do
-      allow(Attio::Entry).to receive(:execute_request).and_return(response)
+      allow(described_class).to receive(:execute_request).and_return(response)
     end
 
     it "sends a GET request to the correct endpoint" do
-      expect(Attio::Entry).to receive(:execute_request).with(
+      expect(described_class).to receive(:execute_request).with(
         :GET,
         "lists/#{list_id}/entries/#{entry_id}/attributes/#{attribute_id}/values",
         {},
         {}
       )
 
-      Attio::Entry.list_attribute_values(list: list_id, entry_id: entry_id, attribute_id: attribute_id)
+      described_class.list_attribute_values(list: list_id, entry_id: entry_id, attribute_id: attribute_id)
     end
 
     it "returns the values array" do
-      result = Attio::Entry.list_attribute_values(list: list_id, entry_id: entry_id, attribute_id: attribute_id)
+      result = described_class.list_attribute_values(list: list_id, entry_id: entry_id, attribute_id: attribute_id)
       expect(result).to eq(response["data"])
     end
   end
 
   describe "instance methods" do
-    let(:entry) { Attio::Entry.new(entry_data) }
+    let(:entry) { described_class.new(entry_data) }
 
     describe "#parent_record_id" do
       it "returns the parent record ID" do
@@ -324,20 +324,20 @@ RSpec.describe Attio::Entry do
     end
 
     describe "#save" do
-      let(:updated_values) { { status: "completed" } }
+      let(:updated_values) { {status: "completed"} }
 
       before do
         entry.entry_values = entry.entry_values.merge(updated_values)
-        allow(Attio::Entry).to receive(:execute_request).and_return(
+        allow(described_class).to receive(:execute_request).and_return(
           "data" => entry_data.merge(entry_values: entry.entry_values)
         )
       end
 
       it "updates the entry with changed values" do
-        expect(Attio::Entry).to receive(:execute_request).with(
+        expect(described_class).to receive(:execute_request).with(
           :PATCH,
           "lists/#{list_id}/entries/#{entry_id}",
-          { data: { entry_values: entry.entry_values } },
+          {data: {entry_values: entry.entry_values}},
           {}
         )
 
@@ -347,18 +347,18 @@ RSpec.describe Attio::Entry do
 
     describe "#destroy" do
       before do
-        allow(Attio::Entry).to receive(:execute_request).and_return({})
+        allow(described_class).to receive(:execute_request).and_return({})
       end
 
       it "deletes the entry" do
-        expect(Attio::Entry).to receive(:execute_request).with(
+        expect(described_class).to receive(:execute_request).with(
           :DELETE,
           "lists/#{list_id}/entries/#{entry_id}",
           {},
           {}
         )
 
-        expect(entry.destroy).to eq(true)
+        expect(entry.destroy).to be(true)
       end
     end
   end
