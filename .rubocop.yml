@@ -122,8 +122,28 @@ RSpec/ContextWording:
 RSpec/IndexedLet:
   Enabled: false
 
-# Disable Capybara cops as they're causing errors and we're not using Capybara
-Capybara/RSpec/PredicateMatcher:
+# Disable all Capybara cops (we don't use Capybara)
+Capybara:
+  Enabled: false
+
+Capybara/RSpec:
+  Enabled: false
+
+RSpec/Capybara:
+  Enabled: false
+
+# Disable Rails-specific RSpec cops (we're not a Rails app)
+RSpec/Rails:
+  Enabled: false
+
+RSpecRails:
+  Enabled: false
+
+# Disable all FactoryBot cops (we don't use FactoryBot)
+FactoryBot:
+  Enabled: false
+
+RSpec/FactoryBot:
   Enabled: false
 
 # Allow global variables in examples
