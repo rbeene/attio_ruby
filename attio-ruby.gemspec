@@ -10,16 +10,16 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Ruby client library for the Attio API"
   spec.description = "A comprehensive Ruby client library for the Attio CRM API with OAuth support, type safety, and extensive test coverage"
-  spec.homepage = "https://github.com/attio/attio-ruby"
+  spec.homepage = "https://github.com/rbeene/attio_ruby"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.4.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/attio/attio-ruby"
-  spec.metadata["changelog_uri"] = "https://github.com/attio/attio-ruby/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/rbeene/attio_ruby"
+  spec.metadata["changelog_uri"] = "https://github.com/rbeene/attio_ruby/blob/main/CHANGELOG.md"
   spec.metadata["documentation_uri"] = "https://rubydoc.info/gems/attio-ruby"
-  spec.metadata["bug_tracker_uri"] = "https://github.com/attio/attio-ruby/issues"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/rbeene/attio_ruby/issues"
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.chdir(__dir__) do
