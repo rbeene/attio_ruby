@@ -35,7 +35,7 @@ RSpec.describe Attio::OAuth::Client do
   end
 
   describe "#authorization_url" do
-    context "generating authorization URL" do
+    context "when generating authorization URL" do
       let(:result) { client.authorization_url }
 
       it "returns a hash with URL and state" do

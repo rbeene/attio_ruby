@@ -97,34 +97,24 @@ RSpec.describe Attio::Record do
   end
 
   describe ".update", :vcr do
+    let(:test_person_values) do
+      {name: {first_name: "Update", last_name: "UpdateVCR", full_name: "Update UpdateVCR"}}
+    end
+
+    let(:updated_person_values) do
+      {name: {first_name: "Updated", last_name: "UpdatedVCR", full_name: "Updated UpdatedVCR"}}
+    end
+
     it "updates a record" do
       VCR.use_cassette("record/update_person") do
         # First create a record
-        # Using deterministic test data
-        record = described_class.create(
-          object: "people",
-          values: {
-            name: {
-              first_name: "Update",
-              last_name: "UpdateVCR",
-              full_name: "Update UpdateVCR"
-            }
-          }
-        )
+        record = described_class.create(object: "people", values: test_person_values)
 
         # Then update it
         updated = described_class.update(
           object: "people",
           record_id: record.id,
-          data: {
-            values: {
-              name: {
-                first_name: "Updated",
-                last_name: "UpdatedVCR",
-                full_name: "Updated UpdatedVCR"
-              }
-            }
-          }
+          data: {values: updated_person_values}
         )
 
         expect(updated).to be_a(described_class)
