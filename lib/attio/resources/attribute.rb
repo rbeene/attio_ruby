@@ -47,7 +47,7 @@ module Attio
     }.freeze
 
     def self.resource_path
-      "/attributes"
+      "attributes"
     end
 
     # Define known attributes with proper accessors
@@ -56,7 +56,8 @@ module Attio
 
     # Read-only attributes
     attr_reader :api_slug, :type, :attio_object_id, :object_api_slug,
-                :parent_object_id, :created_by_actor, :is_archived, :archived_at
+                :parent_object_id, :created_by_actor, :is_archived, :archived_at,
+                :title
 
     def initialize(attributes = {}, opts = {})
       super
@@ -69,6 +70,7 @@ module Attio
       @created_by_actor = normalized_attrs[:created_by_actor]
       @is_archived = normalized_attrs[:is_archived] || false
       @archived_at = parse_timestamp(normalized_attrs[:archived_at])
+      @title = normalized_attrs[:title]
     end
 
     # Archive this attribute
@@ -125,25 +127,81 @@ module Attio
       ).compact
     end
 
+    def resource_path
+      raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
+      attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+      "#{self.class.resource_path}/#{attribute_id}"
+    end
+
+    # Override save to handle nested ID
+    def save(**opts)
+      raise InvalidRequestError, "Cannot save an attribute without an ID" unless persisted?
+      return self unless changed?
+
+      # Pass the full ID (including object context) to update method
+      self.class.update(id, changed_attributes, **opts)
+    end
+
     class << self
+      # Override retrieve to handle object-scoped attributes
+      def retrieve(id, **opts)
+        # Extract simple ID if it's a nested hash
+        attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+        validate_id!(attribute_id)
+        
+        # For attributes, we need the object context - check if it's in the nested ID
+        if id.is_a?(Hash) && id["object_id"]
+          object_id = id["object_id"]
+          response = execute_request(:GET, "objects/#{object_id}/attributes/#{attribute_id}", {}, opts)
+        else
+          # Fall back to regular attributes endpoint
+          response = execute_request(:GET, "#{resource_path}/#{attribute_id}", {}, opts)
+        end
+        
+        new(response["data"] || response, opts)
+      end
+
+      # Override update to handle object-scoped attributes
+      def update(id, params = {}, **opts)
+        # Extract simple ID if it's a nested hash
+        attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+        validate_id!(attribute_id)
+        
+        # For attributes, we need the object context
+        if id.is_a?(Hash) && id["object_id"]
+          object_id = id["object_id"]
+          prepared_params = prepare_params_for_update(params)
+          response = execute_request(:PATCH, "objects/#{object_id}/attributes/#{attribute_id}", prepared_params, opts)
+        else
+          # Fall back to regular attributes endpoint
+          prepared_params = prepare_params_for_update(params)
+          response = execute_request(:PATCH, "#{resource_path}/#{attribute_id}", prepared_params, opts)
+        end
+        
+        new(response["data"] || response, opts)
+      end
+
       # Override create to handle validation and object parameter
       def prepare_params_for_create(params)
-        validate_object_identifier!(params[:object])
         validate_type!(params[:type])
         validate_type_config!(params)
 
+        # Generate api_slug from name if not provided
+        api_slug = params[:api_slug] || params[:name].downcase.gsub(/[^a-z0-9]+/, '_')
+        
         {
-          object: params[:object],
-          name: params[:name],
-          type: params[:type],
-          description: params[:description],
-          is_required: params[:is_required],
-          is_unique: params[:is_unique],
-          is_default_value_enabled: params[:is_default_value_enabled],
-          default_value: params[:default_value],
-          options: prepare_options(params[:options]),
-          target_object: params[:target_object]
-        }.compact
+          data: {
+            title: params[:name] || params[:title],
+            api_slug: api_slug,
+            type: params[:type],
+            description: params[:description],
+            is_required: params[:is_required] || false,
+            is_unique: params[:is_unique] || false,
+            is_multiselect: params[:is_multiselect] || false,
+            default_value: params[:default_value],
+            config: params[:config] || {}
+          }.compact
+        }
       end
 
       # Override update params preparation
@@ -151,17 +209,44 @@ module Attio
         # Only certain fields can be updated
         updateable_fields = %i[
           name
+          title
           description
           is_required
           is_unique
-          is_default_value_enabled
           default_value
           options
         ]
 
         update_params = params.slice(*updateable_fields)
         update_params[:options] = prepare_options(update_params[:options]) if update_params[:options]
-        update_params
+        
+        # Wrap in data for API
+        {
+          data: update_params
+        }
+      end
+
+      # Override list to handle object-specific attributes
+      def list(params = {}, **opts)
+        if params[:object]
+          object = params.delete(:object)
+          validate_object_identifier!(object)
+          
+          response = execute_request(:GET, "objects/#{object}/attributes", params, opts)
+          APIResource::ListObject.new(response, self, params.merge(object: object), opts)
+        else
+          raise ArgumentError, "Attributes must be listed for a specific object. Use Attribute.for_object(object_slug) or pass object: parameter"
+        end
+      end
+
+      # Override create to handle object-specific attributes
+      def create(params = {}, **opts)
+        object = params[:object]
+        validate_object_identifier!(object)
+        
+        prepared_params = prepare_params_for_create(params)
+        response = execute_request(:POST, "objects/#{object}/attributes", prepared_params, opts)
+        new(response["data"] || response, opts)
       end
 
       # List attributes for a specific object

@@ -7,7 +7,7 @@ module Attio
     api_operations :list, :retrieve, :create, :update, :delete
 
     def self.resource_path
-      "/objects"
+      "objects"
     end
 
     # Define known attributes

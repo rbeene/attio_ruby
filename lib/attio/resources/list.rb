@@ -4,10 +4,10 @@ require_relative "../api_resource"
 
 module Attio
   class List < APIResource
-    api_operations :list, :retrieve, :create, :update, :delete
+    api_operations :list, :retrieve, :create, :update
 
     def self.resource_path
-      "/lists"
+      "lists"
     end
 
     # Define known attributes with proper accessors
@@ -29,6 +29,26 @@ module Attio
       @created_by_actor = normalized_attrs[:created_by_actor]
       @workspace_id = normalized_attrs[:workspace_id]
       @workspace_access = normalized_attrs[:workspace_access]
+    end
+
+    def resource_path
+      raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
+      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      "#{self.class.resource_path}/#{list_id}"
+    end
+
+    # Override save to handle nested ID
+    def save(**opts)
+      raise InvalidRequestError, "Cannot save a list without an ID" unless persisted?
+      return self unless changed?
+
+      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      self.class.update(list_id, changed_attributes, **opts)
+    end
+
+    # Lists cannot be deleted via API
+    def destroy(**opts)
+      raise NotImplementedError, "Lists cannot be deleted via the Attio API"
     end
 
     # Get all entries in this list
@@ -78,11 +98,25 @@ module Attio
       def prepare_params_for_create(params)
         validate_object_identifier!(params[:object])
         
+        # Generate api_slug from name if not provided
+        api_slug = params[:api_slug] || params[:name].downcase.gsub(/[^a-z0-9]+/, '_')
+        
         {
-          name: params[:name],
-          object: params[:object],
-          workspace_access: params[:workspace_access]
-        }.compact
+          data: {
+            name: params[:name],
+            parent_object: params[:object],
+            api_slug: api_slug,
+            workspace_access: params[:workspace_access] || "full-access",
+            workspace_member_access: params[:workspace_member_access] || []
+          }
+        }
+      end
+
+      # Override update to handle data wrapper
+      def prepare_params_for_update(params)
+        {
+          data: params
+        }
       end
 
       # Find list by API slug

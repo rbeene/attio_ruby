@@ -40,7 +40,7 @@ module Attio
         when :get, :delete
           req.params = params_or_body if params_or_body.any?
         else
-          req.body = params_or_body.to_json if params_or_body.any?
+          req.body = params_or_body.to_json
         end
       end
 

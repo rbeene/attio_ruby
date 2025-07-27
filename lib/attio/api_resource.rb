@@ -20,7 +20,8 @@ module Attio
 
       # Extract metadata and system fields
       if normalized_attrs.is_a?(Hash)
-        @id = normalized_attrs[:id]
+        # Handle Attio's nested ID structure
+        @id = extract_id(normalized_attrs[:id])
         @created_at = parse_timestamp(normalized_attrs[:created_at])
         @metadata = normalized_attrs[:_metadata] || {}
 
@@ -292,7 +293,7 @@ module Attio
         define_singleton_method :create do |params = {}, **opts|
           prepared_params = prepare_params_for_create(params)
           response = execute_request(:POST, resource_path, prepared_params, opts)
-          new(response[:data] || response, opts)
+          new(response["data"] || response, opts)
         end
       end
 
@@ -300,7 +301,7 @@ module Attio
         define_singleton_method :retrieve do |id, **opts|
           validate_id!(id)
           response = execute_request(:GET, "#{resource_path}/#{id}", {}, opts)
-          new(response[:data] || response, opts)
+          new(response["data"] || response, opts)
         end
         
         singleton_class.send(:alias_method, :get, :retrieve)
@@ -342,10 +343,10 @@ module Attio
         @cursor = nil
 
         if response.is_a?(Hash)
-          raw_data = response[:data] || []
+          raw_data = response["data"] || []
           @data = raw_data.map { |attrs| resource_class.new(attrs, opts) }
-          @has_more = response[:has_more] || false
-          @cursor = response[:cursor]
+          @has_more = response["has_more"] || false
+          @cursor = response["cursor"]
         end
       end
 
@@ -443,6 +444,21 @@ module Attio
       end
     rescue ArgumentError
       nil
+    end
+
+    def extract_id(id_value)
+      case id_value
+      when Hash
+        # Handle Attio's nested ID structure
+        # Objects have { workspace_id: "...", object_id: "..." }
+        # Records have { workspace_id: "...", object_id: "...", record_id: "..." }
+        id_value
+      when String
+        # Simple string ID
+        id_value
+      else
+        id_value
+      end
     end
 
     def deep_copy(obj)

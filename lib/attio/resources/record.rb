@@ -6,9 +6,10 @@ module Attio
   class Record < APIResource
     # Record doesn't use standard CRUD operations due to object parameter requirement
     # We'll define custom methods instead
+    api_operations :delete
     
     def self.resource_path
-      "/objects"
+      "objects"
     end
 
     attr_reader :attio_object_id, :object_api_slug
@@ -28,45 +29,61 @@ module Attio
 
     class << self
       # List records for an object
-      def list(params = {}, object:, **opts)
+      def list(object:, **opts)
         validate_object_identifier!(object)
 
-        query_params = build_query_params(params)
+        # Extract query parameters from opts
+        query_params = build_query_params(opts)
 
         response = execute_request(:POST, "#{resource_path}/#{object}/records/query", query_params, opts)
 
-        APIResource::ListObject.new(response, self, params.merge(object: object), opts)
+        APIResource::ListObject.new(response, self, opts.merge(object: object), opts)
       end
       alias_method :all, :list
 
       # Create a new record
-      def create(values:, object:, **opts)
-        validate_object_identifier!(object)
-        validate_values!(values)
+      def create(object: nil, values: nil, data: nil, **opts)
+        # Handle both parameter styles
+        if values
+          # Test style: create(object: "people", values: {...})
+          validate_object_identifier!(object)
+          validate_values!(values)
+          normalized_values = values
+        elsif data && data[:values]
+          # API style: create(object: "people", data: { values: {...} })
+          validate_object_identifier!(object)
+          validate_values!(data[:values])
+          normalized_values = data[:values]
+        else
+          raise ArgumentError, "Must provide object and either values or data.values"
+        end
 
-        params = {
+        request_params = {
           data: {
-            values: normalize_values(values)
+            values: normalize_values(normalized_values)
           }
         }
 
-        response = execute_request(:POST, "#{resource_path}/#{object}/records", params, opts)
+        response = execute_request(:POST, "#{resource_path}/#{object}/records", request_params, opts)
 
         # Ensure object info is included
-        record_data = response[:data] || {}
+        record_data = response["data"] || {}
         record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
 
         new(record_data, opts)
       end
 
       # Retrieve a specific record
-      def retrieve(record_id:, object:, **opts)
+      def retrieve(record_id: nil, object: nil, **opts)
         validate_object_identifier!(object)
-        validate_id!(record_id)
+        
+        # Extract simple ID if it's a nested hash
+        simple_record_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
+        validate_id!(simple_record_id)
 
-        response = execute_request(:GET, "#{resource_path}/#{object}/records/#{record_id}", {}, opts)
+        response = execute_request(:GET, "#{resource_path}/#{object}/records/#{simple_record_id}", {}, opts)
 
-        record_data = response[:data] || {}
+        record_data = response["data"] || {}
         record_data[:object_api_slug] ||= object
 
         new(record_data, opts)
@@ -74,7 +91,76 @@ module Attio
       alias_method :get, :retrieve
       alias_method :find, :retrieve
 
+      # Update a record
+      def update(record_id: nil, object: nil, data: nil, **opts)
+        validate_object_identifier!(object)
+        
+        # Extract simple ID if it's a nested hash
+        simple_record_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
+        validate_id!(simple_record_id)
+
+        request_params = {
+          data: {
+            values: normalize_values(data[:values] || data)
+          }
+        }
+
+        response = execute_request(:PUT, "#{resource_path}/#{object}/records/#{simple_record_id}", request_params, opts)
+
+        record_data = response["data"] || {}
+        record_data[:object_api_slug] ||= object
+
+        new(record_data, opts)
+      end
+
       # Batch create records
+      def batch_create(object: nil, records: nil, **opts)
+        validate_object_identifier!(object)
+        validate_batch!(records)
+
+        request_params = {
+          data: records.map do |record|
+            values = record[:data] ? record[:data][:values] : record[:values] || record
+            { values: normalize_values(values) }
+          end
+        }
+
+        response = execute_request(:POST, "records/batch", request_params, opts)
+
+        (response["data"] || []).map do |record_data|
+          record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
+          new(record_data, opts)
+        end
+      end
+
+      # Batch update records  
+      def batch_update(object: nil, records: nil, **opts)
+        validate_object_identifier!(object)
+        validate_batch!(records)
+
+        request_params = {
+          data: records.map do |record|
+            record_id = record[:record_id] || record[:id]
+            simple_record_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
+            
+            values = record[:data] ? record[:data][:values] : record[:values]
+            
+            {
+              id: { record_id: simple_record_id },
+              values: normalize_values(values)
+            }
+          end
+        }
+
+        response = execute_request(:PUT, "records/batch", request_params, opts)
+
+        (response["data"] || []).map do |record_data|
+          record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
+          new(record_data, opts)
+        end
+      end
+
+      # Batch create records (legacy name)
       def create_batch(records:, object:, **opts)
         validate_object_identifier!(object)
         validate_batch!(records)
@@ -86,7 +172,7 @@ module Attio
 
         response = execute_request(:POST, "#{resource_path}/batch", params, opts)
 
-        (response[:data] || []).map do |record_data|
+        (response["data"] || []).map do |record_data|
           record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
           new(record_data, opts)
         end
@@ -216,7 +302,20 @@ module Attio
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without object context" unless object_api_slug
-      "#{self.class.resource_path}/#{object_api_slug}/records/#{id}"
+      record_id = id.is_a?(Hash) ? id["record_id"] : id
+      "#{self.class.resource_path}/#{object_api_slug}/records/#{record_id}"
+    end
+
+    # Override destroy to use correct path
+    def destroy(**opts)
+      raise InvalidRequestError, "Cannot destroy a record without an ID" unless persisted?
+      raise InvalidRequestError, "Cannot destroy without object context" unless object_api_slug
+
+      self.class.send(:execute_request, :DELETE, resource_path, {}, opts)
+      @attributes.clear
+      @changed_attributes.clear
+      @id = nil
+      true
     end
 
     def to_h

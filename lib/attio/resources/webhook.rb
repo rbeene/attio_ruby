@@ -7,7 +7,7 @@ module Attio
     api_operations :list, :retrieve, :create, :update, :delete
 
     def self.resource_path
-      "/webhooks"
+      "webhooks"
     end
 
     # Event types
@@ -30,7 +30,7 @@ module Attio
     ].freeze
 
     # Define known attributes with proper accessors
-    attr_attio :url, :events, :state, :api_version
+    attr_attio :target_url, :subscriptions, :status
 
     # Read-only attributes
     attr_reader :secret, :last_event_at, :created_by_actor
@@ -43,25 +43,48 @@ module Attio
       @created_by_actor = normalized_attrs[:created_by_actor]
     end
 
+    def resource_path
+      raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
+      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      "#{self.class.resource_path}/#{webhook_id}"
+    end
+
+    # Override save to handle nested ID
+    def save(**opts)
+      raise InvalidRequestError, "Cannot save a webhook without an ID" unless persisted?
+      return self unless changed?
+
+      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      self.class.update(webhook_id, changed_attributes, **opts)
+    end
+
+    # Override destroy to handle nested ID
+    def destroy(**opts)
+      raise InvalidRequestError, "Cannot destroy a webhook without an ID" unless persisted?
+
+      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      self.class.delete(webhook_id, **opts)
+    end
+
     # Check if webhook is active
     def active?
-      state == "active"
+      status == "active"
     end
 
     # Check if webhook is paused
     def paused?
-      state == "paused"
+      status == "paused"
     end
 
     # Pause the webhook
     def pause(**opts)
-      self.state = "paused"
+      self.status = "paused"
       save(**opts)
     end
 
     # Resume the webhook
     def resume(**opts)
-      self.state = "active"
+      self.status = "active"
       save(**opts)
     end
     alias_method :activate, :resume
@@ -97,49 +120,44 @@ module Attio
     class << self
       # Override create to handle validation
       def prepare_params_for_create(params)
-        validate_url!(params[:url])
-        validate_events!(params[:events])
+        validate_target_url!(params[:target_url])
+        validate_subscriptions!(params[:subscriptions])
 
         {
-          url: params[:url],
-          events: Array(params[:events]),
-          state: params[:state] || "active"
+          data: {
+            target_url: params[:target_url],
+            subscriptions: Array(params[:subscriptions])
+          }
         }
       end
 
       # Override update params preparation
       def prepare_params_for_update(params)
-        # Only certain fields can be updated
-        updateable_fields = %i[url events state]
-        update_params = params.slice(*updateable_fields)
-
-        # Validate if updating
-        validate_url!(update_params[:url]) if update_params[:url]
-        validate_events!(update_params[:events]) if update_params[:events]
-
-        update_params
+        {
+          data: params
+        }
       end
 
       private
 
-      def validate_url!(url)
-        raise ArgumentError, "URL is required" if url.nil? || url.empty?
+      def validate_target_url!(url)
+        raise ArgumentError, "target_url is required" if url.nil? || url.empty?
 
         uri = URI.parse(url)
         unless uri.scheme == "https"
-          raise ArgumentError, "Webhook URL must use HTTPS"
+          raise ArgumentError, "Webhook target_url must use HTTPS"
         end
       rescue URI::InvalidURIError
-        raise ArgumentError, "Invalid webhook URL"
+        raise ArgumentError, "Invalid webhook target_url"
       end
 
-      def validate_events!(events)
-        events = Array(events)
-        raise ArgumentError, "At least one event is required" if events.empty?
-
-        invalid_events = events - EVENTS
-        unless invalid_events.empty?
-          raise ArgumentError, "Invalid events: #{invalid_events.join(", ")}. Valid events: #{EVENTS.join(", ")}"
+      def validate_subscriptions!(subscriptions)
+        raise ArgumentError, "subscriptions are required" if subscriptions.nil? || subscriptions.empty?
+        raise ArgumentError, "subscriptions must be an array" unless subscriptions.is_a?(Array)
+        
+        subscriptions.each do |sub|
+          event_type = sub[:event_type] || sub["event_type"]
+          raise ArgumentError, "Each subscription must have an event_type" unless event_type
         end
       end
     end

@@ -7,7 +7,7 @@ module Attio
     api_operations :list, :retrieve, :create, :delete
 
     def self.resource_path
-      "/notes"
+      "notes"
     end
 
     # Read-only attributes - notes are immutable
@@ -51,6 +51,20 @@ module Attio
       content_plaintext || strip_html(content)
     end
 
+    def resource_path
+      raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
+      note_id = id.is_a?(Hash) ? id["note_id"] : id
+      "#{self.class.resource_path}/#{note_id}"
+    end
+
+    # Override destroy to handle nested ID
+    def destroy(**opts)
+      raise InvalidRequestError, "Cannot destroy a note without an ID" unless persisted?
+
+      note_id = id.is_a?(Hash) ? id["note_id"] : id
+      self.class.delete(note_id, **opts)
+    end
+
     # Notes cannot be updated
     def save(*)
       raise NotImplementedError, "Notes cannot be updated. Create a new note instead."
@@ -72,6 +86,30 @@ module Attio
     end
 
     class << self
+      # Override retrieve to handle nested ID
+      def retrieve(id, **opts)
+        note_id = id.is_a?(Hash) ? id["note_id"] : id
+        validate_id!(note_id)
+        response = execute_request(:GET, "#{resource_path}/#{note_id}", {}, opts)
+        new(response["data"] || response, opts)
+      end
+
+      # Override create to handle validation and parameter mapping
+      def create(params = {}, **opts)
+        # Map object/record_id to parent_object/parent_record_id
+        normalized_params = {
+          parent_object: params[:object] || params[:parent_object],
+          parent_record_id: params[:record_id] || params[:parent_record_id],
+          title: params[:title] || params[:content] || "Note",
+          content: params[:content],
+          format: params[:format]
+        }
+        
+        prepared_params = prepare_params_for_create(normalized_params)
+        response = execute_request(:POST, resource_path, prepared_params, opts)
+        new(response["data"] || response, opts)
+      end
+
       # Override create to handle validation
       def prepare_params_for_create(params)
         validate_parent!(params[:parent_object], params[:parent_record_id])
@@ -79,10 +117,13 @@ module Attio
         validate_format!(params[:format]) if params[:format]
 
         {
-          parent_object: params[:parent_object],
-          parent_record_id: params[:parent_record_id],
-          content: params[:content],
-          format: params[:format] || "plaintext"
+          data: {
+            title: params[:title],
+            parent_object: params[:parent_object],
+            parent_record_id: params[:parent_record_id],
+            content: params[:content],
+            format: params[:format] || "plaintext"
+          }
         }
       end
 

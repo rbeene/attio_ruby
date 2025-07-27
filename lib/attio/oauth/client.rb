@@ -124,7 +124,7 @@ module Attio
         end
 
         if response.success?
-          JSON.parse(response.body, symbolize_names: true)
+          response.body
         else
           handle_oauth_error(response)
         end

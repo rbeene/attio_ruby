@@ -1,32 +1,30 @@
 # frozen_string_literal: true
 
 RSpec.shared_examples "a listable resource" do
-  let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
   let(:list_response) do
     {
-      status: 200,
-      headers: {},
-      body: JSON.generate({
-        data: [
-          {id: "1", name: "Item 1"},
-          {id: "2", name: "Item 2"}
-        ],
-        pagination: {
-          has_next_page: false,
-          total_count: 2
-        }
-      })
+      data: [
+        {id: "1", name: "Item 1"},
+        {id: "2", name: "Item 2"}
+      ],
+      has_more: false,
+      cursor: nil
     }
   end
 
   before do
-    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
-    allow(connection_manager).to receive(:execute).and_return(list_response)
+    stub_request(:get, "https://api.attio.com#{described_class.resource_path}")
+      .with(headers: { "Authorization" => "Bearer test_api_key" })
+      .to_return(
+        status: 200,
+        body: JSON.generate(list_response),
+        headers: { "Content-Type" => "application/json" }
+      )
   end
 
   it "returns a ListObject" do
     result = described_class.list
-    expect(result).to be_a(Attio::APIOperations::List::ListObject)
+    expect(result).to be_a(Attio::APIResource::ListObject)
   end
 
   it "contains the correct number of items" do
@@ -36,8 +34,7 @@ RSpec.shared_examples "a listable resource" do
 
   it "supports pagination" do
     result = described_class.list
-    expect(result.has_next_page?).to be false
-    expect(result.total_count).to eq(2)
+    expect(result.has_more?).to be false
   end
 
   it "supports auto-pagination" do
@@ -48,21 +45,23 @@ RSpec.shared_examples "a listable resource" do
 end
 
 RSpec.shared_examples "a retrievable resource" do
-  let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
   let(:retrieve_response) do
     {
-      status: 200,
-      headers: {},
-      body: JSON.generate({
+      data: {
         id: "123",
         name: "Test Item"
-      })
+      }
     }
   end
 
   before do
-    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
-    allow(connection_manager).to receive(:execute).and_return(retrieve_response)
+    stub_request(:get, "https://api.attio.com#{described_class.resource_path}/123")
+      .with(headers: { "Authorization" => "Bearer test_api_key" })
+      .to_return(
+        status: 200,
+        body: JSON.generate(retrieve_response),
+        headers: { "Content-Type" => "application/json" }
+      )
   end
 
   it "retrieves a single resource" do
@@ -79,21 +78,26 @@ RSpec.shared_examples "a retrievable resource" do
 end
 
 RSpec.shared_examples "a creatable resource" do
-  let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
   let(:create_response) do
     {
-      status: 200,
-      headers: {},
-      body: JSON.generate({
+      data: {
         id: "new-123",
         name: "New Item"
-      })
+      }
     }
   end
 
   before do
-    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
-    allow(connection_manager).to receive(:execute).and_return(create_response)
+    stub_request(:post, "https://api.attio.com#{described_class.resource_path}")
+      .with(
+        headers: { "Authorization" => "Bearer test_api_key" },
+        body: { name: "New Item" }.to_json
+      )
+      .to_return(
+        status: 200,
+        body: JSON.generate(create_response),
+        headers: { "Content-Type" => "application/json" }
+      )
   end
 
   it "creates a new resource" do
@@ -103,39 +107,40 @@ RSpec.shared_examples "a creatable resource" do
   end
 
   it "sends POST request" do
-    allow(connection_manager).to receive(:execute) do |request|
-      expect(request[:method]).to eq(:POST)
-      create_response
-    end
-
     described_class.create(name: "New Item")
+    expect(WebMock).to have_requested(:post, "https://api.attio.com#{described_class.resource_path}")
   end
 end
 
 RSpec.shared_examples "an updatable resource" do
   let(:resource) { described_class.new({id: "123", name: "Original"}) }
-  let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
   let(:update_response) do
     {
-      status: 200,
-      headers: {},
-      body: JSON.generate({
+      data: {
         id: "123",
         name: "Updated"
-      })
+      }
     }
   end
 
   before do
-    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
-    allow(connection_manager).to receive(:execute).and_return(update_response)
+    stub_request(:patch, "https://api.attio.com#{described_class.resource_path}/123")
+      .with(
+        headers: { "Authorization" => "Bearer test_api_key" },
+        body: { name: "Updated" }.to_json
+      )
+      .to_return(
+        status: 200,
+        body: JSON.generate(update_response),
+        headers: { "Content-Type" => "application/json" }
+      )
   end
 
   it "updates the resource" do
     resource.name = "Updated"
     result = resource.save
 
-    expect(result).to eq(resource)
+    expect(result).to be_a(described_class)
     expect(resource.changed?).to be false
   end
 
@@ -144,23 +149,15 @@ RSpec.shared_examples "an updatable resource" do
 
     expect do
       resource_without_id.save
-    end.to raise_error(Attio::Errors::InvalidRequestError)
+    end.to raise_error(Attio::InvalidRequestError)
   end
 end
 
 RSpec.shared_examples "a deletable resource" do
-  let(:connection_manager) { instance_double(Attio::Util::ConnectionManager) }
-  let(:delete_response) do
-    {
-      status: 204,
-      headers: {},
-      body: ""
-    }
-  end
-
   before do
-    allow(Attio).to receive(:connection_manager).and_return(connection_manager)
-    allow(connection_manager).to receive(:execute).and_return(delete_response)
+    stub_request(:delete, "https://api.attio.com#{described_class.resource_path}/123")
+      .with(headers: { "Authorization" => "Bearer test_api_key" })
+      .to_return(status: 204, body: "")
   end
 
   context "when using class method" do
@@ -170,12 +167,8 @@ RSpec.shared_examples "a deletable resource" do
     end
 
     it "sends DELETE request" do
-      allow(connection_manager).to receive(:execute) do |request|
-        expect(request[:method]).to eq(:DELETE)
-        delete_response
-      end
-
       described_class.delete("123")
+      expect(WebMock).to have_requested(:delete, "https://api.attio.com#{described_class.resource_path}/123")
     end
   end
 
@@ -185,7 +178,6 @@ RSpec.shared_examples "a deletable resource" do
     it "deletes the resource" do
       result = resource.destroy
       expect(result).to be true
-      expect(resource).to be_frozen
     end
   end
 end

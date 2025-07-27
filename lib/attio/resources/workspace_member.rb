@@ -7,7 +7,7 @@ module Attio
     api_operations :list, :retrieve
 
     def self.resource_path
-      "/workspace_members"
+      "workspace_members"
     end
 
     # Read-only attributes - workspace members are immutable via API
@@ -86,8 +86,15 @@ module Attio
     class << self
       # Get the current user (the API key owner)
       def me(**opts)
-        response = execute_request(:GET, "#{resource_path}/me", {}, opts)
-        new(response[:data] || response, opts)
+        # The /v2/workspace_members/me endpoint doesn't exist, use /v2/self instead
+        # and then fetch the workspace member details
+        self_response = execute_request(:GET, "self", {}, opts)
+        member_id = self_response[:authorized_by_workspace_member_id]
+        workspace_id = self_response[:workspace_id]
+        
+        # Now fetch the actual workspace member
+        members = list(**opts)
+        members.find { |m| m.id[:workspace_member_id] == member_id }
       end
       alias_method :current, :me
 
