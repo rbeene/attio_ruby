@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+# Start SimpleCov before loading any application code
+if ENV["COVERAGE"] == "true"
+  require "simplecov"
+  SimpleCov.start
+end
+
 require "attio"
 require "pry"
 require "vcr"

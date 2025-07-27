@@ -44,6 +44,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "webmock", "~> 3.18"
   spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "simplecov", "~> 0.22"
+  spec.add_development_dependency "simplecov-cobertura", "~> 2.1"
   spec.add_development_dependency "yard", "~> 0.9"
   spec.add_development_dependency "redcarpet", "~> 3.6"
   spec.add_development_dependency "rubocop", "~> 1.50"
