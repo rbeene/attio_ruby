@@ -114,7 +114,7 @@ module Attio
     end
 
     # Override destroy to use the correct task ID
-    def destroy(**opts) # rubocop:disable Naming/PredicateMethod
+    def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a task without an ID" unless persisted?
 
       task_id = extract_task_id

@@ -67,7 +67,7 @@ module Attio
           scopes
         end
 
-        def validate!(scopes) # rubocop:disable Naming/PredicateMethod
+        def validate!(scopes)
           validate(scopes)
           true
         end

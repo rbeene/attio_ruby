@@ -40,7 +40,7 @@ module Attio
         self
       end
 
-      def revoke! # rubocop:disable Naming/PredicateMethod
+      def revoke!
         raise InvalidTokenError, "No OAuth client configured" unless @client
 
         @client.revoke_token(self)

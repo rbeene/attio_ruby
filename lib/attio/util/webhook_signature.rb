@@ -79,7 +79,7 @@ module Attio
           end
         end
 
-        def secure_compare(a, b) # rubocop:disable Naming/PredicateMethod
+        def secure_compare(a, b)
           return false unless a.bytesize == b.bytesize
 
           # Use constant-time comparison

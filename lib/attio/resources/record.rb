@@ -307,7 +307,7 @@ module Attio
     end
 
     # Override destroy to use correct path
-    def destroy(**opts) # rubocop:disable Naming/PredicateMethod
+    def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a record without an ID" unless persisted?
       raise InvalidRequestError, "Cannot destroy without object context" unless object_api_slug
 

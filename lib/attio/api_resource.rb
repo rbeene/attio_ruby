@@ -188,7 +188,7 @@ module Attio
     end
 
     # Default destroy implementation
-    def destroy(**) # rubocop:disable Naming/PredicateMethod
+    def destroy(**)
       raise InvalidRequestError, "Cannot destroy a resource without an ID" unless persisted?
       self.class.delete(id, **)
       true
