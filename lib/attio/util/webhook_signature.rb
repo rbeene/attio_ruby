@@ -12,8 +12,8 @@ module Attio
       TOLERANCE_SECONDS = 300 # 5 minutes
 
       class << self
-        # Verify webhook signature
-        def verify(payload:, signature:, timestamp:, secret:, tolerance: TOLERANCE_SECONDS)
+        # Verify webhook signature (raises exception on failure)
+        def verify!(payload:, signature:, timestamp:, secret:, tolerance: TOLERANCE_SECONDS)
           validate_inputs!(payload, signature, timestamp, secret)
 
           # Check timestamp to prevent replay attacks
@@ -26,6 +26,14 @@ module Attio
           secure_compare(signature, expected_signature)
         rescue => e
           raise SignatureVerificationError, "Webhook signature verification failed: #{e.message}"
+        end
+
+        # Verify webhook signature (returns boolean)
+        def verify(payload:, signature:, timestamp:, secret:, tolerance: TOLERANCE_SECONDS)
+          verify!(payload: payload, signature: signature, timestamp: timestamp, secret: secret, tolerance: tolerance)
+          true
+        rescue SignatureVerificationError
+          false
         end
 
         # Calculate signature for a payload
@@ -105,7 +113,7 @@ module Attio
 
           signature_data = WebhookSignature.extract_from_headers(headers)
 
-          WebhookSignature.verify(
+          WebhookSignature.verify!(
             payload: body,
             signature: signature_data[:signature],
             timestamp: signature_data[:timestamp],
