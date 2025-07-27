@@ -58,6 +58,14 @@ Naming/PredicateName:
   AllowedMethods:
     - is_required
     - is_unique
+    - has_more?
+    - has_scope?
+    - has_default?
+    - has_comments?
+    - destroy
+    - test
+    - validate!
+    - secure_compare
 
 # Disable some cops for gemspec
 Gemspec/DevelopmentDependencies:

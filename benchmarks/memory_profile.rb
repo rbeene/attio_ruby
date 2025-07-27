@@ -19,14 +19,14 @@ puts "Initial memory: #{(GC.stat[:heap_live_slots] * 40.0 / 1_048_576).round(2)}
 puts
 
 # Helper to run memory profile
-def profile_memory(description, &block)
+def profile_memory(description, &)
   puts "\n#{description}"
   puts "-" * 50
 
   GC.start
   before_slots = GC.stat[:heap_live_slots]
 
-  report = MemoryProfiler.report(&block)
+  report = MemoryProfiler.report(&)
 
   GC.start
   after_slots = GC.stat[:heap_live_slots]

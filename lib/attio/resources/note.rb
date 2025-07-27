@@ -26,13 +26,13 @@ module Attio
     end
 
     # Get the parent record
-    def parent_record(**opts)
+    def parent_record(**)
       return nil unless parent_object && parent_record_id
 
       Record.retrieve(
         object: parent_object,
         record_id: parent_record_id,
-        **opts
+        **
       )
     end
 
@@ -58,11 +58,11 @@ module Attio
     end
 
     # Override destroy to handle nested ID
-    def destroy(**opts)
+    def destroy(**)
       raise InvalidRequestError, "Cannot destroy a note without an ID" unless persisted?
 
       note_id = id.is_a?(Hash) ? id["note_id"] : id
-      self.class.delete(note_id, **opts)
+      self.class.delete(note_id, **)
     end
 
     # Notes cannot be updated
@@ -128,13 +128,13 @@ module Attio
       end
 
       # Get notes for a record
-      def for_record(params = {}, object:, record_id:, **opts)
+      def for_record(params = {}, object:, record_id:, **)
         list(
           params.merge(
             parent_object: object,
             parent_record_id: record_id
           ),
-          **opts
+          **
         )
       end
 

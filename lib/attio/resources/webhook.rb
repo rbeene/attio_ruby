@@ -50,20 +50,20 @@ module Attio
     end
 
     # Override save to handle nested ID
-    def save(**opts)
+    def save(**)
       raise InvalidRequestError, "Cannot save a webhook without an ID" unless persisted?
       return self unless changed?
 
       webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
-      self.class.update(webhook_id, changed_attributes, **opts)
+      self.class.update(webhook_id, changed_attributes, **)
     end
 
     # Override destroy to handle nested ID
-    def destroy(**opts)
+    def destroy(**)
       raise InvalidRequestError, "Cannot destroy a webhook without an ID" unless persisted?
 
       webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
-      self.class.delete(webhook_id, **opts)
+      self.class.delete(webhook_id, **)
     end
 
     # Check if webhook is active
@@ -77,15 +77,15 @@ module Attio
     end
 
     # Pause the webhook
-    def pause(**opts)
+    def pause(**)
       self.status = "paused"
-      save(**opts)
+      save(**)
     end
 
     # Resume the webhook
-    def resume(**opts)
+    def resume(**)
       self.status = "active"
-      save(**opts)
+      save(**)
     end
     alias_method :activate, :resume
 

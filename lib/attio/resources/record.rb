@@ -179,8 +179,8 @@ module Attio
       end
 
       # Search records
-      def search(query, object:, **opts)
-        list({q: query}, object: object, **opts)
+      def search(query, object:, **)
+        list({q: query}, object: object, **)
       end
 
       private
@@ -286,18 +286,18 @@ module Attio
     end
 
     # Add this record to a list
-    def add_to_list(list_id, **opts)
-      list = List.retrieve(list_id, **opts)
-      list.add_record(id, **opts)
+    def add_to_list(list_id, **)
+      list = List.retrieve(list_id, **)
+      list.add_record(id, **)
     end
 
     # Get lists containing this record
-    def lists(**opts)
+    def lists(**)
       raise InvalidRequestError, "Cannot get lists without an ID" unless persisted?
 
       # This is a simplified implementation - in reality you'd need to query the API
       # for lists that contain this record
-      List.list(record_id: id, **opts)
+      List.list(record_id: id, **)
     end
 
     def resource_path

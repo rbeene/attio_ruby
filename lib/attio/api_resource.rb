@@ -104,8 +104,8 @@ module Attio
     end
     alias_method :to_hash, :to_h
 
-    def to_json(*args)
-      JSON.generate(to_h, *args)
+    def to_json(*)
+      JSON.generate(to_h, *)
     end
 
     def inspect
@@ -114,9 +114,9 @@ module Attio
     end
 
     # Enumerable support
-    def each(&block)
+    def each(&)
       return enum_for(:each) unless block_given?
-      @attributes.each(&block)
+      @attributes.each(&)
     end
 
     def keys
@@ -179,18 +179,18 @@ module Attio
     end
 
     # Default save implementation
-    def save(**opts)
+    def save(**)
       if persisted?
-        self.class.update(id, changed_attributes, **opts)
+        self.class.update(id, changed_attributes, **)
       else
         raise InvalidRequestError, "Cannot save a resource without an ID"
       end
     end
 
     # Default destroy implementation
-    def destroy(**opts)
+    def destroy(**)
       raise InvalidRequestError, "Cannot destroy a resource without an ID" unless persisted?
-      self.class.delete(id, **opts)
+      self.class.delete(id, **)
       true
     end
     alias_method :delete, :destroy
@@ -351,8 +351,8 @@ module Attio
         end
       end
 
-      def each(&block)
-        @data.each(&block)
+      def each(&)
+        @data.each(&)
       end
 
       def empty?

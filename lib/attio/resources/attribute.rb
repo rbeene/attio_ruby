@@ -134,12 +134,12 @@ module Attio
     end
 
     # Override save to handle nested ID
-    def save(**opts)
+    def save(**)
       raise InvalidRequestError, "Cannot save an attribute without an ID" unless persisted?
       return self unless changed?
 
       # Pass the full ID (including object context) to update method
-      self.class.update(id, changed_attributes, **opts)
+      self.class.update(id, changed_attributes, **)
     end
 
     class << self
@@ -250,8 +250,8 @@ module Attio
       end
 
       # List attributes for a specific object
-      def for_object(object, params = {}, **opts)
-        list(params.merge(object: object), **opts)
+      def for_object(object, params = {}, **)
+        list(params.merge(object: object), **)
       end
 
       private

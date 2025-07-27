@@ -105,13 +105,13 @@ module Attio
       end
 
       # List active members only
-      def active(**opts)
-        list(**opts).select(&:active?)
+      def active(**)
+        list(**).select(&:active?)
       end
 
       # List admin members only
-      def admins(**opts)
-        list(**opts).select(&:admin?)
+      def admins(**)
+        list(**).select(&:admin?)
       end
 
       # This resource doesn't support creation, updates, or deletion

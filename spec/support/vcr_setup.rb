@@ -37,7 +37,7 @@ if ENV["RUN_INTEGRATION_TESTS"]
   end
 
   # Helper to use VCR with custom cassette name
-  def with_vcr_cassette(name, options = {}, &block)
-    VCR.use_cassette(name, options, &block)
+  def with_vcr_cassette(name, options = {}, &)
+    VCR.use_cassette(name, options, &)
   end
 end

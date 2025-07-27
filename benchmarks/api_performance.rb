@@ -21,8 +21,8 @@ puts "Attio gem version: #{Attio::VERSION}"
 puts
 
 # Benchmark helper methods
-def measure_memory(&block)
-  report = MemoryProfiler.report(&block)
+def measure_memory(&)
+  report = MemoryProfiler.report(&)
   {
     total_allocated: report.total_allocated_memsize,
     total_retained: report.total_retained_memsize,

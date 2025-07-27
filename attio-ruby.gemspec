@@ -33,9 +33,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Runtime dependencies
-  spec.add_runtime_dependency "faraday", "~> 2.0"
-  spec.add_runtime_dependency "faraday-retry", "~> 2.0"
-  spec.add_runtime_dependency "connection_pool", "~> 2.4"
+  spec.add_dependency "faraday", "~> 2.0"
+  spec.add_dependency "faraday-retry", "~> 2.0"
+  spec.add_dependency "connection_pool", "~> 2.4"
 
   # Development dependencies
   spec.add_development_dependency "bundler", "~> 2.0"

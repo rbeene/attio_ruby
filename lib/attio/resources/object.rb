@@ -23,23 +23,23 @@ module Attio
     end
 
     # Get all attributes for this object
-    def attributes(**opts)
-      Attribute.list(parent_object: api_slug || id, **opts)
+    def attributes(**)
+      Attribute.list(parent_object: api_slug || id, **)
     end
 
     # Create a new attribute for this object
-    def create_attribute(params = {}, **opts)
-      Attribute.create(params.merge(parent_object: api_slug || id), **opts)
+    def create_attribute(params = {}, **)
+      Attribute.create(params.merge(parent_object: api_slug || id), **)
     end
 
     # Get records for this object
-    def records(params = {}, **opts)
-      Record.list(object: api_slug || id, **params, **opts)
+    def records(params = {}, **)
+      Record.list(object: api_slug || id, **params, **)
     end
 
     # Create a record for this object
-    def create_record(values = {}, **opts)
-      Record.create(object: api_slug || id, values: values, **opts)
+    def create_record(values = {}, **)
+      Record.create(object: api_slug || id, values: values, **)
     end
 
     # Find by API slug
@@ -50,12 +50,12 @@ module Attio
     end
 
     # Get standard objects
-    def self.people(**opts)
-      find_by_slug("people", **opts)
+    def self.people(**)
+      find_by_slug("people", **)
     end
 
-    def self.companies(**opts)
-      find_by_slug("companies", **opts)
+    def self.companies(**)
+      find_by_slug("companies", **)
     end
   end
 end

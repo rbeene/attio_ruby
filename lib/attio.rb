@@ -67,8 +67,8 @@ module Attio
     #     config.timeout = 30
     #     config.debug = true
     #   end
-    def configure(&block)
-      configuration.configure(&block)
+    def configure(&)
+      configuration.configure(&)
     end
 
     # Resets the configuration to defaults

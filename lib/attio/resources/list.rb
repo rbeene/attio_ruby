@@ -38,12 +38,12 @@ module Attio
     end
 
     # Override save to handle nested ID
-    def save(**opts)
+    def save(**)
       raise InvalidRequestError, "Cannot save a list without an ID" unless persisted?
       return self unless changed?
 
       list_id = id.is_a?(Hash) ? id["list_id"] : id
-      self.class.update(list_id, changed_attributes, **opts)
+      self.class.update(list_id, changed_attributes, **)
     end
 
     # Lists cannot be deleted via API
@@ -71,14 +71,14 @@ module Attio
     end
 
     # Check if a record is in this list
-    def contains_record?(record_id, **opts)
-      entries({record_id: record_id}, **opts).any?
+    def contains_record?(record_id, **)
+      entries({record_id: record_id}, **).any?
     end
 
     # Get the count of entries
-    def entry_count(**opts)
+    def entry_count(**)
       # Just get the entries and count them
-      entries(**opts).length
+      entries(**).length
     end
 
     def to_h
@@ -126,8 +126,8 @@ module Attio
       end
 
       # Get lists for a specific object
-      def for_object(object, params = {}, **opts)
-        list(params.merge(object: object), **opts)
+      def for_object(object, params = {}, **)
+        list(params.merge(object: object), **)
       end
 
       private
