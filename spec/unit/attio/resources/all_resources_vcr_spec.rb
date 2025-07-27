@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe Attio do
-  before do
-    Attio.configure do |config|
-      config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
-    end
-  end
-
   describe Attio::Object do
+    before do
+      Attio.configure do |config|
+        config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      end
+    end
+
     it "lists objects", :vcr do
       VCR.use_cassette("object/list") do
         result = described_class.list
@@ -25,6 +25,12 @@ RSpec.describe Attio do
   end
 
   describe Attio::WorkspaceMember do
+    before do
+      Attio.configure do |config|
+        config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      end
+    end
+
     it "lists workspace members", :vcr do
       VCR.use_cassette("workspace_member/list") do
         result = described_class.list
@@ -35,6 +41,12 @@ RSpec.describe Attio do
   end
 
   describe Attio::List do
+    before do
+      Attio.configure do |config|
+        config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      end
+    end
+
     it "lists lists", :vcr do
       VCR.use_cassette("list/list") do
         result = described_class.list
@@ -56,6 +68,12 @@ RSpec.describe Attio do
   end
 
   describe Attio::Webhook do
+    before do
+      Attio.configure do |config|
+        config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      end
+    end
+
     it "lists webhooks", :vcr do
       VCR.use_cassette("webhook/list") do
         result = described_class.list
@@ -78,6 +96,12 @@ RSpec.describe Attio do
   end
 
   describe Attio::Attribute do
+    before do
+      Attio.configure do |config|
+        config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      end
+    end
+
     it "lists attributes for an object", :vcr do
       VCR.use_cassette("attribute/list") do
         result = described_class.list({object: "people"})
@@ -101,6 +125,12 @@ RSpec.describe Attio do
   end
 
   describe Attio::Note do
+    before do
+      Attio.configure do |config|
+        config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"
+      end
+    end
+
     let(:record_id) { "0174bfac-74b9-41de-b757-c6fa2a68ab00" } # From VCR cassette
 
     # Note: Note listing with filtering by record would require custom implementation
