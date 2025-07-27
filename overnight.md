@@ -1,0 +1,84 @@
+# Overnight Activity Log - Attio Ruby SDK Implementation
+
+## Overview
+Implementing remaining Attio API resources following TDD approach, with commits after each resource.
+
+## Resources to Implement
+
+### From provided URLs:
+1. Task (5 endpoints)
+2. Comment (3 endpoints)  
+3. Thread (2 endpoints)
+
+### From Attio docs (after above completed):
+- Additional resources from https://docs.attio.com/rest-api/endpoint-reference/objects/list-objects
+
+---
+
+## Task Resource
+**Start Time:** 2025-07-27 02:39:00 UTC
+**Status:** Completed (with note)
+
+### Activities:
+- [x] Write unit tests (spec/unit/attio/resources/task_spec.rb)
+- [x] Implement Task class (lib/attio/resources/task.rb)
+- [x] Add to main Attio module
+- [x] Test all endpoints with live API
+- [x] Ensure all tests pass
+- [x] Commit and push
+
+### Endpoints:
+1. GET /v2/tasks - List tasks ✓
+2. POST /v2/tasks - Create task (Note: API returning validation errors even with correct payload)
+3. GET /v2/tasks/{task} - Get task ✓
+4. PATCH /v2/tasks/{task} - Update task ✓ (only is_completed field can be updated)
+5. DELETE /v2/tasks/{task} - Delete task ✓
+
+### Notes:
+- All unit tests pass
+- List, Retrieve, Update (is_completed only), and Delete work correctly
+- Create endpoint returns validation errors - may be API issue or missing required field not documented
+- Tasks appear to be mostly immutable except for completion status
+
+**End Time:** 2025-07-27 03:17:00 UTC
+
+---
+
+## Comment Resource
+**Start Time:** [Pending]
+**Status:** Not Started
+
+### Endpoints:
+1. POST /v2/comments - Create comment
+2. GET /v2/comments/{comment} - Get comment
+3. DELETE /v2/comments/{comment} - Delete comment
+
+**End Time:** [Pending]
+
+---
+
+## Thread Resource  
+**Start Time:** [Pending]
+**Status:** Not Started
+
+### Endpoints:
+1. GET /v2/threads - List threads
+2. GET /v2/threads/{thread} - Get thread
+
+**End Time:** [Pending]
+
+---
+
+## Additional Resources (from docs)
+**Start Time:** [Pending]
+**Status:** Not Started
+
+**End Time:** [Pending]
+
+---
+
+## Summary
+**Total Start:** 2025-07-27 02:39:00 UTC
+**Total End:** [Pending]
+**Resources Completed:** 0/[TBD]
+**All Tests Passing:** [Pending]
