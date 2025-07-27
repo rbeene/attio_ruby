@@ -90,7 +90,7 @@ module Attio
     alias_method :activate, :resume
 
     # Test the webhook with a sample payload
-    def test(**opts)
+    def test(**opts) # rubocop:disable Naming/PredicateMethod
       raise InvalidRequestError, "Cannot test a webhook without an ID" unless persisted?
 
       self.class.send(:execute_request, :POST, "#{resource_path}/test", {}, opts)

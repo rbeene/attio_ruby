@@ -86,7 +86,7 @@ module Attio
       end
 
       # Delete an entry
-      def delete(list: nil, entry_id: nil, **opts)
+      def delete(list: nil, entry_id: nil, **opts) # rubocop:disable Naming/PredicateMethod
         validate_list_identifier!(list)
         validate_entry_id!(entry_id)
 
@@ -158,7 +158,7 @@ module Attio
       self
     end
 
-    def destroy(**opts)
+    def destroy(**opts) # rubocop:disable Naming/PredicateMethod
       raise InvalidRequestError, "Cannot destroy an entry without an ID" unless persisted?
       raise InvalidRequestError, "Cannot destroy without list context" unless list_id
 

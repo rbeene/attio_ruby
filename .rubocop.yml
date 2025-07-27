@@ -66,6 +66,9 @@ Naming/PredicateName:
     - test
     - validate!
     - secure_compare
+    - delete
+    - revoke!
+
 
 # Disable some cops for gemspec
 Gemspec/DevelopmentDependencies:

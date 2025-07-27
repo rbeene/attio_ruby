@@ -62,7 +62,7 @@ module Attio
     end
 
     # Override destroy to use the correct comment ID
-    def destroy(**opts)
+    def destroy(**opts) # rubocop:disable Naming/PredicateMethod
       raise InvalidRequestError, "Cannot destroy a comment without an ID" unless persisted?
 
       comment_id = extract_comment_id

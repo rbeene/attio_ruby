@@ -67,7 +67,7 @@ module Attio
         end
       end
 
-      def validate!
+      def validate! # rubocop:disable Naming/PredicateMethod
         REQUIRED_SETTINGS.each do |setting|
           value = instance_variable_get("@#{setting}")
           if value.nil? || (value.respond_to?(:empty?) && value.empty?)
