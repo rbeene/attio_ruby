@@ -50,12 +50,19 @@ module Attio
     end
 
     # Override save to handle nested ID
-    def save(**)
+    def save(**opts)
       raise InvalidRequestError, "Cannot save a webhook without an ID" unless persisted?
       return self unless changed?
 
       webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
-      self.class.update(webhook_id, changed_attributes, **)
+      params = {
+        data: changed_attributes
+      }
+
+      response = self.class.execute_request(:PATCH, "#{self.class.resource_path}/#{webhook_id}", params, opts)
+      update_from(response["data"] || response[:data] || response)
+      reset_changes!
+      self
     end
 
     # Override destroy to handle nested ID
@@ -93,7 +100,7 @@ module Attio
     def test(**opts)
       raise InvalidRequestError, "Cannot test a webhook without an ID" unless persisted?
 
-      self.class.send(:execute_request, :POST, "#{resource_path}/test", {}, opts)
+      self.class.execute_request(:POST, "#{resource_path}/test", {}, opts)
       true
     end
 
@@ -101,16 +108,15 @@ module Attio
     def deliveries(params = {}, **opts)
       raise InvalidRequestError, "Cannot get deliveries for a webhook without an ID" unless persisted?
 
-      response = self.class.send(:execute_request, :GET, "#{resource_path}/deliveries", params, opts)
-      response[:data] || []
+      response = self.class.execute_request(:GET, "#{resource_path}/deliveries", params, opts)
+      response["data"] || response[:data] || []
     end
 
     def to_h
       super.merge(
-        url: url,
-        events: events,
-        state: state,
-        api_version: api_version,
+        target_url: target_url,
+        subscriptions: subscriptions,
+        status: status,
         secret: secret,
         last_event_at: last_event_at&.iso8601,
         created_by_actor: created_by_actor
@@ -133,9 +139,14 @@ module Attio
 
       # Override update params preparation
       def prepare_params_for_update(params)
-        {
-          data: params
-        }
+        # If params already has data key, use it as is
+        if params.key?(:data)
+          params
+        else
+          {
+            data: params
+          }
+        end
       end
 
       private

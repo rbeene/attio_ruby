@@ -92,7 +92,7 @@ module Attio
         }
       }
 
-      response = self.class.send(:execute_request, :PATCH, resource_path, params, opts)
+      response = self.class.execute_request(:PATCH, resource_path, params, opts)
       update_from(response["data"] || response)
       self
     end
@@ -107,7 +107,7 @@ module Attio
 
       return self unless params[:data].any?
 
-      response = self.class.send(:execute_request, :PATCH, resource_path, params, opts)
+      response = self.class.execute_request(:PATCH, resource_path, params, opts)
       update_from(response["data"] || response)
       reset_changes!
       self
@@ -118,7 +118,7 @@ module Attio
       raise InvalidRequestError, "Cannot destroy a task without an ID" unless persisted?
 
       task_id = extract_task_id
-      self.class.send(:execute_request, :DELETE, "#{self.class.resource_path}/#{task_id}", {}, opts)
+      self.class.execute_request(:DELETE, "#{self.class.resource_path}/#{task_id}", {}, opts)
       @attributes.clear
       @changed_attributes.clear
       @id = nil

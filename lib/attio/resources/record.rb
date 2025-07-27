@@ -284,7 +284,7 @@ module Attio
         }
       }
 
-      response = self.class.send(:execute_request, :PATCH, resource_path, params, opts)
+      response = self.class.execute_request(:PATCH, resource_path, params, opts)
 
       update_from(response[:data] || response)
       reset_changes!
@@ -317,7 +317,7 @@ module Attio
       raise InvalidRequestError, "Cannot destroy a record without an ID" unless persisted?
       raise InvalidRequestError, "Cannot destroy without object context" unless object_api_slug
 
-      self.class.send(:execute_request, :DELETE, resource_path, {}, opts)
+      self.class.execute_request(:DELETE, resource_path, {}, opts)
       @attributes.clear
       @changed_attributes.clear
       @id = nil

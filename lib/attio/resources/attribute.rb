@@ -77,7 +77,7 @@ module Attio
     def archive(**opts)
       raise InvalidRequestError, "Cannot archive an attribute without an ID" unless persisted?
 
-      response = self.class.send(:execute_request, :POST, "#{resource_path}/archive", {}, opts)
+      response = self.class.execute_request(:POST, "#{resource_path}/archive", {}, opts)
       response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]
@@ -89,7 +89,7 @@ module Attio
     def unarchive(**opts)
       raise InvalidRequestError, "Cannot unarchive an attribute without an ID" unless persisted?
 
-      response = self.class.send(:execute_request, :POST, "#{resource_path}/unarchive", {}, opts)
+      response = self.class.execute_request(:POST, "#{resource_path}/unarchive", {}, opts)
       response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]

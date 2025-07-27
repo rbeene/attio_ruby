@@ -314,7 +314,7 @@ module Attio
           validate_id!(id)
           prepared_params = prepare_params_for_update(params)
           response = execute_request(:PATCH, "#{resource_path}/#{id}", prepared_params, opts)
-          new(response[:data] || response, opts)
+          new(response["data"] || response[:data] || response, opts)
         end
       end
 

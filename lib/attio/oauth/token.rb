@@ -66,8 +66,18 @@ module Attio
       end
 
       def inspect
+        token_display = if @access_token
+          if @access_token.length > 4
+            "***" + @access_token[-4..]
+          else
+            "***" + @access_token
+          end
+        else
+          "nil"
+        end
+
         "#<#{self.class.name}:#{object_id} " \
-          "token=#{@access_token ? "***" + @access_token[-4..] : "nil"} " \
+          "token=#{token_display} " \
           "expires_at=#{@expires_at&.iso8601} " \
           "scope=#{@scope.join(" ")}>"
       end

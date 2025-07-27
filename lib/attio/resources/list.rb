@@ -53,21 +53,22 @@ module Attio
 
     # Get all entries in this list
     def entries(params = {}, **opts)
-      client = Attio.client(api_key: opts[:api_key])
-      response = client.get("/lists/#{id}/entries", params)
-      response[:data] || []
+      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      response = self.class.execute_request(:GET, "lists/#{list_id}/entries", params, opts)
+      response["data"] || []
     end
 
     # Add a record to this list
     def add_record(record_id, **opts)
-      client = Attio.client(api_key: opts[:api_key])
-      client.post("/lists/#{id}/entries", {record_id: record_id})
+      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      self.class.execute_request(:POST, "lists/#{list_id}/entries", {record_id: record_id}, opts)
     end
 
     # Remove a record from this list
     def remove_record(entry_id, **opts)
-      client = Attio.client(api_key: opts[:api_key])
-      client.delete("/lists/#{id}/entries/#{entry_id}")
+      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      self.class.execute_request(:DELETE, "lists/#{list_id}/entries/#{entry_id}", {}, opts)
+      nil
     end
 
     # Check if a record is in this list
@@ -126,8 +127,8 @@ module Attio
       end
 
       # Get lists for a specific object
-      def for_object(object, params = {}, **)
-        list(params.merge(object: object), **)
+      def for_object(object, params = {}, **opts)
+        list(params.merge(object: object), **opts)
       end
 
       private

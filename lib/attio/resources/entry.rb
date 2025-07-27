@@ -152,7 +152,7 @@ module Attio
         }
       }
 
-      response = self.class.send(:execute_request, :PATCH, resource_path, params, opts)
+      response = self.class.execute_request(:PATCH, resource_path, params, opts)
       update_from(response[:data] || response)
       reset_changes!
       self
@@ -163,7 +163,7 @@ module Attio
       raise InvalidRequestError, "Cannot destroy without list context" unless list_id
 
       entry_id = extract_entry_id
-      self.class.send(:execute_request, :DELETE, "lists/#{list_id}/entries/#{entry_id}", {}, opts)
+      self.class.execute_request(:DELETE, "lists/#{list_id}/entries/#{entry_id}", {}, opts)
       @attributes.clear
       @changed_attributes.clear
       @id = nil

@@ -66,7 +66,7 @@ module Attio
       raise InvalidRequestError, "Cannot destroy a comment without an ID" unless persisted?
 
       comment_id = extract_comment_id
-      self.class.send(:execute_request, :DELETE, "#{self.class.resource_path}/#{comment_id}", {}, opts)
+      self.class.execute_request(:DELETE, "#{self.class.resource_path}/#{comment_id}", {}, opts)
       @attributes.clear
       @changed_attributes.clear
       @id = nil
