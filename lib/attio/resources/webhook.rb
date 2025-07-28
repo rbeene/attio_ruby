@@ -125,12 +125,14 @@ module Attio
     class << self
       # Override create to handle validation
       def prepare_params_for_create(params)
-        validate_target_url!(params[:target_url])
+        # Handle both url and target_url parameters for convenience
+        target_url = params[:target_url] || params[:url]
+        validate_target_url!(target_url)
         validate_subscriptions!(params[:subscriptions])
 
         {
           data: {
-            target_url: params[:target_url],
+            target_url: target_url,
             subscriptions: Array(params[:subscriptions]).map do |sub|
               # Ensure each subscription has a filter
               sub = sub.is_a?(Hash) ? sub : {"event_type" => sub}

@@ -12,14 +12,6 @@ module TestHelpers
   def unique_test_name(base_name)
     "#{base_name} #{unique_test_id}"
   end
-
-  # VCR cassette options for tests that create resources
-  def vcr_options_for_create
-    {
-      record: :new_episodes,
-      match_requests_on: [:method, :uri, :body]
-    }
-  end
 end
 
 RSpec.configure do |config|

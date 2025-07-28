@@ -61,9 +61,12 @@ module Attio
           raise ArgumentError, "Must provide object and either values or data.values"
         end
 
+        normalized = normalize_values(normalized_values)
+        puts "DEBUG: Normalized values: #{normalized.inspect}" if ENV["ATTIO_DEBUG"]
+        
         request_params = {
           data: {
-            values: normalize_values(normalized_values)
+            values: normalized
           }
         }
 
@@ -176,6 +179,8 @@ module Attio
       # Attributes that should be sent as simple arrays of strings or simple values
       SIMPLE_ARRAY_ATTRIBUTES = %w[email_addresses domains].freeze
       SIMPLE_VALUE_ATTRIBUTES = %w[description linkedin job_title].freeze
+      # Attributes that are arrays of objects and should be sent as-is
+      OBJECT_ARRAY_ATTRIBUTES = %w[phone_numbers name primary_location company].freeze
 
       def normalize_values(values)
         values.map do |key, value|
@@ -185,6 +190,9 @@ module Attio
             [key, value]
           elsif SIMPLE_VALUE_ATTRIBUTES.include?(key.to_s) && !value.is_a?(Hash) && !value.is_a?(Array)
             # For simple string attributes, send directly
+            [key, value]
+          elsif OBJECT_ARRAY_ATTRIBUTES.include?(key.to_s) && value.is_a?(Array)
+            # For arrays of objects like phone_numbers, name, etc., keep as-is
             [key, value]
           else
             normalized_value = case value
@@ -262,6 +270,7 @@ module Attio
       @attributes.clear
       @changed_attributes.clear
       @id = nil
+      freeze
       true
     end
 

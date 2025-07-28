@@ -8,37 +8,14 @@ end
 
 require "attio"
 require "pry"
-require "vcr"
 require "webmock/rspec"
 require "dotenv/load"
 
 # Load support files
 Dir[File.join(__dir__, "support", "**", "*.rb")].sort.each { |f| require f }
 
-# Configure VCR
-VCR.configure do |config|
-  config.cassette_library_dir = "spec/fixtures/vcr_cassettes"
-  config.hook_into :webmock
-  config.configure_rspec_metadata!
-
-  # Filter sensitive data
-  config.filter_sensitive_data("<ATTIO_API_KEY>") { ENV["ATTIO_API_KEY"] }
-  config.filter_sensitive_data("<ATTIO_API_KEY>") { "test_api_key" }
-
-  # Allow real HTTP connections for recording
-  config.allow_http_connections_when_no_cassette = false
-
-  # Ignore OAuth requests (use WebMock for these)
-  config.ignore_request do |request|
-    URI(request.uri).path.include?("/oauth/")
-  end
-
-  # Default cassette options
-  config.default_cassette_options = {
-    record: :once,
-    match_requests_on: [:method, :uri]
-  }
-end
+# Load integration helper for integration tests
+require_relative "integration/integration_helper" if Dir.exist?(File.join(__dir__, "integration"))
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -58,12 +35,25 @@ RSpec.configure do |config|
   Kernel.srand config.seed
 
   # Clear configuration before each test
-  config.before do
+  config.before do |example|
     Attio.reset!
-    # Set a default test API key
-    Attio.configure do |attio_config|
-      attio_config.api_key = "test_api_key"
+    # Set a default test API key for unit tests only
+    unless example.metadata[:integration]
+      Attio.configure do |attio_config|
+        attio_config.api_key = "test_api_key"
+      end
     end
+  end
+
+  # Configure WebMock for integration tests
+  config.before(:each, :integration) do
+    if ENV["RUN_INTEGRATION_TESTS"] == "true" && ENV["ATTIO_API_KEY"]
+      WebMock.allow_net_connect!
+    end
+  end
+
+  config.after(:each, :integration) do
+    WebMock.disable_net_connect!
   end
 
   # Filter run examples by tags

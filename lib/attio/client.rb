@@ -67,6 +67,7 @@ module Attio
           req.params = params_or_body if params_or_body.any?
         else
           req.body = params_or_body.to_json
+          puts "DEBUG: Request body: #{req.body}" if ENV["ATTIO_DEBUG"]
         end
       end
 

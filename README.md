@@ -507,14 +507,46 @@ $ ruby examples/basic_usage.rb
 The gem includes comprehensive test coverage:
 
 ```bash
-# Run all tests
+# Run all tests (unit tests only by default)
 $ bundle exec rspec
 
 # Run unit tests only
 $ bundle exec rspec spec/unit
 
 # Run integration tests (requires API key)
-$ ATTIO_API_KEY=your_key RUN_INTEGRATION_TESTS=true bundle exec rspec spec/integration
+$ RUN_INTEGRATION_TESTS=true bundle exec rspec spec/integration
+```
+
+### Integration Tests
+
+Integration tests make real API calls to Attio and are disabled by default. They serve to:
+
+- Validate that our WebMock stubs match actual API behavior
+- Test OAuth flows and complex scenarios
+- Ensure the gem works correctly with the latest Attio API
+
+To run integration tests:
+
+1. Set up your environment variables:
+   ```bash
+   export ATTIO_API_KEY="your_api_key"
+   export RUN_INTEGRATION_TESTS=true
+   ```
+
+2. Run the tests:
+   ```bash
+   bundle exec rspec spec/integration
+   ```
+
+**Warning**: Integration tests will create and delete real data in your Attio workspace. They include automatic cleanup, but use a test workspace if possible.
+
+### Unit Tests
+
+Unit tests use WebMock to stub all HTTP requests and do not require an API key. They run by default and ensure the gem's internal logic works correctly.
+
+```bash
+# Run only unit tests
+bundle exec rspec spec/unit
 
 # Run with coverage
 $ COVERAGE=true bundle exec rspec

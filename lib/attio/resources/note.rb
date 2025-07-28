@@ -14,18 +14,21 @@ module Attio
     end
 
     # Read-only attributes - notes are immutable
-    attr_reader :parent_object, :parent_record_id, :content, :format,
-      :created_by_actor, :content_plaintext
+    attr_reader :parent_object, :parent_record_id, :title, :format,
+      :created_by_actor, :content_plaintext, :content_markdown, :tags, :metadata
 
     def initialize(attributes = {}, opts = {})
       super
       normalized_attrs = normalize_attributes(attributes)
       @parent_object = normalized_attrs[:parent_object]
       @parent_record_id = normalized_attrs[:parent_record_id]
-      @content = normalized_attrs[:content]
+      @title = normalized_attrs[:title]
+      @content_plaintext = normalized_attrs[:content_plaintext]
+      @content_markdown = normalized_attrs[:content_markdown]
+      @tags = normalized_attrs[:tags] || []
+      @metadata = normalized_attrs[:metadata] || {}
       @format = normalized_attrs[:format] || "plaintext"
       @created_by_actor = normalized_attrs[:created_by_actor]
-      @content_plaintext = normalized_attrs[:content_plaintext]
     end
 
     # Get the parent record
@@ -100,14 +103,18 @@ module Attio
       end
 
       # Override create to handle validation and parameter mapping
-      def create(params = {}, **opts)
+      def create(**kwargs)
+        # Extract options from kwargs
+        opts = {}
+        opts[:api_key] = kwargs.delete(:api_key) if kwargs.key?(:api_key)
+        
         # Map object/record_id to parent_object/parent_record_id
         normalized_params = {
-          parent_object: params[:object] || params[:parent_object],
-          parent_record_id: params[:record_id] || params[:parent_record_id],
-          title: params[:title] || params[:content] || "Note",
-          content: params[:content],
-          format: params[:format]
+          parent_object: kwargs[:object] || kwargs[:parent_object],
+          parent_record_id: kwargs[:record_id] || kwargs[:parent_record_id],
+          title: kwargs[:title] || kwargs[:content] || "Note",
+          content: kwargs[:content],
+          format: kwargs[:format]
         }
 
         prepared_params = prepare_params_for_create(normalized_params)
