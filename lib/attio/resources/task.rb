@@ -11,13 +11,18 @@ module Attio
       "tasks"
     end
 
+    # Override id_key to use task_id
+    def self.id_key
+      :task_id
+    end
+
     # Custom list implementation to handle query params properly
     def self.list(**params)
       # Query params should be part of the request, not opts
       query_params = params.slice(:limit, :offset, :sort, :linked_object, :linked_record_id, :assignee, :is_completed)
       opts = params.except(:limit, :offset, :sort, :linked_object, :linked_record_id, :assignee, :is_completed)
 
-      response = execute_request(:GET, resource_path, query_params, opts)
+      response = execute_request(HTTPMethods::GET, resource_path, query_params, opts)
       ListObject.new(response, self, params, opts)
     end
 
@@ -26,7 +31,7 @@ module Attio
     end
 
     # Override create to handle required content parameter
-    def self.create(content: nil, format: "plaintext", **params)
+    def self.create(content: nil, format: FormatTypes::PLAINTEXT, **params)
       raise ArgumentError, "Content is required" if content.nil? || content.to_s.empty?
 
       request_params = {
@@ -45,13 +50,13 @@ module Attio
       # Remove the params that we've already included in request_params
       opts = params.except(:content, :format, :deadline_at, :is_completed, :linked_records, :assignees)
 
-      response = execute_request(:POST, resource_path, request_params, opts)
+      response = execute_request(HTTPMethods::POST, resource_path, request_params, opts)
       new(response["data"] || response, opts)
     end
 
     # Override update to use PATCH with data wrapper
-    def self.update(id, **params)
-      validate_id!(id)
+    def self.update(task_id:, **params)
+      validate_id!(task_id)
 
       request_params = {
         data: params.slice(:content, :format, :deadline_at, :is_completed, :linked_records, :assignees).compact
@@ -60,7 +65,8 @@ module Attio
       # Remove the params that we've already included in request_params
       opts = params.except(:content, :format, :deadline_at, :is_completed, :linked_records, :assignees)
 
-      response = execute_request(:PATCH, "#{resource_path}/#{id}", request_params, opts)
+      path = Util::PathBuilder.build_resource_path(resource_path, task_id)
+      response = execute_request(HTTPMethods::PATCH, path, request_params, opts)
       new(response["data"] || response, opts)
     end
 
@@ -92,53 +98,76 @@ module Attio
         }
       }
 
-      response = self.class.execute_request(:PATCH, resource_path, params, opts)
+      response = self.class.execute_request(HTTPMethods::PATCH, resource_path, params, opts)
       update_from(response["data"] || response)
       self
     end
 
-    # Override save to handle task-specific attributes
+    # Override save to handle task-specific attributes and support creation
     def save(**opts)
-      raise InvalidRequestError, "Cannot save a task without an ID" unless persisted?
+      if persisted?
+        save_update(**opts)
+      else
+        save_create(**opts)
+      end
+    end
 
+    protected
+
+    def save_update(**opts)
       params = {
         data: changed_attributes.slice(:content, :deadline_at, :is_completed, :linked_records, :assignees).compact
       }
 
       return self unless params[:data].any?
 
-      response = self.class.execute_request(:PATCH, resource_path, params, opts)
+      response = self.class.execute_request(HTTPMethods::PATCH, resource_path, params, opts)
       update_from(response["data"] || response)
       reset_changes!
       self
     end
 
+    def save_create(**opts)
+      # Task requires content at minimum
+      unless self[:content]
+        raise InvalidRequestError, "Cannot save a new task without 'content' attribute"
+      end
+
+      # Prepare all attributes for creation - only include non-nil values
+      create_params = {
+        content: self[:content],
+        format: self[:format] || FormatTypes::PLAINTEXT
+      }
+      create_params[:deadline_at] = self[:deadline_at] if self[:deadline_at]
+      create_params[:is_completed] = self[:is_completed] unless self[:is_completed].nil?
+      create_params[:linked_records] = self[:linked_records] if self[:linked_records]
+      create_params[:assignees] = self[:assignees] if self[:assignees]
+
+      created = self.class.create(**create_params, **opts)
+
+      if created
+        @id = created.id
+        @created_at = created.created_at
+        update_from(created.instance_variable_get(:@attributes))
+        reset_changes!
+        self
+      else
+        raise InvalidRequestError, "Failed to create task"
+      end
+    end
+
+    public
+
     # Override destroy to use the correct task ID
     def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a task without an ID" unless persisted?
 
-      task_id = extract_task_id
-      self.class.execute_request(:DELETE, "#{self.class.resource_path}/#{task_id}", {}, opts)
+      path = Util::PathBuilder.build_resource_path(self.class.resource_path, extract_id)
+      self.class.execute_request(HTTPMethods::DELETE, path, {}, opts)
       @attributes.clear
       @changed_attributes.clear
       @id = nil
       true
-    end
-
-    private
-
-    def extract_task_id
-      case id
-      when Hash
-        id[:task_id] || id["task_id"]
-      else
-        id
-      end
-    end
-
-    def resource_path
-      task_id = extract_task_id
-      "#{self.class.resource_path}/#{task_id}"
     end
   end
 end

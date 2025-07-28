@@ -202,11 +202,11 @@ RSpec.describe Attio::Task do
         {}
       )
 
-      described_class.update(task_id, **update_params)
+      described_class.update(task_id: task_id, **update_params)
     end
 
     it "returns an updated Task instance" do
-      result = described_class.update(task_id, **update_params)
+      result = described_class.update(task_id: task_id, **update_params)
       expect(result).to be_a(described_class)
       expect(result.is_completed).to be(true)
     end

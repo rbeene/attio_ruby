@@ -12,7 +12,7 @@ module Attio
 
     # Get information about the current token and workspace
     def self.identify(**opts)
-      response = execute_request(:GET, resource_path, {}, opts)
+      response = execute_request(HTTPMethods::GET, resource_path, {}, opts)
       new(response["data"] || response, opts)
     end
 

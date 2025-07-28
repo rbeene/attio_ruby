@@ -11,8 +11,13 @@ module Attio
       "comments"
     end
 
+    # Override id_key to use comment_id
+    def self.id_key
+      :comment_id
+    end
+
     # Custom create implementation
-    def self.create(content: nil, format: "plaintext", author: nil, thread_id: nil, created_at: nil, **opts)
+    def self.create(content: nil, format: FormatTypes::PLAINTEXT, author: nil, thread_id: nil, created_at: nil, **opts)
       raise ArgumentError, "Content is required" if content.nil? || content.to_s.empty?
       raise ArgumentError, "Thread ID is required" if thread_id.nil? || thread_id.to_s.empty?
       raise ArgumentError, "Author is required" if author.nil?
@@ -29,7 +34,7 @@ module Attio
       # Only add created_at if provided
       request_params[:data][:created_at] = created_at if created_at
 
-      response = execute_request(:POST, resource_path, request_params, opts)
+      response = execute_request(HTTPMethods::POST, resource_path, request_params, opts)
       new(response["data"] || response, opts)
     end
 
@@ -65,8 +70,8 @@ module Attio
     def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a comment without an ID" unless persisted?
 
-      comment_id = extract_comment_id
-      self.class.execute_request(:DELETE, "#{self.class.resource_path}/#{comment_id}", {}, opts)
+      path = Util::PathBuilder.build_resource_path(self.class.resource_path, extract_id)
+      self.class.execute_request(HTTPMethods::DELETE, path, {}, opts)
       @attributes.clear
       @changed_attributes.clear
       @id = nil
@@ -74,20 +79,6 @@ module Attio
     end
 
     private
-
-    def extract_comment_id
-      case id
-      when Hash
-        id[:comment_id] || id["comment_id"]
-      else
-        id
-      end
-    end
-
-    def resource_path
-      comment_id = extract_comment_id
-      "#{self.class.resource_path}/#{comment_id}"
-    end
 
     def to_h
       {

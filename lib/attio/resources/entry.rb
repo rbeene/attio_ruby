@@ -28,11 +28,17 @@ module Attio
         "lists"
       end
 
+      # Override id_key to use entry_id
+      def id_key
+        :entry_id
+      end
+
       # List entries for a list
       def list(list: nil, **params)
         validate_list_identifier!(list)
 
-        response = execute_request(:POST, "#{resource_path}/#{list}/entries/query", params, {})
+        path = Util::PathBuilder.build_resource_path(resource_path, list, "entries", "query")
+        response = execute_request(HTTPMethods::POST, path, params, {})
         APIResource::ListObject.new(response, self, params.merge(list: list), params)
       end
       alias_method :all, :list
@@ -50,7 +56,8 @@ module Attio
           }
         }
 
-        response = execute_request(:POST, "#{resource_path}/#{list}/entries", request_params, opts)
+        path = Util::PathBuilder.build_resource_path(resource_path, list, "entries")
+        response = execute_request(HTTPMethods::POST, path, request_params, opts)
         new(response["data"] || response, opts)
       end
 
@@ -59,7 +66,8 @@ module Attio
         validate_list_identifier!(list)
         validate_entry_id!(entry_id)
 
-        response = execute_request(:GET, "#{resource_path}/#{list}/entries/#{entry_id}", {}, opts)
+        path = Util::PathBuilder.build_resource_path(resource_path, list, "entries", entry_id)
+        response = execute_request(HTTPMethods::GET, path, {}, opts)
         new(response["data"] || response, opts)
       end
       alias_method :get, :retrieve
@@ -81,7 +89,8 @@ module Attio
           request_params[:mode] = "append"
         end
 
-        response = execute_request(:PATCH, "#{resource_path}/#{list}/entries/#{entry_id}", request_params, opts)
+        path = Util::PathBuilder.build_resource_path(resource_path, list, "entries", entry_id)
+        response = execute_request(HTTPMethods::PATCH, path, request_params, opts)
         new(response["data"] || response, opts)
       end
 
@@ -90,7 +99,8 @@ module Attio
         validate_list_identifier!(list)
         validate_entry_id!(entry_id)
 
-        execute_request(:DELETE, "#{resource_path}/#{list}/entries/#{entry_id}", {}, opts)
+        path = Util::PathBuilder.build_resource_path(resource_path, list, "entries", entry_id)
+        execute_request(HTTPMethods::DELETE, path, {}, opts)
         true
       end
       alias_method :destroy, :delete
@@ -108,7 +118,8 @@ module Attio
           }
         }
 
-        response = execute_request(:PUT, "#{resource_path}/#{list}/entries", request_params, opts)
+        path = Util::PathBuilder.build_resource_path(resource_path, list, "entries")
+        response = execute_request(HTTPMethods::PUT, path, request_params, opts)
         new(response["data"] || response, opts)
       end
 
@@ -118,7 +129,8 @@ module Attio
         validate_entry_id!(entry_id)
         raise ArgumentError, "Attribute ID is required" if attribute_id.nil? || attribute_id.to_s.empty?
 
-        response = execute_request(:GET, "#{resource_path}/#{list}/entries/#{entry_id}/attributes/#{attribute_id}/values", {}, opts)
+        path = Util::PathBuilder.build_resource_path(resource_path, list, "entries", entry_id, "attributes", attribute_id, "values")
+        response = execute_request(HTTPMethods::GET, path, {}, opts)
         response["data"] || []
       end
 
@@ -142,7 +154,16 @@ module Attio
     # Instance methods
 
     def save(**opts)
-      raise InvalidRequestError, "Cannot save an entry without an ID" unless persisted?
+      if persisted?
+        save_update(**opts)
+      else
+        save_create(**opts)
+      end
+    end
+
+    protected
+
+    def save_update(**opts)
       raise InvalidRequestError, "Cannot save without list context" unless list_id
 
       # For Entry, we always save the full entry_values
@@ -152,40 +173,59 @@ module Attio
         }
       }
 
-      response = self.class.execute_request(:PATCH, resource_path, params, opts)
+      response = self.class.execute_request(HTTPMethods::PATCH, resource_path, params, opts)
       update_from(response[:data] || response)
       reset_changes!
       self
     end
 
+    def save_create(**opts)
+      # Entry requires list, parent_record_id, and parent_object at minimum
+      unless list_id && parent_record_id && parent_object
+        raise InvalidRequestError, "Cannot save a new entry without 'list_id', 'parent_record_id', and 'parent_object' attributes"
+      end
+
+      # Prepare all attributes for creation
+      create_params = {
+        list: list_id,
+        parent_record_id: parent_record_id,
+        parent_object: parent_object,
+        entry_values: entry_values || {}
+      }
+
+      created = self.class.create(**create_params, **opts)
+
+      if created
+        @id = created.id
+        @created_at = created.created_at
+        update_from(created.instance_variable_get(:@attributes))
+        reset_changes!
+        self
+      else
+        raise InvalidRequestError, "Failed to create entry"
+      end
+    end
+
+    public
+
     def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy an entry without an ID" unless persisted?
       raise InvalidRequestError, "Cannot destroy without list context" unless list_id
 
-      entry_id = extract_entry_id
-      self.class.execute_request(:DELETE, "lists/#{list_id}/entries/#{entry_id}", {}, opts)
+      self.class.execute_request(HTTPMethods::DELETE, "lists/#{list_id}/entries/#{extract_id}", {}, opts)
       @attributes.clear
       @changed_attributes.clear
       @id = nil
       true
     end
 
-    def resource_path
-      raise InvalidRequestError, "Cannot generate path without list context" unless list_id
-      entry_id = extract_entry_id
-      "lists/#{list_id}/entries/#{entry_id}"
+    # Override path building for complex resource paths
+    def build_resource_path
+      validate_context!("list", list_id)
+      Util::PathBuilder.build_resource_path("lists", list_id, "entries", extract_id)
     end
 
     private
-
-    def extract_entry_id
-      case id
-      when Hash
-        id[:entry_id] || id["entry_id"]
-      else
-        id
-      end
-    end
 
     def to_h
       {

@@ -340,27 +340,56 @@ Set up webhooks to receive real-time updates about changes in your workspace.
 ```ruby
 # Create a webhook
 webhook = Attio::Webhook.create(
-  name: "Customer Updates",
-  url: "https://yourapp.com/webhooks/attio",
-  subscriptions: %w[record.created record.updated]
+  target_url: "https://yourapp.com/webhooks/attio",
+  subscriptions: [
+    { event_type: "record.created" },
+    { event_type: "record.updated" }
+  ]
 )
 
 # List webhooks
 webhooks = Attio::Webhook.list
 
-# Update webhook
-webhook[:active] = false
-webhook.save
+# Manage webhook status
+webhook.pause  # Pause the webhook
+webhook.resume # Resume the webhook
+
+# Test the webhook
+webhook.test
+
+# Get webhook deliveries
+deliveries = webhook.deliveries
 
 # Delete webhook
 webhook.destroy
 
-# Verify webhook signatures
-Attio::Util::WebhookSignature.verify!(
+# Verify webhook signatures (multiple approaches)
+
+# 1. Using instance method (when you have the webhook object)
+webhook.verify_signature!(
   payload: request.body.read,
-  signature: request.headers['Attio-Signature'],
-  secret: ENV['WEBHOOK_SECRET']
+  signature: request.headers['x-attio-signature'],
+  timestamp: request.headers['x-attio-timestamp']
 )
+
+# 2. Using class method for any webhook
+valid = Attio::Webhook.verify_request(request, secret: ENV['WEBHOOK_SECRET'])
+
+# 3. Parse and verify in one step
+begin
+  payload = Attio::Webhook.parse_and_verify(request, secret: ENV['WEBHOOK_SECRET'])
+  # Process the verified payload
+  event_type = payload[:event_type]
+  data = payload[:data]
+rescue Attio::Util::WebhookSignature::SignatureVerificationError => e
+  # Handle invalid signature
+  Rails.logger.error "Invalid webhook signature: #{e.message}"
+  render json: { error: "Unauthorized" }, status: 401
+end
+
+# 4. Create a handler for multiple requests
+handler = Attio::Webhook.create_handler(secret: ENV['WEBHOOK_SECRET'])
+payload = handler.parse_and_verify(request)
 ```
 
 ## Advanced Features

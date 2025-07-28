@@ -12,13 +12,18 @@ module Attio
       "threads"
     end
 
+    # Override id_key to use thread_id
+    def self.id_key
+      :thread_id
+    end
+
     # Custom list implementation to handle query params properly
     def self.list(**params)
       # Query params should be part of the request, not opts
       query_params = params.slice(:record_id, :object, :entry_id, :list, :limit, :offset)
       opts = params.except(:record_id, :object, :entry_id, :list, :limit, :offset)
 
-      response = execute_request(:GET, resource_path, query_params, opts)
+      response = execute_request(HTTPMethods::GET, resource_path, query_params, opts)
       ListObject.new(response, self, params, opts)
     end
 
@@ -62,20 +67,6 @@ module Attio
     end
 
     private
-
-    def extract_thread_id
-      case id
-      when Hash
-        id[:thread_id] || id["thread_id"]
-      else
-        id
-      end
-    end
-
-    def resource_path
-      thread_id = extract_thread_id
-      "#{self.class.resource_path}/#{thread_id}"
-    end
 
     def to_h
       {

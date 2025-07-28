@@ -4,15 +4,7 @@ require "spec_helper"
 require "webmock/rspec"
 
 RSpec.describe Attio::WorkspaceMember do
-  before do
-    # Disable VCR for these unit tests to use WebMock instead
-    VCR.turn_off!
-    WebMock.enable!
-  end
-
-  after do
-    VCR.turn_on!
-  end
+  # WebMock is already enabled globally
 
   let(:member_data) do
     {

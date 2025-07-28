@@ -10,6 +10,11 @@ module Attio
       "workspace_members"
     end
 
+    # Override id_key to use workspace_member_id
+    def self.id_key
+      :workspace_member_id
+    end
+
     # Read-only attributes - workspace members are immutable via API
     attr_reader :email_address, :first_name, :last_name, :avatar_url,
       :access_level, :status, :invited_at, :last_accessed_at
@@ -88,7 +93,7 @@ module Attio
       def me(**opts)
         # The /v2/workspace_members/me endpoint doesn't exist, use /v2/self instead
         # and then fetch the workspace member details
-        self_response = execute_request(:GET, "self", {}, opts)
+        self_response = execute_request(HTTPMethods::GET, "self", {}, opts)
         member_id = self_response[:authorized_by_workspace_member_id]
         self_response[:workspace_id]
 

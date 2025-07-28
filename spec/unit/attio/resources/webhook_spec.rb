@@ -4,15 +4,7 @@ require "spec_helper"
 require "webmock/rspec"
 
 RSpec.describe Attio::Webhook do
-  before do
-    # Disable VCR for these unit tests to use WebMock instead
-    VCR.turn_off!
-    WebMock.enable!
-  end
-
-  after do
-    VCR.turn_on!
-  end
+  # WebMock is already enabled globally
 
   let(:webhook_data) do
     {
@@ -367,11 +359,11 @@ RSpec.describe Attio::Webhook do
         expect(webhook.save).to eq(webhook)
       end
 
-      it "raises error when not persisted" do
+      it "raises error when not persisted without required attributes" do
         unpersisted_webhook = described_class.new({})
         expect { unpersisted_webhook.save }.to raise_error(
           Attio::InvalidRequestError,
-          "Cannot save a webhook without an ID"
+          "Cannot save a new webhook without 'target_url' and 'subscriptions' attributes"
         )
       end
     end

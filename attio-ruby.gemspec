@@ -35,14 +35,14 @@ Gem::Specification.new do |spec|
   # Runtime dependencies
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-retry", "~> 2.0"
-  spec.add_dependency "connection_pool", "~> 2.4"
+  spec.add_dependency "faraday-net_http_persistent", "~> 2.0"
+  spec.add_dependency "base64"
 
   # Development dependencies
   spec.add_development_dependency "bundler", "~> 2.0"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "webmock", "~> 3.18"
-  spec.add_development_dependency "vcr", "~> 6.1"
   spec.add_development_dependency "simplecov", "~> 0.22"
   spec.add_development_dependency "simplecov-cobertura", "~> 2.1"
   spec.add_development_dependency "yard", "~> 0.9"

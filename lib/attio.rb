@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "attio/version"
+require_relative "attio/constants"
 require_relative "attio/errors"
 require_relative "attio/util/configuration"
 require_relative "attio/client"

@@ -44,13 +44,13 @@ RSpec.describe Attio::Note do
         headers: {"Content-Type" => "application/json"}
       )
 
-    result = described_class.create({
-      object: "people",
-      record_id: record_id,
+    result = described_class.create(
+      parent_object: "people",
+      parent_record_id: record_id,
       title: "VCR Test Note",
       content: "This is a test note created by VCR",
       format: "plaintext"
-    })
+    )
     expect(result).to be_a(described_class)
     expect(result.persisted?).to be true
   end

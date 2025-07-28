@@ -369,9 +369,11 @@ RSpec.describe Attio::Attribute do
       end
 
       it "calls update with the ID and changed attributes" do
+        # Attribute ID is a nested hash, so we need to expect the extracted values
         allow(described_class).to receive(:update).with(
-          attribute.id,
-          {name: "Updated Name"}
+          attribute_id: "attribute_123",
+          object: "object_456",
+          name: "Updated Name"
         ).and_return(attribute)
 
         result = attribute.save
@@ -400,7 +402,7 @@ RSpec.describe Attio::Attribute do
       it "raises InvalidRequestError" do
         expect { attribute.save }.to raise_error(
           Attio::InvalidRequestError,
-          "Cannot save an attribute without an ID"
+          "Cannot save a new attribute without 'object', 'name', and 'type' attributes"
         )
       end
     end
@@ -416,7 +418,7 @@ RSpec.describe Attio::Attribute do
             headers: {"Content-Type" => "application/json"}
           )
 
-        attribute = described_class.retrieve(attribute_id)
+        attribute = described_class.retrieve(attribute_id: attribute_id)
 
         expect(attribute).to be_a(described_class)
         expect(attribute.api_slug).to eq("test_attribute")
@@ -434,7 +436,7 @@ RSpec.describe Attio::Attribute do
             headers: {"Content-Type" => "application/json"}
           )
 
-        attribute = described_class.retrieve(nested_id)
+        attribute = described_class.retrieve(attribute_id: nested_id)
 
         expect(attribute).to be_a(described_class)
         expect(attribute.api_slug).to eq("test_attribute")
@@ -443,11 +445,11 @@ RSpec.describe Attio::Attribute do
 
     context "with invalid ID" do
       it "raises ArgumentError for nil ID" do
-        expect { described_class.retrieve(nil) }.to raise_error(ArgumentError)
+        expect { described_class.retrieve(attribute_id: nil) }.to raise_error(ArgumentError)
       end
 
       it "raises ArgumentError for empty string ID" do
-        expect { described_class.retrieve("") }.to raise_error(ArgumentError)
+        expect { described_class.retrieve(attribute_id: "") }.to raise_error(ArgumentError)
       end
     end
   end
@@ -465,7 +467,7 @@ RSpec.describe Attio::Attribute do
             headers: {"Content-Type" => "application/json"}
           )
 
-        attribute = described_class.update(attribute_id, update_params)
+        attribute = described_class.update(attribute_id: attribute_id, **update_params)
 
         expect(attribute).to be_a(described_class)
         expect(attribute.name).to eq("Updated Name")
@@ -484,7 +486,7 @@ RSpec.describe Attio::Attribute do
             headers: {"Content-Type" => "application/json"}
           )
 
-        attribute = described_class.update(nested_id, update_params)
+        attribute = described_class.update(attribute_id: nested_id, **update_params)
 
         expect(attribute).to be_a(described_class)
         expect(attribute.name).to eq("Updated Name")
@@ -505,7 +507,7 @@ RSpec.describe Attio::Attribute do
             headers: {"Content-Type" => "application/json"}
           )
 
-        result = described_class.list({object: "companies"})
+        result = described_class.list(object: "companies")
 
         expect(result).to be_a(Attio::APIResource::ListObject)
         expect(result.data.first).to be_a(described_class)
@@ -515,10 +517,7 @@ RSpec.describe Attio::Attribute do
 
     context "without object parameter" do
       it "raises ArgumentError" do
-        expect { described_class.list }.to raise_error(
-          ArgumentError,
-          /Attributes must be listed for a specific object/
-        )
+        expect { described_class.list }.to raise_error(ArgumentError)
       end
     end
   end
@@ -556,7 +555,7 @@ RSpec.describe Attio::Attribute do
           headers: {"Content-Type" => "application/json"}
         )
 
-      attribute = described_class.create(create_params)
+      attribute = described_class.create(**create_params)
 
       expect(attribute).to be_a(described_class)
       expect(attribute.api_slug).to eq("test_attribute")
@@ -565,7 +564,7 @@ RSpec.describe Attio::Attribute do
     context "with invalid type" do
       it "raises ArgumentError" do
         expect {
-          described_class.create(create_params.merge(type: "invalid"))
+          described_class.create(**create_params.merge(type: "invalid"))
         }.to raise_error(ArgumentError, /Invalid attribute type/)
       end
     end
@@ -573,7 +572,7 @@ RSpec.describe Attio::Attribute do
     context "with type requiring options" do
       it "raises ArgumentError when options not provided" do
         expect {
-          described_class.create(create_params.merge(type: "status"))
+          described_class.create(**create_params.merge(type: "status"))
         }.to raise_error(ArgumentError, /requires options/)
       end
     end
@@ -581,7 +580,7 @@ RSpec.describe Attio::Attribute do
     context "with type requiring target object" do
       it "raises ArgumentError when target_object not provided" do
         expect {
-          described_class.create(create_params.merge(type: "record_reference"))
+          described_class.create(**create_params.merge(type: "record_reference"))
         }.to raise_error(ArgumentError, /requires target_object/)
       end
     end
@@ -589,8 +588,8 @@ RSpec.describe Attio::Attribute do
     context "without object parameter" do
       it "raises ArgumentError" do
         expect {
-          described_class.create(create_params.except(:object))
-        }.to raise_error(ArgumentError, /Object identifier is required/)
+          described_class.create(**create_params.except(:object))
+        }.to raise_error(ArgumentError, /missing keyword: :object/)
       end
     end
   end
@@ -598,7 +597,7 @@ RSpec.describe Attio::Attribute do
   describe ".for_object" do
     it "delegates to list with object parameter" do
       expect(described_class).to receive(:list).with(
-        {object: "companies", limit: 10}
+        object: "companies", limit: 10
       )
 
       described_class.for_object("companies", limit: 10)

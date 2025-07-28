@@ -50,6 +50,11 @@ module Attio
       "attributes"
     end
 
+    # Override id_key to use attribute_id
+    def self.id_key
+      :attribute_id
+    end
+
     # Define known attributes with proper accessors
     attr_attio :name, :description, :is_required, :is_unique,
       :is_default_value_enabled, :default_value, :options
@@ -77,7 +82,8 @@ module Attio
     def archive(**opts)
       raise InvalidRequestError, "Cannot archive an attribute without an ID" unless persisted?
 
-      response = self.class.execute_request(:POST, "#{resource_path}/archive", {}, opts)
+      path = Util::PathBuilder.build_resource_path(self.class.resource_path, extract_id, "archive")
+      response = self.class.execute_request(HTTPMethods::POST, path, {}, opts)
       response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]
@@ -89,7 +95,8 @@ module Attio
     def unarchive(**opts)
       raise InvalidRequestError, "Cannot unarchive an attribute without an ID" unless persisted?
 
-      response = self.class.execute_request(:POST, "#{resource_path}/unarchive", {}, opts)
+      path = Util::PathBuilder.build_resource_path(self.class.resource_path, extract_id, "unarchive")
+      response = self.class.execute_request(HTTPMethods::POST, path, {}, opts)
       response_data = (response.is_a?(Hash) && response["data"]) ? response["data"] : response
       # Update instance variables directly
       @is_archived = response_data[:is_archived] || response_data["is_archived"]
@@ -133,56 +140,121 @@ module Attio
       ).compact
     end
 
-    def resource_path
-      raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
-      "#{self.class.resource_path}/#{attribute_id}"
+    # Override save to handle nested ID and support creation
+    def save(**opts)
+      if persisted?
+        save_update(**opts)
+      else
+        save_create(**opts)
+      end
     end
 
-    # Override save to handle nested ID
-    def save(**)
-      raise InvalidRequestError, "Cannot save an attribute without an ID" unless persisted?
+    protected
+
+    def save_update(**opts)
       return self unless changed?
 
       # Pass the full ID (including object context) to update method
-      self.class.update(id, changed_attributes, **)
+      updated = if id.is_a?(Hash) && id["object_id"]
+        self.class.update(attribute_id: extract_id(:attribute_id), object: extract_id(:object_id), **changed_attributes, **opts)
+      else
+        self.class.update(attribute_id: extract_id, **changed_attributes, **opts)
+      end
+
+      update_from(updated.instance_variable_get(:@attributes)) if updated
+      reset_changes!
+      self
     end
+
+    def save_create(**opts)
+      # Attribute requires object, name, and type at minimum
+      unless self[:object] && self[:name] && self[:type]
+        raise InvalidRequestError, "Cannot save a new attribute without 'object', 'name', and 'type' attributes"
+      end
+
+      # Prepare all attributes for creation
+      create_params = {
+        object: self[:object],
+        name: self[:name],
+        type: self[:type],
+        api_slug: self[:api_slug],
+        description: self[:description],
+        is_required: self[:is_required],
+        is_unique: self[:is_unique],
+        is_default_value_enabled: self[:is_default_value_enabled],
+        default_value: self[:default_value],
+        options: self[:options],
+        target_object: self[:target_object],
+        target_relation_type: self[:target_relation_type]
+      }.compact
+
+      created = self.class.create(**create_params, **opts)
+
+      if created
+        @id = created.id
+        @created_at = created.created_at
+        @api_slug = created.api_slug
+        @type = created.type
+        @attio_object_id = created.attio_object_id
+        @object_api_slug = created.object_api_slug
+        update_from(created.instance_variable_get(:@attributes))
+        reset_changes!
+        self
+      else
+        raise InvalidRequestError, "Failed to create attribute"
+      end
+    end
+
+    public
 
     class << self
       # Override retrieve to handle object-scoped attributes
-      def retrieve(id, **opts)
-        # Extract simple ID if it's a nested hash
-        attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
-        validate_id!(attribute_id)
+      def retrieve(attribute_id:, object: nil, **opts)
+        # Handle both simple ID and nested hash for backwards compatibility
+        if attribute_id.is_a?(Hash)
+          actual_id = attribute_id["attribute_id"]
+          object ||= attribute_id["object_id"]
+        else
+          actual_id = attribute_id
+        end
+        validate_id!(actual_id)
 
-        # For attributes, we need the object context - check if it's in the nested ID
-        if id.is_a?(Hash) && id["object_id"]
-          object_id = id["object_id"]
-          response = execute_request(:GET, "objects/#{object_id}/attributes/#{attribute_id}", {}, opts)
+        # For attributes, we need the object context
+        path = if object
+          Util::PathBuilder.build_resource_path("objects", object, "attributes", actual_id)
         else
           # Fall back to regular attributes endpoint
-          response = execute_request(:GET, "#{resource_path}/#{attribute_id}", {}, opts)
+          Util::PathBuilder.build_resource_path(resource_path, actual_id)
         end
+        response = execute_request(HTTPMethods::GET, path, {}, opts)
 
         new((response.is_a?(Hash) && response["data"]) ? response["data"] : response, opts)
       end
 
       # Override update to handle object-scoped attributes
-      def update(id, params = {}, **opts)
-        # Extract simple ID if it's a nested hash
-        attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
-        validate_id!(attribute_id)
+      def update(attribute_id:, object: nil, **params)
+        # Separate opts from params
+        opts = params.select { |k, _| k == :client || k == :api_key }
+        update_params = params.except(:client, :api_key)
+
+        # Handle both simple ID and nested hash for backwards compatibility
+        if attribute_id.is_a?(Hash)
+          actual_id = attribute_id["attribute_id"]
+          object ||= attribute_id["object_id"]
+        else
+          actual_id = attribute_id
+        end
+        validate_id!(actual_id)
 
         # For attributes, we need the object context
-        if id.is_a?(Hash) && id["object_id"]
-          object_id = id["object_id"]
-          prepared_params = prepare_params_for_update(params)
-          response = execute_request(:PATCH, "objects/#{object_id}/attributes/#{attribute_id}", prepared_params, opts)
+        prepared_params = prepare_params_for_update(update_params)
+        path = if object
+          Util::PathBuilder.build_resource_path("objects", object, "attributes", actual_id)
         else
           # Fall back to regular attributes endpoint
-          prepared_params = prepare_params_for_update(params)
-          response = execute_request(:PATCH, "#{resource_path}/#{attribute_id}", prepared_params, opts)
+          Util::PathBuilder.build_resource_path(resource_path, actual_id)
         end
+        response = execute_request(HTTPMethods::PATCH, path, prepared_params, opts)
 
         new((response.is_a?(Hash) && response["data"]) ? response["data"] : response, opts)
       end
@@ -233,31 +305,35 @@ module Attio
       end
 
       # Override list to handle object-specific attributes
-      def list(params = {}, **opts)
-        if params[:object]
-          object = params.delete(:object)
-          validate_object_identifier!(object)
+      def list(object:, **opts)
+        validate_object_identifier!(object)
 
-          response = execute_request(:GET, "objects/#{object}/attributes", params, opts)
-          APIResource::ListObject.new(response, self, params.merge(object: object), opts)
-        else
-          raise ArgumentError, "Attributes must be listed for a specific object. Use Attribute.for_object(object_slug) or pass object: parameter"
-        end
+        # Extract query parameters
+        query_params = opts.except(:client, :api_key)
+        request_opts = opts.slice(:client, :api_key)
+
+        path = Util::PathBuilder.build_resource_path("objects", object, "attributes")
+        response = execute_request(HTTPMethods::GET, path, query_params, request_opts)
+        APIResource::ListObject.new(response, self, opts.merge(object: object), request_opts)
       end
 
       # Override create to handle object-specific attributes
-      def create(params = {}, **opts)
-        object = params[:object]
+      def create(object:, name:, type:, **params)
         validate_object_identifier!(object)
 
-        prepared_params = prepare_params_for_create(params)
-        response = execute_request(:POST, "objects/#{object}/attributes", prepared_params, opts)
+        # Separate opts from params
+        opts = params.slice(:client, :api_key)
+        create_params = params.except(:client, :api_key).merge(object: object, name: name, type: type)
+
+        prepared_params = prepare_params_for_create(create_params)
+        path = Util::PathBuilder.build_resource_path("objects", object, "attributes")
+        response = execute_request(HTTPMethods::POST, path, prepared_params, opts)
         new((response.is_a?(Hash) && response["data"]) ? response["data"] : response, opts)
       end
 
       # List attributes for a specific object
       def for_object(object, **opts)
-        list({object: object}.merge(opts))
+        list(object: object, **opts)
       end
 
       private

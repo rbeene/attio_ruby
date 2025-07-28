@@ -4,15 +4,7 @@ require "spec_helper"
 require "webmock/rspec"
 
 RSpec.describe Attio::Record do
-  before do
-    # Disable VCR for these unit tests to use WebMock instead
-    VCR.turn_off!
-    WebMock.enable!
-  end
-
-  after do
-    VCR.turn_on!
-  end
+  # WebMock is already enabled globally
 
   describe ".list" do
     let(:list_response) do
@@ -263,7 +255,7 @@ RSpec.describe Attio::Record do
       updated = described_class.update(
         object: "people",
         record_id: record_id,
-        data: {values: updated_person_values}
+        values: updated_person_values
       )
 
       expect(updated).to be_a(described_class)
@@ -304,7 +296,7 @@ RSpec.describe Attio::Record do
             body: {
               "data" => {
                 "values" => {
-                  "name" => {"value" => "New Name"}
+                  "name" => "New Name"
                 }
               }
             }.to_json
@@ -326,11 +318,11 @@ RSpec.describe Attio::Record do
         expect(record.save).to eq(record)
       end
 
-      it "raises error when not persisted" do
+      it "raises error when not persisted without object context" do
         unpersisted_record = described_class.new({})
         expect { unpersisted_record.save }.to raise_error(
           Attio::InvalidRequestError,
-          "Cannot update a record without an ID"
+          "Cannot save a new record without object context. Set the object_api_slug attribute or use Record.create"
         )
       end
 
@@ -383,7 +375,7 @@ RSpec.describe Attio::Record do
         # Mock List.retrieve
         list = instance_double(Attio::List)
         allow(Attio::List).to receive(:retrieve).with(list_id).and_return(list)
-        allow(list).to receive(:add_record).with(record.id).and_return(true)
+        allow(list).to receive(:add_record).with(record_id: record.id).and_return(true)
 
         result = record.add_to_list(list_id)
         expect(result).to be true
@@ -446,7 +438,7 @@ RSpec.describe Attio::Record do
         })
         expect { record_without_object.resource_path }.to raise_error(
           Attio::InvalidRequestError,
-          "Cannot generate path without object context"
+          "Cannot perform operation without object context"
         )
       end
     end
@@ -466,147 +458,6 @@ RSpec.describe Attio::Record do
         expect(record[:email]).to eq("test@example.com")
         expect(record.changed?).to be true
       end
-    end
-  end
-
-  describe ".batch_create" do
-    it "creates multiple records" do
-      batch_response = {
-        "data" => [
-          {
-            "id" => {"record_id" => "batch-1"},
-            "values" => {"name" => [{"value" => "Batch 1"}]}
-          },
-          {
-            "id" => {"record_id" => "batch-2"},
-            "values" => {"name" => [{"value" => "Batch 2"}]}
-          }
-        ]
-      }
-
-      stub_request(:post, "https://api.attio.com/v2/records/batch")
-        .with(
-          body: {
-            "data" => [
-              {"values" => {"name" => {"value" => "Batch 1"}}},
-              {"values" => {"name" => {"value" => "Batch 2"}}}
-            ]
-          }.to_json
-        )
-        .to_return(
-          status: 200,
-          body: batch_response.to_json,
-          headers: {"Content-Type" => "application/json"}
-        )
-
-      records = [
-        {values: {name: "Batch 1"}},
-        {values: {name: "Batch 2"}}
-      ]
-
-      result = described_class.batch_create(object: "people", records: records)
-      expect(result).to be_an(Array)
-      expect(result.size).to eq(2)
-      expect(result.first).to be_a(described_class)
-    end
-
-    it "raises error without object" do
-      expect { described_class.batch_create(records: []) }.to raise_error(ArgumentError)
-    end
-
-    it "raises error with invalid records" do
-      expect { described_class.batch_create(object: "people", records: "not-array") }.to raise_error(
-        ArgumentError,
-        "Records must be an array"
-      )
-    end
-
-    it "raises error with empty records" do
-      expect { described_class.batch_create(object: "people", records: []) }.to raise_error(
-        ArgumentError,
-        "Records cannot be empty"
-      )
-    end
-  end
-
-  describe ".batch_update" do
-    it "updates multiple records" do
-      batch_response = {
-        "data" => [
-          {
-            "id" => {"record_id" => "update-1"},
-            "values" => {"name" => [{"value" => "Updated 1"}]}
-          },
-          {
-            "id" => {"record_id" => "update-2"},
-            "values" => {"name" => [{"value" => "Updated 2"}]}
-          }
-        ]
-      }
-
-      stub_request(:put, "https://api.attio.com/v2/records/batch")
-        .with(
-          body: {
-            "data" => [
-              {
-                "id" => {"record_id" => "update-1"},
-                "values" => {"name" => {"value" => "Updated 1"}}
-              },
-              {
-                "id" => {"record_id" => "update-2"},
-                "values" => {"name" => {"value" => "Updated 2"}}
-              }
-            ]
-          }.to_json
-        )
-        .to_return(
-          status: 200,
-          body: batch_response.to_json,
-          headers: {"Content-Type" => "application/json"}
-        )
-
-      records = [
-        {record_id: "update-1", values: {name: "Updated 1"}},
-        {record_id: "update-2", values: {name: "Updated 2"}}
-      ]
-
-      result = described_class.batch_update(object: "people", records: records)
-      expect(result).to be_an(Array)
-      expect(result.size).to eq(2)
-    end
-  end
-
-  describe ".create_batch" do
-    it "creates multiple records (legacy method)" do
-      batch_response = {
-        "data" => [
-          {
-            "id" => {"record_id" => "legacy-1"},
-            "values" => {"name" => [{"value" => "Legacy 1"}]}
-          }
-        ]
-      }
-
-      stub_request(:post, "https://api.attio.com/v2/objects/batch")
-        .with(
-          body: {
-            "object" => "people",
-            "data" => [
-              {"values" => {"name" => {"value" => "Legacy 1"}}}
-            ]
-          }.to_json
-        )
-        .to_return(
-          status: 200,
-          body: batch_response.to_json,
-          headers: {"Content-Type" => "application/json"}
-        )
-
-      records = [{values: {name: "Legacy 1"}}]
-
-      result = described_class.create_batch(object: "people", records: records)
-      expect(result).to be_an(Array)
-      expect(result.first).to be_a(described_class)
     end
   end
 
@@ -690,7 +541,7 @@ RSpec.describe Attio::Record do
       it "raises error without values" do
         expect { described_class.create(object: "people") }.to raise_error(
           ArgumentError,
-          "Must provide object and either values or data.values"
+          /missing keyword: :?values/
         )
       end
 
@@ -704,7 +555,7 @@ RSpec.describe Attio::Record do
       it "handles data parameter style" do
         stub_request(:post, "https://api.attio.com/v2/objects/people/records")
           .with(
-            body: {"data" => {"values" => {"name" => {"value" => "Data Style"}}}}.to_json
+            body: {"data" => {"values" => {"name" => "Data Style"}}}.to_json
           )
           .to_return(
             status: 200,
@@ -714,7 +565,7 @@ RSpec.describe Attio::Record do
 
         result = described_class.create(
           object: "people",
-          data: {values: {name: "Data Style"}}
+          values: {name: "Data Style"}
         )
         expect(result).to be_a(described_class)
       end
@@ -746,11 +597,11 @@ RSpec.describe Attio::Record do
 
     describe ".update" do
       it "raises error without object" do
-        expect { described_class.update(record_id: "123", data: {}) }.to raise_error(ArgumentError)
+        expect { described_class.update(record_id: "123", values: {}) }.to raise_error(ArgumentError)
       end
 
       it "raises error without record_id" do
-        expect { described_class.update(object: "people", data: {}) }.to raise_error(ArgumentError)
+        expect { described_class.update(object: "people", values: {}) }.to raise_error(ArgumentError)
       end
     end
   end

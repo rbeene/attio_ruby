@@ -4,15 +4,7 @@ require "spec_helper"
 require "webmock/rspec"
 
 RSpec.describe Attio::List do
-  before do
-    # Disable VCR for these unit tests to use WebMock instead
-    VCR.turn_off!
-    WebMock.enable!
-  end
-
-  after do
-    VCR.turn_on!
-  end
+  # WebMock is already enabled globally
 
   let(:list_data) do
     {
@@ -247,7 +239,7 @@ RSpec.describe Attio::List do
           headers: {"Content-Type" => "application/json"}
         )
 
-      list = described_class.update(list_id, {name: "Updated List"})
+      list = described_class.update(list_id: list_id, name: "Updated List")
       expect(list.name).to eq("Updated List")
     end
   end
@@ -261,7 +253,7 @@ RSpec.describe Attio::List do
           headers: {"Content-Type" => "application/json"}
         )
 
-      list = described_class.find_by_slug("customer_success")
+      list = described_class.find_by_slug(slug: "customer_success")
       expect(list).to be_a(described_class)
       expect(list.api_slug).to eq("customer_success")
     end
@@ -275,7 +267,7 @@ RSpec.describe Attio::List do
         )
 
       expect {
-        described_class.find_by_slug("nonexistent")
+        described_class.find_by_slug(slug: "nonexistent")
       }.to raise_error(Attio::NotFoundError, "List with slug 'nonexistent' not found")
     end
   end
@@ -289,7 +281,7 @@ RSpec.describe Attio::List do
           headers: {"Content-Type" => "application/json"}
         )
 
-      lists = described_class.for_object("companies")
+      lists = described_class.for_object(object: "companies")
       expect(lists).to be_a(Attio::APIResource::ListObject)
     end
 
@@ -302,7 +294,7 @@ RSpec.describe Attio::List do
           headers: {"Content-Type" => "application/json"}
         )
 
-      result = described_class.for_object("companies", {limit: 10})
+      result = described_class.for_object(object: "companies", limit: 10)
       expect(result).to be_a(Attio::APIResource::ListObject)
     end
   end
@@ -413,11 +405,11 @@ RSpec.describe Attio::List do
         expect(list.save).to eq(list)
       end
 
-      it "raises error when not persisted" do
+      it "raises error when not persisted without required attributes" do
         unpersisted_list = described_class.new({})
         expect { unpersisted_list.save }.to raise_error(
           Attio::InvalidRequestError,
-          "Cannot save a list without an ID"
+          "Cannot save a new list without 'object' and 'name' attributes"
         )
       end
     end
@@ -461,7 +453,7 @@ RSpec.describe Attio::List do
             headers: {"Content-Type" => "application/json"}
           )
 
-        entries = list.entries({limit: 10})
+        entries = list.entries(limit: 10)
         expect(entries).to eq([])
       end
 
@@ -492,7 +484,7 @@ RSpec.describe Attio::List do
             headers: {"Content-Type" => "application/json"}
           )
 
-        result = list.add_record(record_id)
+        result = list.add_record(record_id: record_id)
         expect(result).to include("data")
       end
     end
@@ -504,7 +496,7 @@ RSpec.describe Attio::List do
         stub_request(:delete, "https://api.attio.com/v2/lists/b557d074-c549-4807-bc01-c4fd74cb419c/entries/#{entry_id}")
           .to_return(status: 204)
 
-        result = list.remove_record(entry_id)
+        result = list.remove_record(entry_id: entry_id)
         expect(result).to be_nil
       end
     end
@@ -520,7 +512,7 @@ RSpec.describe Attio::List do
             headers: {"Content-Type" => "application/json"}
           )
 
-        expect(list.contains_record?(record_id)).to be true
+        expect(list.contains_record?(record_id: record_id)).to be true
       end
 
       it "returns false when record is not in list" do
@@ -533,7 +525,7 @@ RSpec.describe Attio::List do
             headers: {"Content-Type" => "application/json"}
           )
 
-        expect(list.contains_record?(record_id)).to be false
+        expect(list.contains_record?(record_id: record_id)).to be false
       end
     end
 

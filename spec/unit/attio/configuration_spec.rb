@@ -13,7 +13,7 @@ RSpec.describe Attio::Util::Configuration do
     end
 
     it "sets default timeout" do
-      expect(config.timeout).to eq(30)
+      expect(config.timeout).to eq(120)
     end
 
     it "sets default open timeout" do
@@ -172,7 +172,7 @@ RSpec.describe Attio::Util::Configuration do
         api_key: "test",
         api_base: "https://api.attio.com",
         api_version: "v2",
-        timeout: 30,
+        timeout: 120,
         open_timeout: 10,
         max_retries: 3,
         debug: false,
@@ -220,7 +220,7 @@ RSpec.describe Attio::Util::Configuration do
       config.reset!
 
       expect(config.api_key).to be_nil
-      expect(config.timeout).to eq(30)
+      expect(config.timeout).to eq(120)
     end
   end
 end
