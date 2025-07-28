@@ -63,7 +63,7 @@ module Attio
 
         normalized = normalize_values(normalized_values)
         puts "DEBUG: Normalized values: #{normalized.inspect}" if ENV["ATTIO_DEBUG"]
-        
+
         request_params = {
           data: {
             values: normalized

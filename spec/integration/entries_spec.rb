@@ -6,7 +6,7 @@ require "spec_helper"
 # See lists_spec.rb for the correct approach to working with list entries.
 # These tests need to be rewritten to use the List resource methods.
 
-RSpec.describe "Entry Integration (NEEDS REWRITE)", :integration do
+RSpec.describe "Entry Integration (NEEDS REWRITE)", :integration, skip: "Entry API deprecated - use List methods instead. See lists_spec.rb for correct approach." do
   before do
     Attio.configure do |config|
       config.api_key = ENV["ATTIO_API_KEY"] || "5d4b3063a71a19b8d12a98f936b6b74d886d05f8580dba40538e019da8871eaf"

@@ -140,7 +140,7 @@ RSpec.describe "List Integration", :integration do
 
       # Add again - should succeed
       entry2 = list.add_record(record_id)
-      
+
       expect(entry1["id"]["entry_id"]).not_to eq(entry2["id"]["entry_id"])
       expect(entry1["parent_record_id"]).to eq(entry2["parent_record_id"])
     end
@@ -161,7 +161,6 @@ RSpec.describe "List Integration", :integration do
       expect(list.object).to eq("people")
     end
   end
-
 
   describe "error handling" do
     it "handles invalid object type" do

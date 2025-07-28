@@ -17,6 +17,21 @@ module Attio
     attr_reader :parent_object, :parent_record_id, :title, :format,
       :created_by_actor, :content_plaintext, :content_markdown, :tags, :metadata
 
+    # Alias for compatibility
+    alias_method :created_by, :created_by_actor
+
+    # Convenience method to get content based on format
+    def content
+      case format
+      when "plaintext"
+        content_plaintext
+      when "html", "markdown"
+        content_markdown
+      else
+        content_plaintext
+      end
+    end
+
     def initialize(attributes = {}, opts = {})
       super
       normalized_attrs = normalize_attributes(attributes)
@@ -64,11 +79,13 @@ module Attio
     end
 
     # Override destroy to handle nested ID
-    def destroy(**)
+    def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a note without an ID" unless persisted?
 
       note_id = id.is_a?(Hash) ? id["note_id"] : id
-      self.class.delete(note_id, **)
+      self.class.delete(note_id, **opts)
+      freeze
+      true
     end
 
     # Notes cannot be updated
@@ -107,7 +124,7 @@ module Attio
         # Extract options from kwargs
         opts = {}
         opts[:api_key] = kwargs.delete(:api_key) if kwargs.key?(:api_key)
-        
+
         # Map object/record_id to parent_object/parent_record_id
         normalized_params = {
           parent_object: kwargs[:object] || kwargs[:parent_object],

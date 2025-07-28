@@ -25,14 +25,14 @@ module IntegrationHelpers
   # Track created resources for cleanup
   def track_resource(type, id, additional_data = {})
     @created_resources ||= []
-    @created_resources << { type: type, id: id, **additional_data }
+    @created_resources << {type: type, id: id, **additional_data}
   end
 
   # Clean up all tracked resources
   def cleanup_resources
     return unless @created_resources
 
-    @created_resources.reverse.each do |resource|
+    @created_resources.reverse_each do |resource|
       cleanup_resource(resource)
     rescue => e
       warn "Failed to cleanup #{resource[:type]} #{resource[:id]}: #{e.message}"
@@ -74,7 +74,7 @@ module IntegrationHelpers
     rescue Attio::RateLimitError => e
       if retries < max_retries
         retries += 1
-        sleep_time = e.retry_after || (2 ** retries)
+        sleep_time = e.retry_after || (2**retries)
         warn "Rate limited. Sleeping for #{sleep_time} seconds..."
         sleep sleep_time
         retry
@@ -97,12 +97,12 @@ module IntegrationHelpers
       name: unique_name("Person"),
       email_addresses: ensure_unique_email
     }
-    
+
     person = Attio::Record.create(
       object: "people",
       values: default_values.merge(values)
     )
-    
+
     track_resource(:person, person.id["record_id"], object: "people")
     person
   end
@@ -113,12 +113,12 @@ module IntegrationHelpers
       name: unique_name("Company"),
       domains: ["#{SecureRandom.hex(8)}.example.com"]
     }
-    
+
     company = Attio::Record.create(
       object: "companies",
       values: default_values.merge(values)
     )
-    
+
     track_resource(:company, company.id["record_id"], object: "companies")
     company
   end
@@ -129,7 +129,7 @@ RSpec.configure do |config|
 
   config.before(:each, :integration) do
     skip_unless_integration_enabled
-    
+
     # Configure Attio with real API key
     Attio.configure do |attio_config|
       attio_config.api_key = ENV["ATTIO_API_KEY"]

@@ -3,7 +3,6 @@
 require "spec_helper"
 
 RSpec.describe "Record Integration", :integration do
-
   describe "person records" do
     let(:test_email) { "test-#{SecureRandom.hex(8)}@example.com" }
     let(:person_data) do
@@ -96,7 +95,7 @@ RSpec.describe "Record Integration", :integration do
         end
       end
       expect(found).to be true
-      
+
       # Clean up
       created.destroy
     end

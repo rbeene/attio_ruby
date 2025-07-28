@@ -20,7 +20,7 @@ module Attio
     # Read-only attributes
     attr_reader :api_slug, :attio_object_id, :object_api_slug,
       :created_by_actor, :workspace_id, :parent_object, :filters
-    
+
     # Get the parent object as a string
     def object
       # parent_object is returned as an array from the API
@@ -49,7 +49,7 @@ module Attio
       list_id = id.is_a?(Hash) ? id["list_id"] : id
       "#{self.class.resource_path}/#{list_id}"
     end
-    
+
     # Override the default id extraction for API paths
     def id_for_path
       return nil unless persisted?
@@ -83,7 +83,7 @@ module Attio
     def add_record(record_id, **opts)
       list_id = id.is_a?(Hash) ? id["list_id"] : id
       client = Attio.client(api_key: opts[:api_key])
-      
+
       # The API expects parent_record_id, parent_object, and entry_values
       request_data = {
         data: {
@@ -92,7 +92,7 @@ module Attio
           entry_values: {}
         }
       }
-      
+
       response = client.post("lists/#{list_id}/entries", request_data)
       # Return the entry data
       response["data"] || response
@@ -137,13 +137,13 @@ module Attio
         response = execute_request(:GET, "#{resource_path}/#{list_id}", {}, opts)
         new(response["data"] || response, opts)
       end
-      
+
       # Override create to handle keyword arguments properly
       def create(**kwargs)
         # Extract options from kwargs
         opts = {}
         opts[:api_key] = kwargs.delete(:api_key) if kwargs.key?(:api_key)
-        
+
         prepared_params = prepare_params_for_create(kwargs)
         response = execute_request(:POST, resource_path, prepared_params, opts)
         new(response["data"] || response, opts)

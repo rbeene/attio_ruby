@@ -4,7 +4,7 @@ require "spec_helper"
 
 RSpec.describe Attio::Record do
   let(:api_key) { "test_api_key" }
-  
+
   before do
     Attio.configure do |config|
       config.api_key = api_key
@@ -39,9 +39,9 @@ RSpec.describe Attio::Record do
         ],
         "meta" => {"total" => 1}
       }
-      
+
       stub_api_request(:post, "/objects/people/records/query", filter_response)
-      
+
       filter = {name: {"$contains" => "Test"}}
       result = described_class.list(object: "people", filter: filter, limit: 1)
       expect(result).to be_a(Attio::APIResource::ListObject)
@@ -55,9 +55,9 @@ RSpec.describe Attio::Record do
         ],
         "meta" => {"total" => 2}
       }
-      
+
       stub_api_request(:post, "/objects/people/records/query", sorted_response)
-      
+
       result = described_class.list(object: "people", sort: {field: "created_at", direction: "desc"}, limit: 2)
       expect(result).to be_a(Attio::APIResource::ListObject)
     end
@@ -119,9 +119,9 @@ RSpec.describe Attio::Record do
           }
         }
       }
-      
+
       stub_api_request(:post, "/objects/people/records", simple_response)
-      
+
       # Using deterministic test data
       result = described_class.create(
         object: "people",

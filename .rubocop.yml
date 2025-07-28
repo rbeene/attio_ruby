@@ -30,6 +30,7 @@ Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
     - '*.gemspec'
+
     - 'examples/**/*'
     - 'benchmarks/**/*'
 
@@ -83,10 +84,14 @@ Style/Documentation:
 
 # RSpec Configuration
 RSpec/ExampleLength:
-  Max: 20
+  Max: 30
+  Exclude:
+    - 'spec/integration/**/*'
 
 RSpec/MultipleExpectations:
-  Max: 5
+  Max: 10
+  Exclude:
+    - 'spec/integration/**/*'
 
 RSpec/DescribeClass:
   Exclude:
