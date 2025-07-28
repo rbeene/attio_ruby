@@ -149,27 +149,6 @@ RSpec.describe "Record Integration", :integration do
     end
   end
 
-  describe "batch operations" do
-    it "creates multiple records in batch" do
-      VCR.use_cassette("records/batch_create") do
-        records = [
-          {values: {name: "Batch Person 1", email_addresses: "batch1@example.com"}},
-          {values: {name: "Batch Person 2", email_addresses: "batch2@example.com"}},
-          {values: {name: "Batch Person 3", email_addresses: "batch3@example.com"}}
-        ]
-
-        results = Attio::Record.create_batch(
-          object: "people",
-          records: records
-        )
-
-        expect(results).to be_an(Array)
-        expect(results.size).to eq(3)
-        expect(results.all?(Attio::Record)).to be true
-      end
-    end
-  end
-
   describe "filtering and sorting" do
     before do
       VCR.use_cassette("records/setup_filter_data") do

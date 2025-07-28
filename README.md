@@ -61,8 +61,12 @@ end
 person = Attio::Record.create(
   object: "people",
   values: {
-    name: "John Doe",
-    email_addresses: "john@example.com"
+    name: [{
+      first_name: "John",
+      last_name: "Doe",
+      full_name: "John Doe"
+    }],
+    email_addresses: ["john@example.com"]
   }
 )
 
@@ -108,7 +112,13 @@ The gem automatically reads configuration from environment variables:
 # Override configuration for a single request
 person = Attio::Record.create(
   object: "people",
-  values: { name: "Jane Doe" },
+  values: { 
+    name: [{
+      first_name: "Jane",
+      last_name: "Doe",
+      full_name: "Jane Doe"
+    }]
+  },
   opts: { api_key: "different_api_key" }
 )
 ```
@@ -175,6 +185,44 @@ puts people_object.name # => "People"
 
 Records are instances of objects (e.g., individual people or companies).
 
+#### Complex Attributes
+
+Some attributes in Attio require specific structures. Here are the most common:
+
+**Name (for people):**
+```ruby
+name: [{
+  first_name: "John",
+  last_name: "Smith",
+  full_name: "John Smith"
+}]
+```
+
+**Phone Numbers:**
+```ruby
+phone_numbers: [{
+  original_phone_number: "+15558675309",
+  country_code: "US"
+}]
+```
+
+**Addresses:**
+```ruby
+primary_location: [{
+  line_1: "1 Infinite Loop",
+  locality: "Cupertino",
+  region: "CA",
+  postcode: "95014",
+  country_code: "US"
+}]
+```
+
+**Email addresses and domains are simple arrays:**
+```ruby
+email_addresses: ["john@example.com", "john.smith@company.com"]
+domains: ["example.com", "example.org"]
+```
+
 #### Creating Records
 
 ```ruby
@@ -182,9 +230,16 @@ Records are instances of objects (e.g., individual people or companies).
 person = Attio::Record.create(
   object: "people",
   values: {
-    name: "Jane Smith",
-    email_addresses: "jane@example.com",
-    phone_numbers: "+1-555-0123",
+    name: [{
+      first_name: "Jane",
+      last_name: "Smith",
+      full_name: "Jane Smith"
+    }],
+    email_addresses: ["jane@example.com"],
+    phone_numbers: [{
+      original_phone_number: "+1-555-0123",
+      country_code: "US"
+    }],
     job_title: "CEO"
   }
 )
@@ -194,7 +249,7 @@ company = Attio::Record.create(
   object: "companies",
   values: {
     name: "Acme Corp",
-    domains: "acme.com",
+    domains: ["acme.com"],
     industry: "Technology",
     employees: [{ 
       target_object: "people", 
@@ -279,6 +334,10 @@ person.destroy
 # Or delete by ID
 Attio::Record.delete(object: "people", record_id: "rec_123abc456")  # Replace with actual record ID
 ```
+
+#### Note on Batch Operations
+
+The Attio API does not currently support batch operations for creating, updating, or deleting multiple records in a single request. Each record must be processed individually. If you need to process many records, consider implementing rate limiting and error handling in your application.
 
 ### Lists and List Entries
 
@@ -435,7 +494,6 @@ Complete example applications are available in the `examples/` directory:
 
 - `basic_usage.rb` - Demonstrates core functionality
 - `oauth_flow.rb` - Complete OAuth 2.0 implementation with Sinatra
-- `batch_operations.rb` - Bulk data processing examples
 - `webhook_server.rb` - Webhook handling with signature verification
 
 Run an example:

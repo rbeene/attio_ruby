@@ -118,6 +118,10 @@ module Attio
           scope.split(" ")
         when Array
           scope.map(&:to_s)
+        when NilClass
+          # If scope is not provided in the token response, return nil
+          # This indicates the token has all scopes that were authorized
+          nil
         else
           []
         end

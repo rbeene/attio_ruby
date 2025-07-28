@@ -98,7 +98,7 @@ RSpec.describe Attio::OAuth::Client do
     end
 
     before do
-      stub_request(:post, "https://api.attio.com/v2/oauth/token")
+      stub_request(:post, "https://app.attio.com/oauth/token")
         .with(
           body: {
             grant_type: "authorization_code",
@@ -131,7 +131,7 @@ RSpec.describe Attio::OAuth::Client do
 
     it "sends correct parameters" do
       client.exchange_code_for_token(code: code)
-      expect(WebMock).to have_requested(:post, "https://api.attio.com/v2/oauth/token")
+      expect(WebMock).to have_requested(:post, "https://app.attio.com/oauth/token")
         .with(body: hash_including("grant_type" => "authorization_code", "code" => code))
     end
   end
@@ -148,7 +148,7 @@ RSpec.describe Attio::OAuth::Client do
     end
 
     before do
-      stub_request(:post, "https://api.attio.com/v2/oauth/token")
+      stub_request(:post, "https://app.attio.com/oauth/token")
         .with(
           body: {
             grant_type: "refresh_token",
@@ -173,7 +173,7 @@ RSpec.describe Attio::OAuth::Client do
 
     it "sends correct parameters" do
       client.refresh_token(refresh_token)
-      expect(WebMock).to have_requested(:post, "https://api.attio.com/v2/oauth/token")
+      expect(WebMock).to have_requested(:post, "https://app.attio.com/oauth/token")
         .with(body: hash_including("grant_type" => "refresh_token"))
     end
   end
@@ -182,7 +182,7 @@ RSpec.describe Attio::OAuth::Client do
     let(:token) { "access_token_123" }
 
     before do
-      stub_request(:post, "https://api.attio.com/v2/oauth/revoke")
+      stub_request(:post, "https://app.attio.com/oauth/revoke")
         .with(
           body: /token=#{token}/,
           headers: {"Content-Type" => "application/x-www-form-urlencoded"}
@@ -206,7 +206,7 @@ RSpec.describe Attio::OAuth::Client do
     end
 
     it "returns false on error" do
-      stub_request(:post, "https://api.attio.com/v2/oauth/revoke")
+      stub_request(:post, "https://app.attio.com/oauth/revoke")
         .to_return(status: 400, body: "")
 
       result = client.revoke_token(token)
@@ -227,7 +227,7 @@ RSpec.describe Attio::OAuth::Client do
     end
 
     before do
-      stub_request(:post, "https://api.attio.com/v2/oauth/introspect")
+      stub_request(:post, "https://app.attio.com/oauth/introspect")
         .with(
           body: /token=#{token}/,
           headers: {"Content-Type" => "application/x-www-form-urlencoded"}

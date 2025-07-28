@@ -12,7 +12,7 @@ module Attio
       # OAuth endpoints
       OAUTH_BASE_URL = "https://app.attio.com/authorize"
       # Token exchange endpoint
-      TOKEN_URL = "https://api.attio.com/v2/oauth/token"
+      TOKEN_URL = "https://app.attio.com/oauth/token"
       # Default OAuth scopes requested if none specified
       DEFAULT_SCOPES = %w[
         record:read
@@ -100,7 +100,7 @@ module Attio
 
         # Use Faraday directly for OAuth endpoints
         conn = create_oauth_connection
-        response = conn.post("/v2/oauth/revoke") do |req|
+        response = conn.post("/oauth/revoke") do |req|
           req.headers["Content-Type"] = "application/x-www-form-urlencoded"
           req.body = URI.encode_www_form(params)
         end
@@ -123,7 +123,7 @@ module Attio
 
         # Use Faraday directly for OAuth endpoints
         conn = create_oauth_connection
-        response = conn.post("/v2/oauth/introspect") do |req|
+        response = conn.post("/oauth/introspect") do |req|
           req.headers["Content-Type"] = "application/x-www-form-urlencoded"
           req.body = URI.encode_www_form(params)
         end
@@ -164,16 +164,25 @@ module Attio
       end
 
       def make_token_request(params)
-        conn = Faraday.new(url: TOKEN_URL) do |faraday|
+        conn = Faraday.new do |faraday|
           faraday.request :url_encoded
           faraday.response :json, parser_options: {symbolize_names: true}
           faraday.adapter Faraday.default_adapter
         end
 
-        response = conn.post do |req|
+        response = conn.post(TOKEN_URL, params) do |req|
           req.headers["Accept"] = "application/json"
-          req.body = params
         end
+
+        puts "\n=== TOKEN REQUEST DEBUG ==="
+        puts "Request URL: #{TOKEN_URL}"
+        puts "All params keys: #{params.keys}"
+        puts "Request params: #{params.map { |k, v| (k == :client_secret) ? [k, "#{v[0..5]}..."] : [k, v] }.to_h}"
+        puts "Request Content-Type: application/x-www-form-urlencoded"
+        puts "Response status: #{response.status}"
+        puts "Response headers: #{response.headers}"
+        puts "Response body: #{response.body}"
+        puts "========================\n"
 
         if response.success?
           response.body
@@ -183,7 +192,7 @@ module Attio
       end
 
       def create_oauth_connection
-        Faraday.new(url: "https://api.attio.com") do |faraday|
+        Faraday.new(url: "https://app.attio.com") do |faraday|
           faraday.response :json, parser_options: {symbolize_names: true}
           faraday.adapter Faraday.default_adapter
         end

@@ -31,9 +31,16 @@ puts
 puts "2. Creating a Person:"
 person = Attio::Record.create(
   values: {
-    name: "John Doe",
-    email_addresses: "john@example.com",
-    phone_numbers: "+1-555-0123",
+    name: [{
+      first_name: "John",
+      last_name: "Doe",
+      full_name: "John Doe"
+    }],
+    email_addresses: ["john@example.com"],
+    phone_numbers: [{
+      original_phone_number: "+1-555-0123",
+      country_code: "US"
+    }],
     job_title: "Software Engineer"
   },
   object: "people"
@@ -61,7 +68,7 @@ puts "4. Creating a Company:"
 company = Attio::Record.create(
   values: {
     name: "Acme Corporation",
-    domains: "acme.com",
+    domains: ["acme.com"],
     industry: "Technology",
     company_size: "50-100"
   },
@@ -111,43 +118,18 @@ attributes.first(5).each do |attr|
 end
 puts
 
-# 9. Using Service Classes
-puts "9. Using Service Classes:"
-person_service = Attio::Services::PersonService.new
-
-# Find or create by email
-existing_person = person_service.find_or_create_by_email(
-  "jane@example.com",
-  defaults: {
-    name: "Jane Smith",
-    job_title: "Product Manager"
-  }
+# 9. Working with Attributes
+puts "9. Searching Records:"
+# Search people by query
+search_results = Attio::Record.list(
+  object: "people",
+  params: {q: "Jane"}
 )
-puts "  Found or created: #{existing_person[:name]}"
-
-# Search by name
-results = person_service.search_by_name("Jane")
-puts "  Found #{results.count} people named Jane"
+puts "  Found #{search_results.count} people matching 'Jane'"
 puts
 
-# 10. Batch Operations
-puts "10. Batch Operations:"
-batch_service = Attio::Services::BatchService.new(
-  on_progress: ->(_progress) { print "." }
-)
-
-puts "  Creating multiple records in batch..."
-batch_results = batch_service.create_records(
-  "people" => [
-    {values: {name: "Alice Johnson", email_addresses: "alice@example.com"}},
-    {values: {name: "Bob Wilson", email_addresses: "bob@example.com"}}
-  ]
-)
-puts "\n  Created #{batch_results[:success].size} records successfully"
-puts
-
-# 11. Error Handling
-puts "11. Error Handling Example:"
+# 10. Error Handling
+puts "10. Error Handling Example:"
 begin
   # Try to create a record without required fields
   Attio::Record.create(object: "invalid_object", values: {})
@@ -163,6 +145,5 @@ puts "- Configuring the client"
 puts "- Creating and updating records"
 puts "- Searching and filtering"
 puts "- Working with lists and notes"
-puts "- Using service classes"
-puts "- Batch operations"
+puts "- Working with attributes"
 puts "- Error handling"

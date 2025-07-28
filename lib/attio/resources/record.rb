@@ -116,71 +116,6 @@ module Attio
         new(record_data, opts)
       end
 
-      # Batch create records
-      def batch_create(object: nil, records: nil, **opts)
-        validate_object_identifier!(object)
-        validate_batch!(records)
-
-        request_params = {
-          data: records.map do |record|
-            values = record[:data] ? record[:data][:values] : record[:values] || record
-            {values: normalize_values(values)}
-          end
-        }
-
-        response = execute_request(:POST, "records/batch", request_params, opts)
-
-        (response["data"] || []).map do |record_data|
-          record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
-          new(record_data, opts)
-        end
-      end
-
-      # Batch update records
-      def batch_update(object: nil, records: nil, **opts)
-        validate_object_identifier!(object)
-        validate_batch!(records)
-
-        request_params = {
-          data: records.map do |record|
-            record_id = record[:record_id] || record[:id]
-            simple_record_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
-
-            values = record[:data] ? record[:data][:values] : record[:values]
-
-            {
-              id: {record_id: simple_record_id},
-              values: normalize_values(values)
-            }
-          end
-        }
-
-        response = execute_request(:PUT, "records/batch", request_params, opts)
-
-        (response["data"] || []).map do |record_data|
-          record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
-          new(record_data, opts)
-        end
-      end
-
-      # Batch create records (legacy name)
-      def create_batch(records:, object:, **opts)
-        validate_object_identifier!(object)
-        validate_batch!(records)
-
-        params = {
-          object: object,
-          data: records.map { |r| {values: normalize_values(r[:values] || r)} }
-        }
-
-        response = execute_request(:POST, "#{resource_path}/batch", params, opts)
-
-        (response["data"] || []).map do |record_data|
-          record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
-          new(record_data, opts)
-        end
-      end
-
       # Search records
       def search(query, object:, **)
         list({q: query}, object: object, **)
@@ -194,11 +129,6 @@ module Attio
 
       def validate_values!(values)
         raise ArgumentError, "Values must be a Hash" unless values.is_a?(Hash)
-      end
-
-      def validate_batch!(records)
-        raise ArgumentError, "Records must be an array" unless records.is_a?(Array)
-        raise ArgumentError, "Records cannot be empty" if records.empty?
       end
 
       def build_query_params(params)
@@ -243,15 +173,29 @@ module Attio
         }
       end
 
+      # Attributes that should be sent as simple arrays of strings or simple values
+      SIMPLE_ARRAY_ATTRIBUTES = %w[email_addresses domains].freeze
+      SIMPLE_VALUE_ATTRIBUTES = %w[description linkedin job_title].freeze
+
       def normalize_values(values)
-        values.transform_values do |value|
-          case value
-          when Array
-            value.map { |v| normalize_single_value(v) }
+        values.map do |key, value|
+          # Check if this is a simple array attribute
+          if SIMPLE_ARRAY_ATTRIBUTES.include?(key.to_s) && value.is_a?(Array)
+            # For email_addresses and domains, keep strings as-is
+            [key, value]
+          elsif SIMPLE_VALUE_ATTRIBUTES.include?(key.to_s) && !value.is_a?(Hash) && !value.is_a?(Array)
+            # For simple string attributes, send directly
+            [key, value]
           else
-            normalize_single_value(value)
+            normalized_value = case value
+            when Array
+              value.map { |v| normalize_single_value(v) }
+            else
+              normalize_single_value(value)
+            end
+            [key, normalized_value]
           end
-        end
+        end.to_h
       end
 
       def normalize_single_value(value)
