@@ -128,7 +128,7 @@ module Attio
     # @param opts [Hash] Options to pass to JSON.generate
     # @return [String] JSON representation of the resource
     def to_json(*opts)
-      JSON.generate(to_h, *)
+      JSON.generate(to_h, *opts)
     end
 
     # Human-readable representation of the resource

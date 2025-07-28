@@ -68,7 +68,7 @@ module Attio
       # @param opts [Hash] Options to pass to JSON.generate
       # @return [String] JSON representation of the token
       def to_json(*opts)
-        JSON.generate(to_h, *)
+        JSON.generate(to_h, *opts)
       end
 
       # Human-readable representation with masked token
