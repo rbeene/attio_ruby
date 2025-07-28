@@ -126,7 +126,12 @@ module Attio
         {
           data: {
             target_url: params[:target_url],
-            subscriptions: Array(params[:subscriptions])
+            subscriptions: Array(params[:subscriptions]).map do |sub|
+              # Ensure each subscription has a filter
+              sub = sub.is_a?(Hash) ? sub : {"event_type" => sub}
+              sub["filter"] ||= {"$and" => []}  # Default empty filter
+              sub
+            end
           }
         }
       end

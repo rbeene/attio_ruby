@@ -91,7 +91,8 @@ module Attio
       when 200..299
         response.body
       when 400
-        raise BadRequestError.new("Bad request", response_to_hash(response))
+        error_message = response.body["error"] || response.body["message"] || "Bad request"
+        raise BadRequestError.new("Bad request: #{error_message}", response_to_hash(response))
       when 401
         raise AuthenticationError.new("Authentication failed", response_to_hash(response))
       when 403

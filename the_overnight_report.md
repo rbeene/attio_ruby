@@ -5,22 +5,26 @@
 **Session Duration**: 2 hours (01:45 AM - 03:45 AM EST)  
 **Date**: January 28, 2025
 
-**Major Achievement**: Discovered and fixed a critical bug in the Attio Ruby gem where ALL Record API calls were broken due to incorrect value normalization. This was a silent but severe failure where tests were passing with mocked incorrect formats.
+**Major Achievement**: Fixed ALL broken API calls in the Attio Ruby gem. Started with a critical bug where Record API calls were broken, ended with 100% API functionality.
 
 **Key Findings**:
-- The gem was wrapping all simple values in `{value: "..."}` objects, completely breaking API compatibility
-- Our tests were passing because they mocked the wrong request format, hiding the real issue
-- API audit revealed 10/13 endpoints work correctly after the fix
-- 3 endpoints have validation errors in our gem code (List.create, Task.create, Webhook.create)
+1. The gem was wrapping all simple values in `{value: "..."}` objects, completely breaking Record API compatibility
+2. Our tests were passing because they mocked the wrong request format, hiding real issues
+3. Initial audit revealed 10/13 endpoints working, 3 broken
+4. All 3 broken endpoints had different issues requiring specific fixes
 
 **Deliverables**:
 1. Fixed the critical `normalize_single_value` bug in Record class
-2. Created comprehensive API audit documentation (AUDIT_FAILURES.md)
-3. Updated test expectations to match correct API format
-4. Committed and pushed fix to `fix-record-value-normalization` branch
-5. Created new branch `fix-remaining-api-issues` for ongoing work
+2. Fixed List.create to use positional hash arguments
+3. Fixed Task.create field names and requirements
+4. Fixed Webhook.create to include required filter field
+5. Achieved 100% API functionality (13/13 endpoints working)
+6. Committed and pushed fixes to appropriate branches
 
-**Final Status**: All 611 tests passing, RuboCop completely clean (0 offenses)
+**Final Status**: 
+- All tests passing (205 on this branch)
+- RuboCop completely clean (0 offenses)
+- ALL API endpoints verified working with real API key
 
 ---
 
@@ -80,12 +84,13 @@
   - Created and pushed `fix-record-value-normalization` branch
   - Created new `fix-remaining-api-issues` branch for ongoing work
 
-#### Task 8: Fixing Remaining API Issues (02:45 - ONGOING)
-- **Duration**: In progress...
+#### Task 8: Fixing Remaining API Issues (02:45 - 03:40)
+- **Duration**: 55 minutes
 - **Target**: Fix the 3 remaining broken endpoints
-  - List.create
-  - Task.create
-  - Webhook.create
+- **Results**: All 3 endpoints fixed! ✅
+  - **List.create**: Fixed by using positional hash argument instead of keyword args
+  - **Task.create**: Fixed by using 'content' field and making deadline_at required (can be null)
+  - **Webhook.create**: Fixed by adding required filter field to subscriptions
 
 ---
 
@@ -121,6 +126,32 @@ end
 ### 2. Test Updates in `/spec/unit/attio/resources/record_spec.rb`
 - Fixed 2 WebMock stubs expecting old `{value: "..."}` format
 - Changed expectations to match correct API format
+
+### 3. Task.create Fix in `/lib/attio/resources/task.rb`
+```ruby
+# Changed from 'content_plaintext' to 'content'
+# Made deadline_at required (can be null)
+request_params = {
+  data: {
+    content: content,  # API expects 'content'
+    format: format,    # Format is required
+    is_completed: params[:is_completed] || false,
+    linked_records: params[:linked_records] || [],
+    assignees: params[:assignees] || []
+  }
+}
+request_params[:data][:deadline_at] = params[:deadline_at]
+```
+
+### 4. Webhook.create Fix in `/lib/attio/resources/webhook.rb`
+```ruby
+# Added automatic filter to subscriptions
+subscriptions: Array(params[:subscriptions]).map do |sub|
+  sub = sub.is_a?(Hash) ? sub : {"event_type" => sub}
+  sub["filter"] ||= {"$and" => []}  # Default empty filter
+  sub
+end
+```
 
 ---
 
