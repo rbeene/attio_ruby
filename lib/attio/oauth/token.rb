@@ -2,6 +2,7 @@
 
 module Attio
   module OAuth
+    # Represents an OAuth access token with refresh capabilities
     class Token
       attr_reader :access_token, :refresh_token, :token_type, :expires_in,
         :expires_at, :scope, :created_at, :client
@@ -49,6 +50,8 @@ module Attio
         true
       end
 
+      # Convert token to hash representation
+      # @return [Hash] Token attributes as a hash
       def to_h
         {
           access_token: @access_token,
@@ -61,10 +64,15 @@ module Attio
         }.compact
       end
 
-      def to_json(*)
+      # Convert token to JSON string
+      # @param opts [Hash] Options to pass to JSON.generate
+      # @return [String] JSON representation of the token
+      def to_json(*opts)
         JSON.generate(to_h, *)
       end
 
+      # Human-readable representation with masked token
+      # @return [String] Inspection string with partially masked token
       def inspect
         "#<#{self.class.name}:#{object_id} " \
           "token=#{@access_token ? "***" + @access_token[-4..] : "nil"} " \
@@ -138,6 +146,7 @@ module Attio
         end
       end
 
+      # Raised when token validation fails
       class InvalidTokenError < StandardError; end
     end
   end

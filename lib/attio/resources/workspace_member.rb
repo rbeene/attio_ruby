@@ -3,9 +3,12 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a workspace member in Attio (read-only)
   class WorkspaceMember < APIResource
     api_operations :list, :retrieve
 
+    # API endpoint path for workspace members
+    # @return [String] The API path
     def self.resource_path
       "workspace_members"
     end
@@ -70,6 +73,8 @@ module Attio
       raise NotImplementedError, "Workspace members cannot be deleted via API"
     end
 
+    # Convert workspace member to hash representation
+    # @return [Hash] Member data as a hash
     def to_h
       super.merge(
         email_address: email_address,

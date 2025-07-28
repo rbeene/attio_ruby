@@ -4,28 +4,54 @@ require "faraday"
 require "faraday/retry"
 
 module Attio
+  # HTTP client for making API requests to Attio
+  # Handles authentication, retries, and error responses
   class Client
     def initialize(api_key: nil)
       @api_key = api_key || Attio.configuration.api_key
       raise AuthenticationError, "No API key provided" unless @api_key
     end
 
+    # Perform a GET request
+    # @param path [String] The API endpoint path
+    # @param params [Hash] Query parameters
+    # @return [Hash] Parsed JSON response
+    # @raise [Error] On API errors
     def get(path, params = {})
       request(:get, path, params)
     end
 
+    # Perform a POST request
+    # @param path [String] The API endpoint path
+    # @param body [Hash] Request body to be sent as JSON
+    # @return [Hash] Parsed JSON response
+    # @raise [Error] On API errors
     def post(path, body = {})
       request(:post, path, body)
     end
 
+    # Perform a PUT request
+    # @param path [String] The API endpoint path
+    # @param body [Hash] Request body to be sent as JSON
+    # @return [Hash] Parsed JSON response
+    # @raise [Error] On API errors
     def put(path, body = {})
       request(:put, path, body)
     end
 
+    # Perform a PATCH request
+    # @param path [String] The API endpoint path
+    # @param body [Hash] Request body to be sent as JSON
+    # @return [Hash] Parsed JSON response
+    # @raise [Error] On API errors
     def patch(path, body = {})
       request(:patch, path, body)
     end
 
+    # Perform a DELETE request
+    # @param path [String] The API endpoint path
+    # @return [Hash] Parsed JSON response
+    # @raise [Error] On API errors
     def delete(path)
       request(:delete, path)
     end

@@ -69,8 +69,10 @@ module Attio
   # Connection errors
   class ConnectionError < Error; end
 
+  # Request timeout error
   class TimeoutError < ConnectionError; end
 
+  # Network-level connection error
   class NetworkError < ConnectionError; end
 
   # Configuration errors
@@ -79,8 +81,12 @@ module Attio
   # Request errors
   class InvalidRequestError < ClientError; end
 
-  # Simple error factory
+  # Factory module for creating appropriate error instances
   module ErrorFactory
+    # Create an error instance from an HTTP response
+    # @param response [Hash] Response hash with :status, :body, and :headers
+    # @param message [String, nil] Optional custom error message
+    # @return [Error] Appropriate error instance based on status code
     def self.from_response(response, message = nil)
       status = response[:status].to_i
       message ||= "API request failed with status #{status}"
@@ -100,6 +106,10 @@ module Attio
       end
     end
 
+    # Create an error instance from a caught exception
+    # @param exception [Exception] The caught exception
+    # @param context [Hash] Additional context (currently unused)
+    # @return [Error] Appropriate error instance based on exception type
     def self.from_exception(exception, context = {})
       case exception
       when Faraday::TimeoutError, Net::ReadTimeout, Net::OpenTimeout

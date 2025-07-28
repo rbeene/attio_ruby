@@ -1,11 +1,16 @@
 # frozen_string_literal: true
 
 module Attio
+  # Utility classes for the Attio gem
   module Util
+    # Configuration management for the Attio gem
     class Configuration
+      # Raised when configuration validation fails
       class ConfigurationError < ::Attio::InvalidRequestError; end
 
+      # Settings that must be configured
       REQUIRED_SETTINGS = %i[api_key].freeze
+      # Optional settings with defaults
       OPTIONAL_SETTINGS = %i[
         api_base
         api_version
@@ -19,8 +24,10 @@ module Attio
         use_faraday
       ].freeze
 
+      # All available configuration settings
       ALL_SETTINGS = (REQUIRED_SETTINGS + OPTIONAL_SETTINGS).freeze
 
+      # Default values for optional settings
       DEFAULT_SETTINGS = {
         api_base: "https://api.attio.com",
         api_version: "v2",
@@ -42,6 +49,8 @@ module Attio
         reset_without_lock!
       end
 
+      # Reset configuration to defaults
+      # @return [void]
       def reset!
         @mutex.synchronize do
           reset_without_lock!
@@ -82,6 +91,8 @@ module Attio
         true
       end
 
+      # Convert configuration to hash
+      # @return [Hash] Configuration settings as a hash
       def to_h
         ALL_SETTINGS.each_with_object({}) do |setting, hash|
           hash[setting] = instance_variable_get("@#{setting}")
@@ -110,6 +121,9 @@ module Attio
         end
       end
 
+      # Create a new configuration with merged options
+      # @param options [Hash] Options to merge
+      # @return [Configuration] New configuration instance
       def merge(options)
         dup.tap do |config|
           options.each do |key, value|
@@ -120,6 +134,8 @@ module Attio
         end
       end
 
+      # Create a duplicate configuration
+      # @return [Configuration] Duplicate configuration instance
       def dup
         self.class.new.tap do |config|
           ALL_SETTINGS.each do |setting|

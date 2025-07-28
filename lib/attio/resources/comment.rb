@@ -3,10 +3,14 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a comment in an Attio thread
+  # Comments are immutable once created
   class Comment < APIResource
     # Comments only support create, retrieve, and delete (no list or update)
     api_operations :retrieve, :delete
 
+    # API endpoint path for comments
+    # @return [String] The API path
     def self.resource_path
       "comments"
     end

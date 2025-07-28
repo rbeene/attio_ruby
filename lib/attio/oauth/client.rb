@@ -5,10 +5,15 @@ require "securerandom"
 require "base64"
 
 module Attio
+  # OAuth authentication module for Attio API
   module OAuth
+    # OAuth client for handling the OAuth 2.0 authorization flow
     class Client
+      # OAuth endpoints
       OAUTH_BASE_URL = "https://app.attio.com/authorize"
+      # Token exchange endpoint
       TOKEN_URL = "https://api.attio.com/v2/oauth/token"
+      # Default OAuth scopes requested if none specified
       DEFAULT_SCOPES = %w[
         record:read
         record:write

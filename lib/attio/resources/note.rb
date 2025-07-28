@@ -3,9 +3,12 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a note attached to a record in Attio
   class Note < APIResource
     api_operations :list, :retrieve, :create, :delete
 
+    # API endpoint path for notes
+    # @return [String] The API path
     def self.resource_path
       "notes"
     end
@@ -74,6 +77,8 @@ module Attio
       raise NotImplementedError, "Notes cannot be updated. Create a new note instead."
     end
 
+    # Convert note to hash representation
+    # @return [Hash] Note data as a hash
     def to_h
       super.merge(
         parent_object: parent_object,

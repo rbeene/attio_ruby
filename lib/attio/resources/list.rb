@@ -3,9 +3,12 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a list in Attio for organizing records
   class List < APIResource
     api_operations :list, :retrieve, :create, :update
 
+    # API endpoint path for lists
+    # @return [String] The API path
     def self.resource_path
       "lists"
     end
@@ -81,6 +84,8 @@ module Attio
       entries(**).length
     end
 
+    # Convert list to hash representation
+    # @return [Hash] List data as a hash
     def to_h
       super.merge(
         api_slug: api_slug,

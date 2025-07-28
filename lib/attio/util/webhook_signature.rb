@@ -6,8 +6,11 @@ require "time"
 
 module Attio
   module Util
+    # Verifies webhook signatures from Attio to ensure authenticity
     class WebhookSignature
+      # HTTP header containing the webhook signature
       SIGNATURE_HEADER = "x-attio-signature"
+      # HTTP header containing the request timestamp
       TIMESTAMP_HEADER = "x-attio-timestamp"
       TOLERANCE_SECONDS = 300 # 5 minutes
 
@@ -165,6 +168,7 @@ module Attio
         end
       end
 
+      # Raised when webhook signature verification fails
       class SignatureVerificationError < StandardError; end
     end
   end

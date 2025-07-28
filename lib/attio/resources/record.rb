@@ -3,11 +3,14 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a record (instance of an object) in Attio
   class Record < APIResource
     # Record doesn't use standard CRUD operations due to object parameter requirement
     # We'll define custom methods instead
     api_operations :delete
 
+    # API endpoint path for records (nested under objects)
+    # @return [String] The API path
     def self.resource_path
       "objects"
     end
@@ -318,6 +321,8 @@ module Attio
       true
     end
 
+    # Convert record to hash representation
+    # @return [Hash] Record data as a hash
     def to_h
       values = @attributes.except(:id, :created_at, :object_id, :object_api_slug)
 
@@ -330,6 +335,8 @@ module Attio
       }.compact
     end
 
+    # Human-readable representation of the record
+    # @return [String] Inspection string with ID, object, and sample values
     def inspect
       values_preview = @attributes.take(3).map { |k, v| "#{k}: #{v.inspect}" }.join(", ")
       values_preview += "..." if @attributes.size > 3

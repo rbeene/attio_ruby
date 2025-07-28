@@ -3,11 +3,14 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a comment thread in Attio (read-only)
   class Thread < APIResource
     # Threads only support list and retrieve (read-only resource)
     # Don't use api_operations for list since we need custom handling
     api_operations :retrieve
 
+    # API endpoint path for threads
+    # @return [String] The API path
     def self.resource_path
       "threads"
     end
@@ -38,10 +41,14 @@ module Attio
       comment_count > 0
     end
 
+    # Get the first comment in the thread
+    # @return [Hash, nil] First comment or nil if empty
     def first_comment
       comments&.first
     end
 
+    # Get the last comment in the thread
+    # @return [Hash, nil] Last comment or nil if empty
     def last_comment
       comments&.last
     end

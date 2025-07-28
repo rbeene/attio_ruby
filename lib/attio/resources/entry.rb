@@ -3,6 +3,8 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents an entry in an Attio list
+  # Entries link records to lists with custom attribute values
   class Entry < APIResource
     attr_reader :parent_record_id, :parent_object, :list_id
     attr_accessor :entry_values
@@ -24,6 +26,8 @@ module Attio
     end
 
     class << self
+      # API endpoint path for entries (nested under lists)
+      # @return [String] The API path
       def resource_path
         "lists"
       end

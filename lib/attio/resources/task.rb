@@ -3,10 +3,13 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a task in Attio
   class Task < APIResource
     # Don't use api_operations for list since we need custom handling
     api_operations :create, :retrieve, :update, :delete
 
+    # API endpoint path for tasks
+    # @return [String] The API path
     def self.resource_path
       "tasks"
     end

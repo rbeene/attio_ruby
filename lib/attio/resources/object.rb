@@ -3,9 +3,12 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents an object type in Attio (e.g., People, Companies)
   class Object < APIResource
     api_operations :list, :retrieve, :create, :update, :delete
 
+    # API endpoint path for objects
+    # @return [String] The API path
     def self.resource_path
       "objects"
     end
@@ -54,6 +57,8 @@ module Attio
       find_by_slug("people", **)
     end
 
+    # Get the standard Companies object
+    # @return [Object] The companies object
     def self.companies(**)
       find_by_slug("companies", **)
     end

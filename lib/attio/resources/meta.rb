@@ -3,6 +3,7 @@
 require_relative "../api_resource"
 
 module Attio
+  # Provides metadata about the current API token and workspace
   class Meta < APIResource
     # Meta only supports the identify endpoint (no CRUD operations)
 
@@ -30,10 +31,14 @@ module Attio
       workspace&.dig(:id)
     end
 
+    # Get the workspace name
+    # @return [String, nil] The workspace name
     def workspace_name
       workspace&.dig(:name)
     end
 
+    # Get the workspace slug
+    # @return [String, nil] The workspace slug
     def workspace_slug
       workspace&.dig(:slug)
     end
@@ -43,14 +48,20 @@ module Attio
       token&.dig(:id)
     end
 
+    # Get the token name
+    # @return [String, nil] The token name
     def token_name
       token&.dig(:name)
     end
 
+    # Get the token type
+    # @return [String, nil] The token type
     def token_type
       token&.dig(:type)
     end
 
+    # Get the token's OAuth scopes
+    # @return [Array<String>] Array of scope strings
     def scopes
       token&.dig(:scopes) || []
     end
