@@ -2,6 +2,7 @@
 
 module Attio
   module OAuth
+    # Validates and manages OAuth scopes for Attio API
     class ScopeValidator
       # Define all valid scopes with their descriptions
       SCOPE_DEFINITIONS = {
@@ -41,6 +42,7 @@ module Attio
         "task:write" => "Write access to tasks (includes read)"
       }.freeze
 
+      # Array of all valid scope strings
       VALID_SCOPES = SCOPE_DEFINITIONS.keys.freeze
 
       # Scope hierarchy - write scopes include read scopes
@@ -56,6 +58,10 @@ module Attio
       }.freeze
 
       class << self
+        # Validate that all provided scopes are valid
+        # @param scopes [Array<String>, String] Scopes to validate
+        # @return [Array<String>] Validated scopes
+        # @raise [InvalidScopeError] If any scope is invalid
         def validate(scopes)
           scopes = Array(scopes).map(&:to_s)
           invalid_scopes = scopes - VALID_SCOPES
@@ -67,6 +73,10 @@ module Attio
           scopes
         end
 
+        # Validate scopes and return true if valid
+        # @param scopes [Array<String>, String] Scopes to validate
+        # @return [true]
+        # @raise [InvalidScopeError] If any scope is invalid
         def validate!(scopes)
           validate(scopes)
           true
@@ -76,6 +86,9 @@ module Attio
           VALID_SCOPES.include?(scope.to_s)
         end
 
+        # Get the description for a scope
+        # @param scope [String] The scope to describe
+        # @return [String, nil] Description or nil if scope not found
         def description(scope)
           SCOPE_DEFINITIONS[scope.to_s]
         end
@@ -142,6 +155,7 @@ module Attio
         end
       end
 
+      # Raised when invalid scopes are provided
       class InvalidScopeError < StandardError; end
     end
   end

@@ -4,6 +4,6 @@
 --title "Attio Ruby SDK Documentation"
 --output-dir doc
 --readme README.md
---files CHANGELOG.md,CONTRIBUTING.md,SECURITY.md
+--files CHANGELOG.md,CONTRIBUTING.md
 lib/**/*.rb
 examples/**/*.rb

@@ -110,6 +110,8 @@ post "/webhooks/attio" do
 end
 
 # Webhook event processors
+# Process record.created webhook events
+# @param data [Hash] Webhook event data
 def process_record_created(data)
   puts "New #{data["object"]} created: #{data["record"]["id"]}"
 
@@ -124,6 +126,8 @@ def process_record_created(data)
   end
 end
 
+# Process record.updated webhook events
+# @param data [Hash] Webhook event data
 def process_record_updated(data)
   puts "#{data["object"]} updated: #{data["record"]["id"]}"
 
@@ -135,6 +139,8 @@ def process_record_updated(data)
   end
 end
 
+# Process record.deleted webhook events
+# @param data [Hash] Webhook event data
 def process_record_deleted(data)
   puts "#{data["object"]} deleted: #{data["record_id"]}"
 
@@ -142,6 +148,8 @@ def process_record_deleted(data)
   puts "  Would clean up related data in external systems"
 end
 
+# Process list_entry.created webhook events
+# @param data [Hash] Webhook event data
 def process_list_entry_created(data)
   puts "Record added to list: #{data["list"]["name"]}"
 
@@ -151,6 +159,8 @@ def process_list_entry_created(data)
   end
 end
 
+# Process note.created webhook events
+# @param data [Hash] Webhook event data
 def process_note_created(data)
   puts "New note created on #{data["parent_object"]}"
 

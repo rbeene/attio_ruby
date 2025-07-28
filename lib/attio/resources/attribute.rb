@@ -3,6 +3,8 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a custom attribute on an Attio object
+  # Attributes define the schema for data stored on records
   class Attribute < APIResource
     api_operations :list, :retrieve, :create, :update
 
@@ -46,6 +48,8 @@ module Attio
       "location" => {supports_required: true}
     }.freeze
 
+    # API endpoint path for attributes
+    # @return [String] The API path
     def self.resource_path
       "attributes"
     end
@@ -107,6 +111,8 @@ module Attio
       is_default_value_enabled == true
     end
 
+    # Convert attribute to hash representation
+    # @return [Hash] Attribute data as a hash
     def to_h
       super.merge(
         api_slug: api_slug,

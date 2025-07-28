@@ -36,8 +36,12 @@ require_relative "attio/oauth/scope_validator"
 #   person = Attio::Record.create(
 #     object: "people",
 #     values: {
-#       name: "John Doe",
-#       email_addresses: "john@example.com"
+#       name: [{
+#         first_name: "John",
+#         last_name: "Doe",
+#         full_name: "John Doe"
+#       }],
+#       email_addresses: ["john@example.com"]
 #     }
 #   )
 #

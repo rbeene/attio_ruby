@@ -3,9 +3,12 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a webhook configuration in Attio
   class Webhook < APIResource
     api_operations :list, :retrieve, :create, :update, :delete
 
+    # API endpoint path for webhooks
+    # @return [String] The API path
     def self.resource_path
       "webhooks"
     end
@@ -105,6 +108,8 @@ module Attio
       response[:data] || []
     end
 
+    # Convert webhook to hash representation
+    # @return [Hash] Webhook data as a hash
     def to_h
       super.merge(
         url: url,
@@ -126,7 +131,12 @@ module Attio
         {
           data: {
             target_url: params[:target_url],
-            subscriptions: Array(params[:subscriptions])
+            subscriptions: Array(params[:subscriptions]).map do |sub|
+              # Ensure each subscription has a filter
+              sub = sub.is_a?(Hash) ? sub : {"event_type" => sub}
+              sub["filter"] ||= {"$and" => []}  # Default empty filter
+              sub
+            end
           }
         }
       end

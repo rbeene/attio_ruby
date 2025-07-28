@@ -3,10 +3,13 @@
 require_relative "../api_resource"
 
 module Attio
+  # Represents a task in Attio
   class Task < APIResource
     # Don't use api_operations for list since we need custom handling
     api_operations :create, :retrieve, :update, :delete
 
+    # API endpoint path for tasks
+    # @return [String] The API path
     def self.resource_path
       "tasks"
     end
@@ -31,16 +34,16 @@ module Attio
 
       request_params = {
         data: {
-          content: content,
-          format: format,
+          content: content,  # API expects 'content'
+          format: format,    # Format is required
           is_completed: params[:is_completed] || false,
           linked_records: params[:linked_records] || [],
           assignees: params[:assignees] || []
         }
       }
 
-      # Only add optional fields if provided
-      request_params[:data][:deadline_at] = params[:deadline_at] if params[:deadline_at]
+      # deadline_at must be present (null or valid date)
+      request_params[:data][:deadline_at] = params[:deadline_at]
 
       # Remove the params that we've already included in request_params
       opts = params.except(:content, :format, :deadline_at, :is_completed, :linked_records, :assignees)

@@ -8,6 +8,7 @@ module Attio
 
     attr_reader :id, :created_at, :metadata
 
+    # Keys to skip when processing attributes from API responses
     SKIP_KEYS = %i[id created_at _metadata].freeze
 
     def initialize(attributes = {}, opts = {})
@@ -38,10 +39,15 @@ module Attio
     end
 
     # Attribute access
+    # @param key [String, Symbol] The attribute key to retrieve
+    # @return [Object] The value of the attribute
     def [](key)
       @attributes[key.to_sym]
     end
 
+    # Set an attribute value and track changes
+    # @param key [String, Symbol] The attribute key to set
+    # @param value [Object] The value to set
     def []=(key, value)
       key = key.to_sym
       old_value = @attributes[key]
@@ -53,6 +59,10 @@ module Attio
       @changed_attributes.add(key)
     end
 
+    # Fetch an attribute value with an optional default
+    # @param key [String, Symbol] The attribute key to fetch
+    # @param default [Object] The default value if key is not found
+    # @return [Object] The attribute value or default
     def fetch(key, default = nil)
       @attributes.fetch(key.to_sym, default)
     end
@@ -68,27 +78,37 @@ module Attio
       !@changed_attributes.empty?
     end
 
+    # Get list of changed attribute names
+    # @return [Array<String>] Array of changed attribute names as strings
     def changed
       @changed_attributes.map(&:to_s)
     end
 
+    # Get changes with before and after values
+    # @return [Hash] Hash mapping attribute names to [old_value, new_value] arrays
     def changes
       @changed_attributes.each_with_object({}) do |key, hash|
         hash[key.to_s] = [@original_attributes[key], @attributes[key]]
       end
     end
 
+    # Get only the changed attributes and their new values
+    # @return [Hash] Hash of changed attributes with their current values
     def changed_attributes
       @changed_attributes.each_with_object({}) do |key, hash|
         hash[key] = @attributes[key]
       end
     end
 
+    # Clear all tracked changes and update original attributes
+    # @return [void]
     def reset_changes!
       @changed_attributes.clear
       @original_attributes = deep_copy(@attributes)
     end
 
+    # Revert all changes back to original attribute values
+    # @return [void]
     def revert!
       @attributes = deep_copy(@original_attributes)
       @changed_attributes.clear
@@ -104,10 +124,15 @@ module Attio
     end
     alias_method :to_hash, :to_h
 
-    def to_json(*)
-      JSON.generate(to_h, *)
+    # Convert resource to JSON string
+    # @param opts [Hash] Options to pass to JSON.generate
+    # @return [String] JSON representation of the resource
+    def to_json(*opts)
+      JSON.generate(to_h, *opts)
     end
 
+    # Human-readable representation of the resource
+    # @return [String] Inspection string with class name, ID, and attributes
     def inspect
       attrs = @attributes.map { |k, v| "#{k}: #{v.inspect}" }.join(", ")
       "#<#{self.class.name}:#{object_id} id=#{id.inspect} #{attrs}>"
@@ -119,10 +144,14 @@ module Attio
       @attributes.each(&)
     end
 
+    # Get all attribute keys
+    # @return [Array<Symbol>] Array of attribute keys as symbols
     def keys
       @attributes.keys
     end
 
+    # Get all attribute values
+    # @return [Array] Array of attribute values
     def values
       @attributes.values
     end
@@ -133,6 +162,8 @@ module Attio
     end
     alias_method :eql?, :==
 
+    # Generate hash code for use in Hash keys and Set members
+    # @return [Integer] Hash code based on class, ID, and attributes
     def hash
       [self.class, id, @attributes].hash
     end
@@ -166,14 +197,21 @@ module Attio
     end
 
     # Resource path helpers
+    # Get the base API path for this resource type
+    # @return [String] The API path (e.g., "/v2/objects")
+    # @raise [NotImplementedError] Must be implemented by subclasses
     def self.resource_path
       raise NotImplementedError, "Subclasses must implement resource_path"
     end
 
+    # Get the resource name derived from the class name
+    # @return [String] The lowercase resource name
     def self.resource_name
       name.split("::").last.downcase
     end
 
+    # Get the full API path for this specific resource instance
+    # @return [String] The full API path including the resource ID
     def resource_path
       "#{self.class.resource_path}/#{id}"
     end
@@ -330,6 +368,7 @@ module Attio
     end
 
     # ListObject for handling paginated responses
+    # Container for API list responses with pagination support
     class ListObject
       include Enumerable
 
@@ -351,6 +390,9 @@ module Attio
         end
       end
 
+      # Iterate over each resource in the current page
+      # @yield [APIResource] Each resource instance
+      # @return [Enumerator] If no block given
       def each(&)
         @data.each(&)
       end
@@ -359,24 +401,35 @@ module Attio
         @data.empty?
       end
 
+      # Get the number of items in the current page
+      # @return [Integer] Number of items
       def length
         @data.length
       end
       alias_method :size, :length
       alias_method :count, :length
 
+      # Get the first item in the current page
+      # @return [APIResource, nil] The first resource or nil if empty
       def first
         @data.first
       end
 
+      # Get the last item in the current page
+      # @return [APIResource, nil] The last resource or nil if empty
       def last
         @data.last
       end
 
+      # Access item by index
+      # @param index [Integer] The index of the item to retrieve
+      # @return [APIResource, nil] The resource at the given index
       def [](index)
         @data[index]
       end
 
+      # Fetch the next page of results
+      # @return [ListObject, nil] The next page or nil if no more pages
       def next_page
         return nil unless has_more? && cursor
 
@@ -387,6 +440,9 @@ module Attio
         @has_more == true
       end
 
+      # Automatically fetch and iterate through all pages
+      # @yield [APIResource] Each resource across all pages
+      # @return [Enumerator] If no block given
       def auto_paging_each(&block)
         return enum_for(:auto_paging_each) unless block_given?
 
@@ -399,10 +455,14 @@ module Attio
         end
       end
 
+      # Convert current page to array
+      # @return [Array<APIResource>] Array of resources in current page
       def to_a
         @data
       end
 
+      # Human-readable representation of the list
+      # @return [String] Inspection string with data and pagination info
       def inspect
         "#<#{self.class.name} data=#{@data.inspect} has_more=#{@has_more}>"
       end
