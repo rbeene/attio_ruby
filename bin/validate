@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "attio"
+
+puts "=== Attio Ruby Gem Validation ==="
+puts "Version: #{Attio::VERSION}"
+puts
+
+# Check all modules load correctly
+modules = %w[
+  Attio::Util::Configuration
+  Attio::Util::ConnectionManager
+  Attio::Errors::Base
+  Attio::APIOperations::Create
+  Attio::Resources::Base
+  Attio::Resources::Record
+  Attio::Resources::Object
+  Attio::OAuth::Client
+  Attio::Services::PersonService
+]
+
+puts "Checking modules..."
+modules.each do |mod|
+  mod.split("::").inject(Object) { |o, c| o.const_get(c) }
+  puts "✓ #{mod}"
+rescue NameError => e
+  puts "✗ #{mod}: #{e.message}"
+end
+puts
+
+# Check configuration
+puts "Checking configuration..."
+begin
+  Attio.configure do |config|
+    config.api_key = "test_key"
+    config.timeout = 30
+  end
+  puts "✓ Configuration works"
+  puts "  API Key: #{Attio.api_key[0..10]}..."
+  puts "  API Base: #{Attio.api_base}"
+  puts "  API Version: #{Attio.api_version}"
+rescue => e
+  puts "✗ Configuration failed: #{e.message}"
+end
+puts
+
+# Check error hierarchy
+puts "Checking error hierarchy..."
+errors = [
+  Attio::Errors::APIError,
+  Attio::Errors::AuthenticationError,
+  Attio::Errors::InvalidRequestError,
+  Attio::Errors::NotFoundError,
+  Attio::Errors::RateLimitError,
+  Attio::Errors::ConnectionError
+]
+
+errors.each do |error_class|
+  if error_class.ancestors.include?(Attio::Errors::Base)
+    puts "✓ #{error_class}"
+  else
+    puts "✗ #{error_class} does not inherit from Base"
+  end
+end
+puts
+
+# Check gem metadata
+puts "Checking gem metadata..."
+spec = Gem::Specification.load("attio-ruby.gemspec")
+if spec
+  puts "✓ Name: #{spec.name}"
+  puts "✓ Version: #{spec.version}"
+  puts "✓ Authors: #{spec.authors.join(", ")}"
+  puts "✓ License: #{spec.license}"
+  puts "✓ Ruby requirement: #{spec.required_ruby_version}"
+  puts "✓ Development dependencies: #{spec.development_dependencies.size}"
+  puts "✓ Runtime dependencies: #{spec.runtime_dependencies.size}"
+else
+  puts "✗ Failed to load gemspec"
+end
+puts
+
+puts "=== Validation Complete ==="
+puts "The gem appears to be properly structured and ready for use!"

@@ -1,0 +1,123 @@
+# frozen_string_literal: true
+
+require_relative "attio/version"
+require_relative "attio/errors"
+require_relative "attio/util/configuration"
+require_relative "attio/util/id_extractor"
+require_relative "attio/client"
+require_relative "attio/api_resource"
+require_relative "attio/internal/record"
+require_relative "attio/resources/object"
+require_relative "attio/resources/typed_record"
+require_relative "attio/resources/person"
+require_relative "attio/resources/company"
+require_relative "attio/resources/attribute"
+require_relative "attio/resources/list"
+require_relative "attio/resources/webhook"
+require_relative "attio/resources/workspace_member"
+require_relative "attio/resources/note"
+require_relative "attio/resources/entry"
+require_relative "attio/resources/task"
+require_relative "attio/resources/comment"
+require_relative "attio/resources/thread"
+require_relative "attio/resources/meta"
+require_relative "attio/util/webhook_signature"
+require_relative "attio/oauth/client"
+require_relative "attio/oauth/token"
+require_relative "attio/oauth/scope_validator"
+require_relative "attio/builders/name_builder"
+
+# Attio Ruby SDK
+#
+# The official Ruby client library for the Attio API. This library provides
+# a simple and intuitive interface for interacting with Attio's CRM platform.
+#
+# @example Basic configuration
+#   Attio.configure do |config|
+#     config.api_key = "your_api_key"
+#   end
+#
+# @example Creating a person
+#   person = Attio::Person.create(
+#     first_name: "John",
+#     last_name: "Doe",
+#     email: "john@example.com"
+#   )
+#
+# @see https://attio.com/docs API Documentation
+# @see https://github.com/attio/attio-ruby GitHub Repository
+module Attio
+  # Base error class for all Attio-specific errors
+  class Error < StandardError; end
+
+  # Main entry point for the Attio Ruby client library
+  class << self
+    # Returns the current configuration object
+    #
+    # @return [Attio::Util::Configuration] The configuration instance
+    def configuration
+      @configuration ||= Util::Configuration.new.tap(&:apply_env_vars!)
+    end
+
+    # Configures the Attio client
+    #
+    # @yield [config] Configuration block
+    # @yieldparam config [Attio::Util::Configuration] The configuration object
+    #
+    # @example
+    #   Attio.configure do |config|
+    #     config.api_key = "your_api_key"
+    #     config.timeout = 30
+    #     config.debug = true
+    #   end
+    def configure(&)
+      configuration.configure(&)
+    end
+
+    # Resets the configuration to defaults
+    #
+    # @return [nil]
+    def reset!
+      @configuration = nil
+    end
+
+    # Gets the current API key
+    #
+    # @return [String, nil] The API key
+    def api_key
+      configuration.api_key
+    end
+
+    # Sets the API key
+    #
+    # @param value [String] The API key
+    # @return [String] The API key
+    def api_key=(value)
+      configuration.api_key = value
+    end
+
+    # Gets the API base URL
+    #
+    # @return [String] The API base URL
+    def api_base
+      configuration.api_base
+    end
+
+    # Gets the API version
+    #
+    # @return [String] The API version
+    def api_version
+      configuration.api_version
+    end
+
+    # Creates a new HTTP client instance
+    #
+    # @return [Client] The HTTP client
+    def client(api_key: nil)
+      Client.new(api_key: api_key)
+    end
+  end
+
+  # Hide internal implementation details
+  private_constant :Internal
+end
