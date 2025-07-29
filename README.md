@@ -4,8 +4,6 @@
 [![Build Status](https://github.com/rbeene/attio_ruby/workflows/CI/badge.svg)](https://github.com/rbeene/attio_ruby/actions)
 [![Documentation](https://img.shields.io/badge/docs-YARD-blue.svg)](https://rubydoc.info/gems/attio-ruby)
 
-> **Note**: This gem is pending publication to RubyGems.org. Documentation links will become active once the gem is published.
-
 A Ruby SDK for the [Attio API](https://attio.com/docs). This gem provides a simple and intuitive interface for interacting with Attio's CRM platform.
 
 ## Table of Contents
@@ -67,9 +65,7 @@ person = Attio::Person.create(
 )
 
 # Search for companies
-companies = Attio::Company.list(
-  params: { q: "tech", limit: 10 }
-)
+companies = Attio::Company.search("tech")
 ```
 
 ## Configuration
