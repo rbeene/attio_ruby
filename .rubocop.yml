@@ -92,10 +92,13 @@ RSpec/MultipleExpectations:
   Max: 10
   Exclude:
     - 'spec/integration/**/*'
+    - 'spec/unit/attio/errors_spec.rb'
+    - 'spec/unit/attio/resources/attribute_spec.rb'
 
 RSpec/DescribeClass:
   Exclude:
     - 'spec/integration/**/*'
+    - 'spec/unit/attio/errors_spec.rb'
 
 RSpec/MultipleMemoizedHelpers:
   Max: 7
@@ -125,6 +128,14 @@ RSpec/ContextWording:
 RSpec/IndexedLet:
   Enabled: false
 
+RSpec/MultipleDescribes:
+  Exclude:
+    - 'spec/unit/attio/errors_spec.rb'
+
+RSpec/DescribeMethod:
+  Exclude:
+    - 'spec/unit/attio/errors_spec.rb'
+
 # Disable Capybara cops as they're causing errors and we're not using Capybara
 Capybara/RSpec/PredicateMatcher:
   Enabled: false
@@ -148,3 +159,6 @@ Layout/TrailingEmptyLines:
 Performance/CollectionLiteralInLoop:
   Exclude:
     - 'spec/**/*'
+
+RSpec/NoExpectationExample:
+  Enabled: false

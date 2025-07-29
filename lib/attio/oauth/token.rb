@@ -74,10 +74,11 @@ module Attio
       # Human-readable representation with masked token
       # @return [String] Inspection string with partially masked token
       def inspect
+        scope_str = @scope.is_a?(Array) ? @scope.join(" ") : @scope.to_s
         "#<#{self.class.name}:#{object_id} " \
           "token=#{@access_token ? "***" + @access_token[-4..] : "nil"} " \
           "expires_at=#{@expires_at&.iso8601} " \
-          "scope=#{@scope.join(" ")}>"
+          "scope=#{scope_str}>"
       end
 
       # Authorization header value

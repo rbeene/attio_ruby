@@ -135,7 +135,7 @@ module Attio
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+      attribute_id = id.is_a?(Hash) ? (id[:attribute_id] || id["attribute_id"]) : id
       "#{self.class.resource_path}/#{attribute_id}"
     end
 

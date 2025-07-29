@@ -46,14 +46,14 @@ module Attio
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      list_id = id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
       "#{self.class.resource_path}/#{list_id}"
     end
 
     # Override the default id extraction for API paths
     def id_for_path
       return nil unless persisted?
-      id.is_a?(Hash) ? id["list_id"] : id
+      id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
     end
 
     # Override save to handle nested ID
@@ -61,7 +61,7 @@ module Attio
       raise InvalidRequestError, "Cannot save a list without an ID" unless persisted?
       return self unless changed?
 
-      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      list_id = id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
       self.class.update(list_id, changed_attributes, **)
     end
 
@@ -72,7 +72,7 @@ module Attio
 
     # Get all entries in this list
     def entries(params = {}, **opts)
-      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      list_id = id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
       client = Attio.client(api_key: opts[:api_key])
       # Use POST query endpoint to get entries
       response = client.post("lists/#{list_id}/entries/query", params)

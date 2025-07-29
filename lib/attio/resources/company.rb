@@ -43,18 +43,7 @@ module Attio
       domains = self[:domains]
       return nil unless domains
 
-      if domains.is_a?(Array) && !domains.empty?
-        domain = domains.first
-        if domain.is_a?(Hash)
-          domain["domain"] || domain[:domain]
-        else
-          domain.to_s
-        end
-      elsif domains.is_a?(Hash)
-        domains["domain"] || domains[:domain]
-      else
-        domains.to_s
-      end
+      extract_primary_value(domains, "domain")
     end
 
     # Get all domains
@@ -63,18 +52,46 @@ module Attio
       domains = self[:domains]
       return [] unless domains
 
-      if domains.is_a?(Array)
-        domains.filter_map do |d|
-          if d.is_a?(Hash)
-            d["domain"] || d[:domain]
-          else
-            d.to_s
-          end
-        end
+      case domains
+      when Array
+        domains.filter_map { |d| extract_field_value(d, "domain") }
       else
         [domain].compact
       end
     end
+
+    private
+
+    # Extract primary value from various data structures
+    # @param value [Array, Hash, Object] The value to extract from
+    # @param field [String] The field name for hash extraction
+    # @return [String, nil] The extracted value
+    def extract_primary_value(value, field)
+      case value
+      when Array
+        return nil if value.empty?
+        extract_field_value(value.first, field)
+      when Hash
+        value[field] || value[field.to_sym]
+      else
+        value.to_s
+      end
+    end
+
+    # Extract a value from a hash or convert to string
+    # @param item [Hash, Object] The item to extract from
+    # @param field [String] The field name for hash extraction
+    # @return [String] The extracted value
+    def extract_field_value(item, field)
+      case item
+      when Hash
+        item[field] || item[field.to_sym]
+      else
+        item.to_s
+      end
+    end
+
+    public
 
     # Set the company description
     # @param description [String] The company description

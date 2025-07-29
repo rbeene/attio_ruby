@@ -62,7 +62,7 @@ RSpec.describe Attio::Person do
       expect(result).to be_a(described_class)
     end
 
-    it "handles company association" do
+    it "handles company association with Company instance" do
       company = Attio::Company.new({id: {record_id: "company-123"}})
 
       allow(described_class).to receive(:execute_request).and_return({data: {id: {record_id: "123"}}})
@@ -71,6 +71,23 @@ RSpec.describe Attio::Person do
         first_name: "John",
         last_name: "Doe",
         company: company
+      )
+      expect(result).to be_a(described_class)
+    end
+
+    it "handles company association with string ID" do
+      allow(described_class).to receive(:execute_request) do |_, _, params, _|
+        expect(params[:data][:values][:company]).to eq([{
+          target_object: "companies",
+          target_record_id: "company-456"
+        }])
+        {data: {id: {record_id: "123"}}}
+      end
+
+      result = described_class.create(
+        first_name: "Jane",
+        last_name: "Smith",
+        company: "company-456"
       )
       expect(result).to be_a(described_class)
     end
@@ -161,6 +178,33 @@ RSpec.describe Attio::Person do
       end
     end
 
+    context "with array format using string keys" do
+      let(:person) do
+        described_class.new({
+          id: {record_id: "123"},
+          values: {
+            name: [{
+              "first_name" => "Alice",
+              "last_name" => "Johnson",
+              "full_name" => "Alice Johnson"
+            }]
+          }
+        })
+      end
+
+      it "returns full name with string keys" do
+        expect(person.full_name).to eq("Alice Johnson")
+      end
+
+      it "returns first name with string keys" do
+        expect(person.first_name).to eq("Alice")
+      end
+
+      it "returns last name with string keys" do
+        expect(person.last_name).to eq("Johnson")
+      end
+    end
+
     context "with hash format" do
       let(:person) do
         described_class.new({
@@ -177,6 +221,41 @@ RSpec.describe Attio::Person do
 
       it "returns full name" do
         expect(person.full_name).to eq("Jane Smith")
+      end
+
+      it "returns first name" do
+        expect(person.first_name).to eq("Jane")
+      end
+
+      it "returns last name" do
+        expect(person.last_name).to eq("Smith")
+      end
+    end
+
+    context "with hash format using string keys" do
+      let(:person) do
+        described_class.new({
+          id: {record_id: "123"},
+          values: {
+            name: {
+              "first_name" => "Bob",
+              "last_name" => "Wilson",
+              "full_name" => "Bob Wilson"
+            }
+          }
+        })
+      end
+
+      it "returns full name with string keys" do
+        expect(person.full_name).to eq("Bob Wilson")
+      end
+
+      it "returns first name with string keys" do
+        expect(person.first_name).to eq("Bob")
+      end
+
+      it "returns last name with string keys" do
+        expect(person.last_name).to eq("Wilson")
       end
     end
 
@@ -231,6 +310,38 @@ RSpec.describe Attio::Person do
       expect(person.email).to eq("test@example.com")
     end
 
+    it "returns email from array of hashes with string keys" do
+      person = described_class.new({
+        values: {email_addresses: [{"email_address" => "string-key@example.com"}]}
+      })
+
+      expect(person.email).to eq("string-key@example.com")
+    end
+
+    it "returns email from hash format" do
+      person = described_class.new({
+        values: {email_addresses: {email_address: "hash@example.com"}}
+      })
+
+      expect(person.email).to eq("hash@example.com")
+    end
+
+    it "returns email from hash format with string keys" do
+      person = described_class.new({
+        values: {email_addresses: {"email_address" => "hash-string@example.com"}}
+      })
+
+      expect(person.email).to eq("hash-string@example.com")
+    end
+
+    it "converts non-standard format to string" do
+      person = described_class.new({
+        values: {email_addresses: "direct@example.com"}
+      })
+
+      expect(person.email).to eq("direct@example.com")
+    end
+
     it "returns nil when no emails" do
       person = described_class.new({})
       expect(person.email).to be_nil
@@ -268,6 +379,55 @@ RSpec.describe Attio::Person do
       })
 
       expect(person.phone).to eq("+12125551234")
+    end
+
+    it "returns phone from array of hashes with string keys" do
+      person = described_class.new({
+        values: {
+          phone_numbers: [{
+            "original_phone_number" => "+44123456789",
+            "country_code" => "GB"
+          }]
+        }
+      })
+
+      expect(person.phone).to eq("+44123456789")
+    end
+
+    it "returns phone from array of non-hash values" do
+      person = described_class.new({
+        values: {
+          phone_numbers: ["+15551234567", "+15559876543"]
+        }
+      })
+
+      expect(person.phone).to eq("+15551234567")
+    end
+
+    it "returns phone from hash format" do
+      person = described_class.new({
+        values: {
+          phone_numbers: {
+            original_phone_number: "+33123456789",
+            country_code: "FR"
+          }
+        }
+      })
+
+      expect(person.phone).to eq("+33123456789")
+    end
+
+    it "returns phone from hash format with string keys" do
+      person = described_class.new({
+        values: {
+          phone_numbers: {
+            "original_phone_number" => "+49123456789",
+            "country_code" => "DE"
+          }
+        }
+      })
+
+      expect(person.phone).to eq("+49123456789")
     end
 
     it "returns nil when no phones" do

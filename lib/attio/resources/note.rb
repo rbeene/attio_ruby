@@ -69,12 +69,18 @@ module Attio
 
     # Get plaintext version of content
     def to_plaintext
-      content_plaintext || strip_html(content)
+      return content_plaintext if content_plaintext
+
+      # If no plaintext, try to get markdown/html content and strip HTML
+      html_content = content_markdown || content
+      return nil unless html_content
+
+      strip_html(html_content)
     end
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      note_id = id.is_a?(Hash) ? id["note_id"] : id
+      note_id = id.is_a?(Hash) ? (id[:note_id] || id["note_id"]) : id
       "#{self.class.resource_path}/#{note_id}"
     end
 
@@ -82,7 +88,7 @@ module Attio
     def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a note without an ID" unless persisted?
 
-      note_id = id.is_a?(Hash) ? id["note_id"] : id
+      note_id = id.is_a?(Hash) ? (id[:note_id] || id["note_id"]) : id
       self.class.delete(note_id, **opts)
       freeze
       true
@@ -113,7 +119,7 @@ module Attio
     class << self
       # Override retrieve to handle nested ID
       def retrieve(id, **opts)
-        note_id = id.is_a?(Hash) ? id["note_id"] : id
+        note_id = id.is_a?(Hash) ? (id[:note_id] || id["note_id"]) : id
         validate_id!(note_id)
         response = execute_request(:GET, "#{resource_path}/#{note_id}", {}, opts)
         new(response["data"] || response, opts)

@@ -128,10 +128,9 @@ module Attio
     # @return [Hash] Webhook data as a hash
     def to_h
       super.merge(
-        url: url,
-        events: events,
-        state: state,
-        api_version: api_version,
+        target_url: target_url,
+        subscriptions: subscriptions,
+        status: status,
         secret: secret,
         last_event_at: last_event_at&.iso8601,
         created_by_actor: created_by_actor

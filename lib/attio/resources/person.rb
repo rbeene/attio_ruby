@@ -34,41 +34,70 @@ module Attio
     # Get the person's full name
     # @return [String, nil] The full name or nil if not set
     def full_name
-      name_value = self[:name]
-      return nil unless name_value
-
-      if name_value.is_a?(Array) && name_value.first.is_a?(Hash)
-        name_value.first["full_name"] || name_value.first[:full_name]
-      elsif name_value.is_a?(Hash)
-        name_value["full_name"] || name_value[:full_name]
-      end
+      extract_name_field("full_name")
     end
 
     # Get the person's first name
     # @return [String, nil] The first name or nil if not set
     def first_name
-      name_value = self[:name]
-      return nil unless name_value
-
-      if name_value.is_a?(Array) && name_value.first.is_a?(Hash)
-        name_value.first["first_name"] || name_value.first[:first_name]
-      elsif name_value.is_a?(Hash)
-        name_value["first_name"] || name_value[:first_name]
-      end
+      extract_name_field("first_name")
     end
 
     # Get the person's last name
     # @return [String, nil] The last name or nil if not set
     def last_name
+      extract_name_field("last_name")
+    end
+
+    private
+
+    # Extract a field from the name data structure
+    # @param field [String] The field to extract
+    # @return [String, nil] The field value or nil
+    def extract_name_field(field)
       name_value = self[:name]
       return nil unless name_value
 
-      if name_value.is_a?(Array) && name_value.first.is_a?(Hash)
-        name_value.first["last_name"] || name_value.first[:last_name]
-      elsif name_value.is_a?(Hash)
-        name_value["last_name"] || name_value[:last_name]
+      name_hash = normalize_to_hash(name_value)
+      name_hash[field] || name_hash[field.to_sym]
+    end
+
+    # Extract primary value from various data structures
+    # @param value [Array, Hash, Object] The value to extract from
+    # @param field [String] The field name for hash extraction
+    # @return [String, nil] The extracted value
+    def extract_primary_value(value, field)
+      case value
+      when Array
+        return nil if value.empty?
+        first_item = value.first
+        if first_item.is_a?(Hash)
+          first_item[field] || first_item[field.to_sym]
+        else
+          first_item.to_s
+        end
+      when Hash
+        value[field] || value[field.to_sym]
+      else
+        value.to_s
       end
     end
+
+    # Normalize various name formats to a hash
+    # @param value [Array, Hash] The value to normalize
+    # @return [Hash] The normalized hash
+    def normalize_to_hash(value)
+      case value
+      when Array
+        value.first.is_a?(Hash) ? value.first : {}
+      when Hash
+        value
+      else
+        {}
+      end
+    end
+
+    public
 
     # Add an email address
     # @param email [String] The email address to add
@@ -88,19 +117,7 @@ module Attio
       emails = self[:email_addresses]
       return nil unless emails
 
-      if emails.is_a?(Array) && !emails.empty?
-        # If it's an array of hashes (from API response)
-        if emails.first.is_a?(Hash)
-          emails.first["email_address"] || emails.first[:email_address]
-        else
-          # If it's an array of strings
-          emails.first
-        end
-      elsif emails.is_a?(Hash)
-        emails["email_address"] || emails[:email_address]
-      else
-        emails.to_s
-      end
+      extract_primary_value(emails, "email_address")
     end
 
     # Add a phone number
@@ -125,16 +142,7 @@ module Attio
       phones = self[:phone_numbers]
       return nil unless phones
 
-      if phones.is_a?(Array) && !phones.empty?
-        phone = phones.first
-        if phone.is_a?(Hash)
-          phone["original_phone_number"] || phone[:original_phone_number]
-        else
-          phone.to_s
-        end
-      elsif phones.is_a?(Hash)
-        phones["original_phone_number"] || phones[:original_phone_number]
-      end
+      extract_primary_value(phones, "original_phone_number")
     end
 
     # Set the job title
