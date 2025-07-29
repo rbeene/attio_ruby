@@ -58,21 +58,14 @@ Attio.configure do |config|
 end
 
 # Create a person
-person = Attio::Record.create(
-  object: "people",
-  values: {
-    name: [{
-      first_name: "John",
-      last_name: "Doe",
-      full_name: "John Doe"
-    }],
-    email_addresses: ["john@example.com"]
-  }
+person = Attio::Person.create(
+  first_name: "John",
+  last_name: "Doe",
+  email: "john@example.com"
 )
 
 # Search for companies
-companies = Attio::Record.list(
-  object: "companies",
+companies = Attio::Company.list(
   params: { q: "tech", limit: 10 }
 )
 ```
@@ -110,16 +103,10 @@ The gem automatically reads configuration from environment variables:
 
 ```ruby
 # Override configuration for a single request
-person = Attio::Record.create(
-  object: "people",
-  values: { 
-    name: [{
-      first_name: "Jane",
-      last_name: "Doe",
-      full_name: "Jane Doe"
-    }]
-  },
-  opts: { api_key: "different_api_key" }
+person = Attio::Person.create(
+  first_name: "Jane",
+  last_name: "Doe",
+  api_key: "different_api_key"
 )
 ```
 
@@ -227,34 +214,20 @@ domains: ["example.com", "example.org"]
 
 ```ruby
 # Create a person
-person = Attio::Record.create(
-  object: "people",
-  values: {
-    name: [{
-      first_name: "Jane",
-      last_name: "Smith",
-      full_name: "Jane Smith"
-    }],
-    email_addresses: ["jane@example.com"],
-    phone_numbers: [{
-      original_phone_number: "+1-555-0123",
-      country_code: "US"
-    }],
-    job_title: "CEO"
-  }
+person = Attio::Person.create(
+  first_name: "Jane",
+  last_name: "Smith",
+  email: "jane@example.com",
+  phone: "+1-555-0123",
+  job_title: "CEO"
 )
 
-# Create a company with a relationship
-company = Attio::Record.create(
-  object: "companies",
+# Create a company
+company = Attio::Company.create(
+  name: "Acme Corp",
+  domain: "acme.com",
   values: {
-    name: "Acme Corp",
-    domains: ["acme.com"],
-    industry: "Technology",
-    employees: [{ 
-      target_object: "people", 
-      target_record: "rec_789def012"  # Replace with actual person record ID
-    }]
+    industry: "Technology"
   }
 )
 ```
@@ -262,11 +235,8 @@ company = Attio::Record.create(
 #### Retrieving Records
 
 ```ruby
-# Get a specific record
-person = Attio::Record.retrieve(
-  object: "people",
-  record_id: "rec_456def789"  # Replace with actual record ID
-)
+# Get a specific person
+person = Attio::Person.retrieve("rec_456def789")
 
 # Access attributes
 puts person[:name]
@@ -282,9 +252,8 @@ person[:tags] = ["vip", "customer"]
 person.save
 
 # Or update directly
-Attio::Record.update(
-  object: "people",
-  record_id: "rec_456def789",  # Replace with actual record ID
+Attio::Person.update(
+  "rec_456def789",
   values: { job_title: "CTO" }
 )
 ```
@@ -293,14 +262,10 @@ Attio::Record.update(
 
 ```ruby
 # Simple search
-people = Attio::Record.list(
-  object: "people",
-  params: { q: "john" }
-)
+people = Attio::Person.search("john")
 
 # Advanced filtering
-executives = Attio::Record.list(
-  object: "people",
+executives = Attio::Person.list(
   params: {
     filter: {
       job_title: { "$contains": "CEO" }
@@ -332,7 +297,7 @@ end
 person.destroy
 
 # Or delete by ID
-Attio::Record.delete(object: "people", record_id: "rec_123abc456")  # Replace with actual record ID
+Attio::Person.delete("rec_123abc456")  # Replace with actual record ID
 ```
 
 #### Note on Batch Operations
@@ -466,9 +431,8 @@ The gem provides comprehensive error handling:
 
 ```ruby
 begin
-  person = Attio::Record.create(
-    object: "people",
-    values: { email_addresses: "invalid-email" }
+  person = Attio::Person.create(
+    email: "invalid-email"
   )
 rescue Attio::InvalidRequestError => e
   puts "Validation error: #{e.message}"
@@ -518,6 +482,8 @@ $ RUN_INTEGRATION_TESTS=true bundle exec rspec spec/integration
 ```
 
 ### Integration Tests
+
+**Note**: This gem is under active development. To ensure our implementation matches the Attio API, we leverage live integration tests against a sandbox environment. This strategy will be removed once we hit a stable 1.0 release.
 
 Integration tests make real API calls to Attio and are disabled by default. They serve to:
 

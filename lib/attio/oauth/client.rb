@@ -106,8 +106,9 @@ module Attio
         end
 
         response.success?
-      rescue
-        # Token might already be revoked or other error
+      rescue => e
+        # Log the error if debug mode is enabled
+        warn "OAuth token revocation failed: #{e.message}" if Attio.configuration.debug
         false
       end
 
@@ -174,16 +175,6 @@ module Attio
           req.headers["Accept"] = "application/json"
         end
 
-        puts "\n=== TOKEN REQUEST DEBUG ==="
-        puts "Request URL: #{TOKEN_URL}"
-        puts "All params keys: #{params.keys}"
-        puts "Request params: #{params.map { |k, v| (k == :client_secret) ? [k, "#{v[0..5]}..."] : [k, v] }.to_h}"
-        puts "Request Content-Type: application/x-www-form-urlencoded"
-        puts "Response status: #{response.status}"
-        puts "Response headers: #{response.headers}"
-        puts "Response body: #{response.body}"
-        puts "========================\n"
-
         if response.success?
           response.body
         else
@@ -216,7 +207,7 @@ module Attio
         when 401
           raise AuthenticationError, error_message
         when 403
-          raise PermissionError, error_message
+          raise ForbiddenError, error_message
         when 404
           raise NotFoundError, error_message
         else

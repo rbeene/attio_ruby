@@ -98,59 +98,82 @@ RSpec.describe Attio::Object do
   describe "#records" do
     let(:object) { described_class.new(object_attributes) }
 
+    before do
+      Attio.configure do |config|
+        config.api_key = "test_api_key"
+      end
+    end
+
     it "fetches records for the object" do
-      allow(Attio::Record).to receive(:list).with(object: "people")
-      object.records
+      list_response = {"data" => [], "meta" => {"total" => 0}}
+      stub_api_request(:post, "/objects/people/records/query", list_response)
+
+      result = object.records
+      expect(result).to be_a(Attio::APIResource::ListObject)
     end
 
     it "passes query parameters" do
       params = {limit: 10, offset: 5}
-      allow(Attio::Record).to receive(:list).with(object: "people", limit: 10, offset: 5)
-      object.records(params)
+      list_response = {"data" => [], "meta" => {"total" => 0}}
+      stub_api_request(:post, "/objects/people/records/query", list_response)
+
+      result = object.records(params)
+      expect(result).to be_a(Attio::APIResource::ListObject)
     end
 
     it "uses id when api_slug is nil" do
       object_without_slug = described_class.new(id: "obj_789")
-      allow(Attio::Record).to receive(:list).with(object: "obj_789")
-      object_without_slug.records
+      list_response = {"data" => [], "meta" => {"total" => 0}}
+      stub_api_request(:post, "/objects/obj_789/records/query", list_response)
+
+      result = object_without_slug.records
+      expect(result).to be_a(Attio::APIResource::ListObject)
     end
 
     it "passes additional options" do
-      allow(Attio::Record).to receive(:list).with(object: "people", api_key: "custom_key")
-      object.records({}, api_key: "custom_key")
+      list_response = {"data" => [], "meta" => {"total" => 0}}
+      stub_api_request(:post, "/objects/people/records/query", list_response)
+
+      result = object.records({}, api_key: "custom_key")
+      expect(result).to be_a(Attio::APIResource::ListObject)
     end
   end
 
   describe "#create_record" do
     let(:object) { described_class.new(object_attributes) }
 
+    before do
+      Attio.configure do |config|
+        config.api_key = "test_api_key"
+      end
+    end
+
     it "creates a record for the object" do
       values = {name: "John Doe", email: "john@example.com"}
-      allow(Attio::Record).to receive(:create).with(
-        object: "people",
-        values: values
-      )
-      object.create_record(values)
+      create_response = {"data" => {"id" => {"record_id" => "rec_123"}}}
+      stub_api_request(:post, "/objects/people/records", create_response)
+
+      result = object.create_record(values)
+      expect(result).to be_a(Attio.const_get(:Internal)::Record)
     end
 
     it "uses id when api_slug is nil" do
       object_without_slug = described_class.new(id: "obj_789")
       values = {name: "Test"}
-      allow(Attio::Record).to receive(:create).with(
-        object: "obj_789",
-        values: values
-      )
-      object_without_slug.create_record(values)
+      create_response = {"data" => {"id" => {"record_id" => "rec_123"}}}
+      stub_api_request(:post, "/objects/obj_789/records", create_response)
+
+      result = object_without_slug.create_record(values)
+      expect(result).to be_a(Attio.const_get(:Internal)::Record)
     end
 
     it "passes additional options" do
       values = {name: "Test"}
-      allow(Attio::Record).to receive(:create).with(
-        object: "people",
-        values: values,
-        api_key: "custom_key"
-      )
-      object.create_record(values, api_key: "custom_key")
+      create_response = {"data" => {"id" => {"record_id" => "rec_123"}}}
+      stub_api_request(:post, "/objects/people/records", create_response)
+
+      result = object.create_record(values, api_key: "custom_key")
+      expect(result).to be_a(Attio.const_get(:Internal)::Record)
     end
   end
 

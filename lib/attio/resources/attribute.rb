@@ -135,7 +135,7 @@ module Attio
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      attribute_id = id.is_a?(Hash) ? (id[:attribute_id] || id["attribute_id"]) : id
+      attribute_id = Util::IdExtractor.extract_for_resource(id, :attribute)
       "#{self.class.resource_path}/#{attribute_id}"
     end
 
@@ -152,7 +152,7 @@ module Attio
       # Override retrieve to handle object-scoped attributes
       def retrieve(id, **opts)
         # Extract simple ID if it's a nested hash
-        attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+        attribute_id = Util::IdExtractor.extract_for_resource(id, :attribute)
         validate_id!(attribute_id)
 
         # For attributes, we need the object context - check if it's in the nested ID
@@ -170,7 +170,7 @@ module Attio
       # Override update to handle object-scoped attributes
       def update(id, params = {}, **opts)
         # Extract simple ID if it's a nested hash
-        attribute_id = id.is_a?(Hash) ? id["attribute_id"] : id
+        attribute_id = Util::IdExtractor.extract_for_resource(id, :attribute)
         validate_id!(attribute_id)
 
         # For attributes, we need the object context

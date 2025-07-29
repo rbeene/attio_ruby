@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "record"
+require_relative "../internal/record"
 
 module Attio
   # Base class for type-specific record classes (e.g., Person, Company)
   # Provides a more object-oriented interface for working with specific Attio objects
-  class TypedRecord < Record
+  class TypedRecord < Internal::Record
     class << self
       # Define the object type for this class
       # @param type [String] The Attio object type (e.g., "people", "companies")
@@ -41,12 +41,15 @@ module Attio
 
       # Override update to automatically include object type
       def update(record_id, values: {}, **opts)
-        super(object: object_type, record_id: record_id, values: values, **opts)
+        super(object: object_type, record_id: record_id, data: {values: values}, **opts)
       end
 
       # Override delete to automatically include object type
-      def delete(record_id:, **opts)
-        super(object: object_type, record_id: record_id, **opts)
+      def delete(record_id, **opts)
+        # Delete a record using the object-specific endpoint
+        simple_id = record_id.is_a?(Hash) ? record_id["record_id"] : record_id
+        execute_request(:DELETE, "objects/#{object_type}/records/#{simple_id}", {}, opts)
+        true
       end
 
       # Provide a more intuitive find method

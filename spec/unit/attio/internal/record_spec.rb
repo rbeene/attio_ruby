@@ -2,7 +2,14 @@
 
 require "spec_helper"
 
-RSpec.describe Attio::Record do
+# We test the Record functionality through TypedRecord since Internal is private
+RSpec.describe Attio::TypedRecord do
+  # Create a test class that inherits from TypedRecord
+  let(:test_class) do
+    Class.new(Attio::TypedRecord) do
+      object_type "test_objects"
+    end
+  end
   let(:api_key) { "test_api_key" }
 
   before do
@@ -27,9 +34,9 @@ RSpec.describe Attio::Record do
     end
 
     it "lists records for an object" do
-      result = described_class.list(object: "people", limit: 2)
+      result = test_class.list(object: "people", limit: 2)
       expect(result).to be_a(Attio::APIResource::ListObject)
-      expect(result.first).to be_a(described_class) if result.any?
+      expect(result.first).to be_a(test_class) if result.any?
     end
 
     it "supports filtering" do
@@ -43,7 +50,7 @@ RSpec.describe Attio::Record do
       stub_api_request(:post, "/objects/people/records/query", filter_response)
 
       filter = {name: {"$contains" => "Test"}}
-      result = described_class.list(object: "people", filter: filter, limit: 1)
+      result = test_class.list(object: "people", filter: filter, limit: 1)
       expect(result).to be_a(Attio::APIResource::ListObject)
     end
 
@@ -58,7 +65,7 @@ RSpec.describe Attio::Record do
 
       stub_api_request(:post, "/objects/people/records/query", sorted_response)
 
-      result = described_class.list(object: "people", sort: {field: "created_at", direction: "desc"}, limit: 2)
+      result = test_class.list(object: "people", sort: {field: "created_at", direction: "desc"}, limit: 2)
       expect(result).to be_a(Attio::APIResource::ListObject)
     end
   end
@@ -83,12 +90,12 @@ RSpec.describe Attio::Record do
     end
 
     before do
-      stub_api_request(:post, "/objects/people/records", create_response)
+      # TypedRecord uses the /records endpoint with object in payload
+      stub_api_request(:post, "/records", create_response)
     end
 
     it "creates a new record" do
-      result = described_class.create(
-        object: "people",
+      result = test_class.create(
         values: {
           name: {
             first_name: "Test",
@@ -98,7 +105,7 @@ RSpec.describe Attio::Record do
         }
       )
 
-      expect(result).to be_a(described_class)
+      expect(result).to be_a(test_class)
       expect(result.id).not_to be_nil
       expect(result.persisted?).to be true
     end
@@ -120,11 +127,10 @@ RSpec.describe Attio::Record do
         }
       }
 
-      stub_api_request(:post, "/objects/people/records", simple_response)
+      stub_api_request(:post, "/records", simple_response)
 
       # Using deterministic test data
-      result = described_class.create(
-        object: "people",
+      result = test_class.create(
         values: {
           name: {
             first_name: "Simple",
@@ -134,7 +140,7 @@ RSpec.describe Attio::Record do
         }
       )
 
-      expect(result).to be_a(described_class)
+      expect(result).to be_a(test_class)
       expect(result.id).not_to be_nil
     end
   end
@@ -160,12 +166,12 @@ RSpec.describe Attio::Record do
     end
 
     before do
-      stub_api_request(:get, "/objects/people/records/#{record_id}", retrieve_response)
+      stub_api_request(:get, "/objects/test_objects/records/#{record_id}", retrieve_response)
     end
 
     it "retrieves a specific record" do
-      retrieved = described_class.retrieve(object: "people", record_id: record_id)
-      expect(retrieved).to be_a(described_class)
+      retrieved = test_class.retrieve(record_id)
+      expect(retrieved).to be_a(test_class)
       expect(retrieved.id["record_id"]).to eq(record_id)
     end
   end
@@ -199,17 +205,16 @@ RSpec.describe Attio::Record do
     end
 
     before do
-      stub_api_request(:put, "/objects/people/records/#{record_id}", update_response)
+      stub_api_request(:put, "/objects/test_objects/records/#{record_id}", update_response)
     end
 
     it "updates a record" do
-      updated = described_class.update(
-        object: "people",
-        record_id: record_id,
-        data: {values: updated_person_values}
+      updated = test_class.update(
+        record_id,
+        values: updated_person_values
       )
 
-      expect(updated).to be_a(described_class)
+      expect(updated).to be_a(test_class)
       expect(updated.id["record_id"]).to eq(record_id)
     end
   end
@@ -232,7 +237,7 @@ RSpec.describe Attio::Record do
     end
 
     let(:record) do
-      described_class.new(record_data)
+      test_class.new(record_data)
     end
 
     describe "#save" do
@@ -260,7 +265,7 @@ RSpec.describe Attio::Record do
       it "updates the record when changed" do
         # This would require implementing the save method to work with the test pattern
         # For now, let's just verify the record was created properly
-        expect(record).to be_a(described_class)
+        expect(record).to be_a(test_class)
         expect(record.persisted?).to be true
       end
     end

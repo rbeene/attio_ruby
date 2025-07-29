@@ -62,7 +62,7 @@ module Attio
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
       "#{self.class.resource_path}/#{webhook_id}"
     end
 
@@ -71,7 +71,7 @@ module Attio
       raise InvalidRequestError, "Cannot save a webhook without an ID" unless persisted?
       return self unless changed?
 
-      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
       self.class.update(webhook_id, changed_attributes, **)
     end
 
@@ -79,7 +79,7 @@ module Attio
     def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a webhook without an ID" unless persisted?
 
-      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
       self.class.delete(webhook_id, **opts)
       freeze
       true
@@ -149,14 +149,14 @@ module Attio
 
       # Override retrieve to handle hash IDs
       def retrieve(id, **opts)
-        webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+        webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
         response = execute_request(:GET, "#{resource_path}/#{webhook_id}", {}, opts)
         new(response["data"] || response, opts)
       end
 
       # Override delete to handle hash IDs
       def delete(id, **opts)
-        webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+        webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
         execute_request(:DELETE, "#{resource_path}/#{webhook_id}", {}, opts)
         true
       end

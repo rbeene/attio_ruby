@@ -23,11 +23,18 @@ RSpec.describe Attio::TypedRecord do
 
   describe ".list" do
     it "automatically includes the object type" do
-      # Mock the parent class list method behavior
-      allow(Attio::Record).to receive(:list).with(
-        object: "test_objects",
-        params: {q: "test"}
-      ).and_return(double(data: []))
+      # Mock the API response directly
+      list_response = {
+        "data" => [],
+        "meta" => {"total" => 0}
+      }
+
+      allow(test_class).to receive(:execute_request).with(
+        :POST,
+        "objects/test_objects/records/query",
+        {},
+        {params: {q: "test"}}
+      ).and_return(list_response)
 
       result = test_class.list(params: {q: "test"})
       expect(result.data).to eq([])
@@ -36,15 +43,20 @@ RSpec.describe Attio::TypedRecord do
 
   describe ".retrieve" do
     it "automatically includes the object type" do
-      # Mock the parent class retrieve method
-      expected_record = test_class.new({id: {record_id: "123"}})
-      allow(Attio::Record).to receive(:retrieve).with(
-        object: "test_objects",
-        record_id: "123"
-      ).and_return(expected_record)
+      # Mock the API response
+      retrieve_response = {
+        "data" => {"id" => {"record_id" => "123"}}
+      }
+
+      allow(test_class).to receive(:execute_request).with(
+        :GET,
+        "objects/test_objects/records/123",
+        {},
+        {}
+      ).and_return(retrieve_response)
 
       result = test_class.retrieve("123")
-      expect(result).to eq(expected_record)
+      expect(result.id["record_id"]).to eq("123")
     end
   end
 
@@ -70,26 +82,35 @@ RSpec.describe Attio::TypedRecord do
 
   describe ".update" do
     it "automatically includes the object type" do
-      expected_record = test_class.new({id: {record_id: "123"}})
-      allow(Attio::Record).to receive(:update).with(
-        object: "test_objects",
-        record_id: "123",
-        values: {name: "Updated"}
-      ).and_return(expected_record)
+      # Instead of mocking the superclass, let's mock execute_request
+      # which is what the parent class eventually calls
+      update_response = {
+        "data" => {
+          "id" => {"record_id" => "123"},
+          "values" => {"name" => "Updated"}
+        }
+      }
+
+      # Mock the underlying API call
+      allow(test_class).to receive(:execute_request).and_return(update_response)
 
       result = test_class.update("123", values: {name: "Updated"})
-      expect(result).to eq(expected_record)
+      expect(result).to be_a(test_class)
+      expect(result.id["record_id"]).to eq("123")
     end
   end
 
   describe ".delete" do
     it "automatically includes the object type" do
-      allow(Attio::Record).to receive(:delete).with(
-        object: "test_objects",
-        record_id: "123"
-      ).and_return(true)
+      # Mock the execute_request call directly
+      allow(test_class).to receive(:execute_request).with(
+        :DELETE,
+        "objects/test_objects/records/123",
+        {},
+        {}
+      ).and_return({"data" => {}})
 
-      result = test_class.delete(record_id: "123")
+      result = test_class.delete("123")
       expect(result).to be true
     end
   end

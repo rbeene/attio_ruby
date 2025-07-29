@@ -50,7 +50,7 @@ module Attio
     def parent_record(**)
       return nil unless parent_object && parent_record_id
 
-      Record.retrieve(
+      Internal::Record.retrieve(
         object: parent_object,
         record_id: parent_record_id,
         **

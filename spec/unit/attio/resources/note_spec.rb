@@ -97,9 +97,11 @@ RSpec.describe Attio::Note do
 
   describe "#parent_record" do
     let(:note) { described_class.new(note_attributes) }
+    # Access the private constant within the test
+    let(:internal_record) { Attio.const_get(:Internal)::Record }
 
     it "retrieves the parent record" do
-      expect(Attio::Record).to receive(:retrieve).with(
+      expect(internal_record).to receive(:retrieve).with(
         object: "people",
         record_id: "rec_123"
       )
@@ -118,7 +120,7 @@ RSpec.describe Attio::Note do
     end
 
     it "passes additional options" do
-      expect(Attio::Record).to receive(:retrieve).with(
+      expect(internal_record).to receive(:retrieve).with(
         object: "people",
         record_id: "rec_123",
         api_key: "custom_key"
