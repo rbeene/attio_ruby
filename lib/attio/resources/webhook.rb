@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../api_resource"
+require_relative "../webhook/signature_verifier"
+require_relative "../webhook/event"
 
 module Attio
   # Represents a webhook configuration in Attio
@@ -37,6 +39,11 @@ module Attio
 
     # Read-only attributes
     attr_reader :secret, :last_event_at, :created_by_actor
+    attr_accessor :active
+
+    # Alias url to target_url for convenience
+    alias_method :url, :target_url
+    alias_method :url=, :target_url=
 
     def initialize(attributes = {}, opts = {})
       super
@@ -44,11 +51,18 @@ module Attio
       @secret = normalized_attrs[:secret]
       @last_event_at = parse_timestamp(normalized_attrs[:last_event_at])
       @created_by_actor = normalized_attrs[:created_by_actor]
+
+      # Map status to active for convenience
+      if status == "active"
+        instance_variable_set(:@active, true)
+      elsif status == "paused"
+        instance_variable_set(:@active, false)
+      end
     end
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
       "#{self.class.resource_path}/#{webhook_id}"
     end
 
@@ -57,38 +71,40 @@ module Attio
       raise InvalidRequestError, "Cannot save a webhook without an ID" unless persisted?
       return self unless changed?
 
-      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
+      webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
       self.class.update(webhook_id, changed_attributes, **)
     end
 
     # Override destroy to handle nested ID
-    def destroy(**)
+    def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a webhook without an ID" unless persisted?
 
-      webhook_id = id.is_a?(Hash) ? id["webhook_id"] : id
-      self.class.delete(webhook_id, **)
+      webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
+      self.class.delete(webhook_id, **opts)
+      freeze
+      true
     end
 
     # Check if webhook is active
     def active?
-      status == "active"
+      active == true
     end
 
     # Check if webhook is paused
     def paused?
-      status == "paused"
+      !active?
     end
 
     # Pause the webhook
-    def pause(**)
-      self.status = "paused"
-      save(**)
+    def pause(**opts)
+      self.active = false
+      save(**opts)
     end
 
     # Resume the webhook
-    def resume(**)
-      self.status = "active"
-      save(**)
+    def resume(**opts)
+      self.active = true
+      save(**opts)
     end
     alias_method :activate, :resume
 
@@ -112,10 +128,9 @@ module Attio
     # @return [Hash] Webhook data as a hash
     def to_h
       super.merge(
-        url: url,
-        events: events,
-        state: state,
-        api_version: api_version,
+        target_url: target_url,
+        subscriptions: subscriptions,
+        status: status,
         secret: secret,
         last_event_at: last_event_at&.iso8601,
         created_by_actor: created_by_actor
@@ -123,15 +138,41 @@ module Attio
     end
 
     class << self
+      # Override create to handle keyword arguments
+      def create(**kwargs)
+        opts = {}
+        opts[:api_key] = kwargs.delete(:api_key) if kwargs.key?(:api_key)
+        prepared_params = prepare_params_for_create(kwargs)
+        response = execute_request(:POST, resource_path, prepared_params, opts)
+        new(response["data"] || response, opts)
+      end
+
+      # Override retrieve to handle hash IDs
+      def retrieve(id, **opts)
+        webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
+        response = execute_request(:GET, "#{resource_path}/#{webhook_id}", {}, opts)
+        new(response["data"] || response, opts)
+      end
+
+      # Override delete to handle hash IDs
+      def delete(id, **opts)
+        webhook_id = Util::IdExtractor.extract_for_resource(id, :webhook)
+        execute_request(:DELETE, "#{resource_path}/#{webhook_id}", {}, opts)
+        true
+      end
+
       # Override create to handle validation
       def prepare_params_for_create(params)
-        validate_target_url!(params[:target_url])
-        validate_subscriptions!(params[:subscriptions])
+        # Handle both url and target_url parameters for convenience
+        target_url = params[:target_url] || params["target_url"] || params[:url] || params["url"]
+        validate_target_url!(target_url)
+        subscriptions = params[:subscriptions] || params["subscriptions"]
+        validate_subscriptions!(subscriptions)
 
         {
           data: {
-            target_url: params[:target_url],
-            subscriptions: Array(params[:subscriptions]).map do |sub|
+            target_url: target_url,
+            subscriptions: Array(subscriptions).map do |sub|
               # Ensure each subscription has a filter
               sub = sub.is_a?(Hash) ? sub : {"event_type" => sub}
               sub["filter"] ||= {"$and" => []}  # Default empty filter
@@ -151,14 +192,14 @@ module Attio
       private
 
       def validate_target_url!(url)
-        raise ArgumentError, "target_url is required" if url.nil? || url.empty?
+        raise BadRequestError, "target_url or url is required" if url.nil? || url.empty?
 
         uri = URI.parse(url)
         unless uri.scheme == "https"
-          raise ArgumentError, "Webhook target_url must use HTTPS"
+          raise BadRequestError, "Webhook target_url must use HTTPS"
         end
       rescue URI::InvalidURIError
-        raise ArgumentError, "Invalid webhook target_url"
+        raise BadRequestError, "Invalid webhook target_url"
       end
 
       def validate_subscriptions!(subscriptions)
@@ -166,10 +207,18 @@ module Attio
         raise ArgumentError, "subscriptions must be an array" unless subscriptions.is_a?(Array)
 
         subscriptions.each do |sub|
-          event_type = sub[:event_type] || sub["event_type"]
+          event_type = if sub.is_a?(Hash)
+            sub[:event_type] || sub["event_type"]
+          else
+            sub  # sub is a string representing the event type
+          end
           raise ArgumentError, "Each subscription must have an event_type" unless event_type
         end
       end
     end
+
+    # Constants to match expected API
+    SignatureVerifier = WebhookUtils::SignatureVerifier
+    Event = WebhookUtils::Event
   end
 end

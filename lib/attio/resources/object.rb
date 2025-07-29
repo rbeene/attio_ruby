@@ -37,12 +37,12 @@ module Attio
 
     # Get records for this object
     def records(params = {}, **)
-      Record.list(object: api_slug || id, **params, **)
+      Internal::Record.list(object: api_slug || id, **params, **)
     end
 
     # Create a record for this object
     def create_record(values = {}, **)
-      Record.create(object: api_slug || id, values: values, **)
+      Internal::Record.create(object: api_slug || id, values: values, **)
     end
 
     # Find by API slug

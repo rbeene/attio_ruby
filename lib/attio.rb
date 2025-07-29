@@ -3,10 +3,14 @@
 require_relative "attio/version"
 require_relative "attio/errors"
 require_relative "attio/util/configuration"
+require_relative "attio/util/id_extractor"
 require_relative "attio/client"
 require_relative "attio/api_resource"
+require_relative "attio/internal/record"
 require_relative "attio/resources/object"
-require_relative "attio/resources/record"
+require_relative "attio/resources/typed_record"
+require_relative "attio/resources/person"
+require_relative "attio/resources/company"
 require_relative "attio/resources/attribute"
 require_relative "attio/resources/list"
 require_relative "attio/resources/webhook"
@@ -118,4 +122,7 @@ module Attio
       Client.new(api_key: api_key)
     end
   end
+
+  # Hide internal implementation details
+  private_constant :Internal
 end

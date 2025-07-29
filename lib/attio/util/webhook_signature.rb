@@ -26,7 +26,7 @@ module Attio
           expected_signature = calculate_signature(payload, timestamp, secret)
 
           # Constant-time comparison to prevent timing attacks
-          secure_compare(signature, expected_signature)
+          raise SignatureVerificationError, "Invalid signature" unless secure_compare(signature, expected_signature)
         rescue => e
           raise SignatureVerificationError, "Webhook signature verification failed: #{e.message}"
         end

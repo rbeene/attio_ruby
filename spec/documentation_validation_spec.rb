@@ -21,34 +21,31 @@ RSpec.describe "README documentation validation" do
       }.not_to raise_error
     end
 
-    it "validates Record.create syntax" do
-      expect(Attio::Record).to respond_to(:create)
+    it "validates Person.create syntax" do
+      expect(Attio::Person).to respond_to(:create)
 
       # Mock the request
-      allow(Attio::Record).to receive(:create).and_return(
-        Attio::Record.new({"id" => {"workspace_id" => "test", "object_id" => "test", "record_id" => "test"}})
+      allow(Attio::Person).to receive(:create).and_return(
+        Attio::Person.new({"id" => {"workspace_id" => "test", "object_id" => "test", "record_id" => "test"}})
       )
 
-      person = Attio::Record.create(
-        object: "people",
-        values: {
-          name: "John Doe",
-          email_addresses: "john@example.com"
-        }
+      person = Attio::Person.create(
+        first_name: "John",
+        last_name: "Doe",
+        email: "john@example.com"
       )
 
-      expect(person).to be_a(Attio::Record)
+      expect(person).to be_a(Attio::Person)
     end
 
-    it "validates Record.list syntax with params" do
-      expect(Attio::Record).to respond_to(:list)
+    it "validates Company.list syntax with params" do
+      expect(Attio::Company).to respond_to(:list)
 
-      allow(Attio::Record).to receive(:list).and_return(
+      allow(Attio::Company).to receive(:list).and_return(
         Attio::APIResource::ListObject.new([], {})
       )
 
-      companies = Attio::Record.list(
-        object: "companies",
+      companies = Attio::Company.list(
         params: {q: "tech", limit: 10}
       )
 
@@ -72,15 +69,15 @@ RSpec.describe "README documentation validation" do
     end
 
     it "validates per-request configuration syntax" do
-      allow(Attio::Record).to receive(:create).and_return(
-        Attio::Record.new({"id" => {"workspace_id" => "test", "object_id" => "test", "record_id" => "test"}})
+      allow(Attio::Person).to receive(:create).and_return(
+        Attio::Person.new({"id" => {"workspace_id" => "test", "object_id" => "test", "record_id" => "test"}})
       )
 
       expect {
-        Attio::Record.create(
-          object: "people",
-          values: {name: "Jane Doe"},
-          opts: {api_key: "different_api_key"}
+        Attio::Person.create(
+          first_name: "Jane",
+          last_name: "Doe",
+          api_key: "different_api_key"
         )
       }.not_to raise_error
     end
@@ -128,47 +125,48 @@ RSpec.describe "README documentation validation" do
   end
 
   describe "Record management examples" do
-    it "validates record attribute access syntax" do
-      record = Attio::Record.new({
+    it "validates person attribute access syntax" do
+      person = Attio::Person.new({
         "id" => {"workspace_id" => "test", "object_id" => "test", "record_id" => "test"},
         "values" => {
-          "name" => [{"value" => "John Doe"}],
-          "email_addresses" => [{"value" => "john@example.com"}]
+          "name" => [{"first_name" => "John", "last_name" => "Doe", "full_name" => "John Doe"}],
+          "email_addresses" => ["john@example.com"]
         }
       })
 
       # Test bracket access
-      expect(record).to respond_to(:[])
-      expect(record[:name]).to eq("John Doe")
+      expect(person).to respond_to(:[])
+      # Person returns complex name structure, test the accessor instead
+      expect(person.full_name).to eq("John Doe")
 
       # Test bracket assignment
-      expect(record).to respond_to(:[]=)
-      record[:job_title] = "CTO"
-      expect(record[:job_title]).to eq("CTO")
+      expect(person).to respond_to(:[]=)
+      person[:job_title] = "CTO"
+      expect(person[:job_title]).to eq("CTO")
     end
 
     it "validates save method" do
-      record = Attio::Record.new({
+      person = Attio::Person.new({
         "id" => {"workspace_id" => "test", "object_id" => "test", "record_id" => "test"}
       })
 
-      expect(record).to respond_to(:save)
+      expect(person).to respond_to(:save)
     end
 
     it "validates Record.update class method" do
-      expect(Attio::Record).to respond_to(:update)
+      expect(Attio::Person).to respond_to(:update)
     end
 
     it "validates destroy method" do
-      record = Attio::Record.new({
+      person = Attio::Person.new({
         "id" => {"workspace_id" => "test", "object_id" => "test", "record_id" => "test"}
       })
 
-      expect(record).to respond_to(:destroy)
+      expect(person).to respond_to(:destroy)
     end
 
     it "validates Record.delete class method" do
-      expect(Attio::Record).to respond_to(:delete)
+      expect(Attio::Person).to respond_to(:delete)
     end
   end
 

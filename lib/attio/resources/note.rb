@@ -14,25 +14,43 @@ module Attio
     end
 
     # Read-only attributes - notes are immutable
-    attr_reader :parent_object, :parent_record_id, :content, :format,
-      :created_by_actor, :content_plaintext
+    attr_reader :parent_object, :parent_record_id, :title, :format,
+      :created_by_actor, :content_plaintext, :content_markdown, :tags, :metadata
+
+    # Alias for compatibility
+    alias_method :created_by, :created_by_actor
+
+    # Convenience method to get content based on format
+    def content
+      case format
+      when "plaintext"
+        content_plaintext
+      when "html", "markdown"
+        content_markdown
+      else
+        content_plaintext
+      end
+    end
 
     def initialize(attributes = {}, opts = {})
       super
       normalized_attrs = normalize_attributes(attributes)
       @parent_object = normalized_attrs[:parent_object]
       @parent_record_id = normalized_attrs[:parent_record_id]
-      @content = normalized_attrs[:content]
+      @title = normalized_attrs[:title]
+      @content_plaintext = normalized_attrs[:content_plaintext]
+      @content_markdown = normalized_attrs[:content_markdown]
+      @tags = normalized_attrs[:tags] || []
+      @metadata = normalized_attrs[:metadata] || {}
       @format = normalized_attrs[:format] || "plaintext"
       @created_by_actor = normalized_attrs[:created_by_actor]
-      @content_plaintext = normalized_attrs[:content_plaintext]
     end
 
     # Get the parent record
     def parent_record(**)
       return nil unless parent_object && parent_record_id
 
-      Record.retrieve(
+      Internal::Record.retrieve(
         object: parent_object,
         record_id: parent_record_id,
         **
@@ -51,21 +69,29 @@ module Attio
 
     # Get plaintext version of content
     def to_plaintext
-      content_plaintext || strip_html(content)
+      return content_plaintext if content_plaintext
+
+      # If no plaintext, try to get markdown/html content and strip HTML
+      html_content = content_markdown || content
+      return nil unless html_content
+
+      strip_html(html_content)
     end
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      note_id = id.is_a?(Hash) ? id["note_id"] : id
+      note_id = id.is_a?(Hash) ? (id[:note_id] || id["note_id"]) : id
       "#{self.class.resource_path}/#{note_id}"
     end
 
     # Override destroy to handle nested ID
-    def destroy(**)
+    def destroy(**opts)
       raise InvalidRequestError, "Cannot destroy a note without an ID" unless persisted?
 
-      note_id = id.is_a?(Hash) ? id["note_id"] : id
-      self.class.delete(note_id, **)
+      note_id = id.is_a?(Hash) ? (id[:note_id] || id["note_id"]) : id
+      self.class.delete(note_id, **opts)
+      freeze
+      true
     end
 
     # Notes cannot be updated
@@ -93,21 +119,25 @@ module Attio
     class << self
       # Override retrieve to handle nested ID
       def retrieve(id, **opts)
-        note_id = id.is_a?(Hash) ? id["note_id"] : id
+        note_id = id.is_a?(Hash) ? (id[:note_id] || id["note_id"]) : id
         validate_id!(note_id)
         response = execute_request(:GET, "#{resource_path}/#{note_id}", {}, opts)
         new(response["data"] || response, opts)
       end
 
       # Override create to handle validation and parameter mapping
-      def create(params = {}, **opts)
+      def create(**kwargs)
+        # Extract options from kwargs
+        opts = {}
+        opts[:api_key] = kwargs.delete(:api_key) if kwargs.key?(:api_key)
+
         # Map object/record_id to parent_object/parent_record_id
         normalized_params = {
-          parent_object: params[:object] || params[:parent_object],
-          parent_record_id: params[:record_id] || params[:parent_record_id],
-          title: params[:title] || params[:content] || "Note",
-          content: params[:content],
-          format: params[:format]
+          parent_object: kwargs[:object] || kwargs[:parent_object],
+          parent_record_id: kwargs[:record_id] || kwargs[:parent_record_id],
+          title: kwargs[:title] || kwargs[:content] || "Note",
+          content: kwargs[:content],
+          format: kwargs[:format]
         }
 
         prepared_params = prepare_params_for_create(normalized_params)

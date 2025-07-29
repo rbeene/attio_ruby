@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "ostruct"
 require_relative "../api_resource"
 
 module Attio
@@ -18,7 +19,14 @@ module Attio
 
     # Read-only attributes
     attr_reader :api_slug, :attio_object_id, :object_api_slug,
-      :created_by_actor, :workspace_id
+      :created_by_actor, :workspace_id, :parent_object, :filters
+
+    # Get the parent object as a string
+    def object
+      # parent_object is returned as an array from the API
+      return nil unless @parent_object
+      @parent_object.is_a?(Array) ? @parent_object.first : @parent_object
+    end
 
     def initialize(attributes = {}, opts = {})
       super
@@ -32,12 +40,20 @@ module Attio
       @created_by_actor = normalized_attrs[:created_by_actor]
       @workspace_id = normalized_attrs[:workspace_id]
       @workspace_access = normalized_attrs[:workspace_access]
+      @parent_object = normalized_attrs[:parent_object] || normalized_attrs[:object]
+      @filters = normalized_attrs[:filters]
     end
 
     def resource_path
       raise InvalidRequestError, "Cannot generate path without an ID" unless persisted?
-      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      list_id = id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
       "#{self.class.resource_path}/#{list_id}"
+    end
+
+    # Override the default id extraction for API paths
+    def id_for_path
+      return nil unless persisted?
+      id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
     end
 
     # Override save to handle nested ID
@@ -45,7 +61,7 @@ module Attio
       raise InvalidRequestError, "Cannot save a list without an ID" unless persisted?
       return self unless changed?
 
-      list_id = id.is_a?(Hash) ? id["list_id"] : id
+      list_id = id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
       self.class.update(list_id, changed_attributes, **)
     end
 
@@ -56,21 +72,37 @@ module Attio
 
     # Get all entries in this list
     def entries(params = {}, **opts)
+      list_id = id.is_a?(Hash) ? (id[:list_id] || id["list_id"]) : id
       client = Attio.client(api_key: opts[:api_key])
-      response = client.get("/lists/#{id}/entries", params)
-      response[:data] || []
+      # Use POST query endpoint to get entries
+      response = client.post("lists/#{list_id}/entries/query", params)
+      response["data"] || []
     end
 
     # Add a record to this list
     def add_record(record_id, **opts)
+      list_id = id.is_a?(Hash) ? id["list_id"] : id
       client = Attio.client(api_key: opts[:api_key])
-      client.post("/lists/#{id}/entries", {record_id: record_id})
+
+      # The API expects parent_record_id, parent_object, and entry_values
+      request_data = {
+        data: {
+          parent_record_id: record_id,
+          parent_object: object, # Get the parent object from the list
+          entry_values: {}
+        }
+      }
+
+      response = client.post("lists/#{list_id}/entries", request_data)
+      # Return the entry data
+      response["data"] || response
     end
 
     # Remove a record from this list
     def remove_record(entry_id, **opts)
+      list_id = id.is_a?(Hash) ? id["list_id"] : id
       client = Attio.client(api_key: opts[:api_key])
-      client.delete("/lists/#{id}/entries/#{entry_id}")
+      client.delete("lists/#{list_id}/entries/#{entry_id}")
     end
 
     # Check if a record is in this list
@@ -99,6 +131,24 @@ module Attio
     end
 
     class << self
+      # Override retrieve to handle complex IDs
+      def retrieve(id, **opts)
+        list_id = id.is_a?(Hash) ? id["list_id"] : id
+        response = execute_request(:GET, "#{resource_path}/#{list_id}", {}, opts)
+        new(response["data"] || response, opts)
+      end
+
+      # Override create to handle keyword arguments properly
+      def create(**kwargs)
+        # Extract options from kwargs
+        opts = {}
+        opts[:api_key] = kwargs.delete(:api_key) if kwargs.key?(:api_key)
+
+        prepared_params = prepare_params_for_create(kwargs)
+        response = execute_request(:POST, resource_path, prepared_params, opts)
+        new(response["data"] || response, opts)
+      end
+
       # Override create to handle special parameters
       def prepare_params_for_create(params)
         validate_object_identifier!(params[:object])
@@ -112,8 +162,9 @@ module Attio
             parent_object: params[:object],
             api_slug: api_slug,
             workspace_access: params[:workspace_access] || "full-access",
-            workspace_member_access: params[:workspace_member_access] || []
-          }
+            workspace_member_access: params[:workspace_member_access] || [],
+            filters: params[:filters]
+          }.compact
         }
       end
 
