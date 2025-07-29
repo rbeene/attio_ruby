@@ -1,7 +1,7 @@
 # Attio Ruby SDK
 
 [![Gem Version](https://badge.fury.io/rb/attio-ruby.svg)](https://badge.fury.io/rb/attio-ruby)
-[![Build Status](https://github.com/rbeene/attio_ruby/workflows/CI/badge.svg)](https://github.com/rbeene/attio_ruby/actions)
+[![Build Status](https://github.com/rbeene/attio_ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/rbeene/attio_ruby/actions/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-YARD-blue.svg)](https://rubydoc.info/gems/attio-ruby)
 
 A Ruby SDK for the [Attio API](https://attio.com/docs). This gem provides a simple and intuitive interface for interacting with Attio's CRM platform.
