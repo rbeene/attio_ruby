@@ -45,11 +45,31 @@ module Attio
       Internal::Record.create(object: api_slug || id, values: values, **)
     end
 
-    # Find by API slug
+    # Find by attribute using Rails-style syntax
+    def self.find_by(**conditions)
+      # Extract any opts that aren't conditions
+      opts = {}
+      known_opts = [:api_key, :timeout, :idempotency_key]
+      known_opts.each do |opt|
+        opts[opt] = conditions.delete(opt) if conditions.key?(opt)
+      end
+      
+      # Currently only supports slug
+      if conditions.key?(:slug)
+        slug = conditions[:slug]
+        begin
+          retrieve(slug, **opts)
+        rescue NotFoundError
+          list(**opts).find { |obj| obj.api_slug == slug }
+        end
+      else
+        raise ArgumentError, "find_by only supports slug attribute for objects"
+      end
+    end
+    
+    # Find by API slug (deprecated - use find_by(slug: ...) instead)
     def self.find_by_slug(slug, **opts)
-      retrieve(slug, **opts)
-    rescue NotFoundError
-      list(**opts).find { |obj| obj.api_slug == slug }
+      find_by(slug: slug, **opts)
     end
 
     # Get standard objects

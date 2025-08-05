@@ -28,7 +28,20 @@ RSpec.describe Attio::Company do
           }
         },
         {}
-      ).and_return({"data" => {"id" => {"record_id" => "123"}, "values" => {"name" => "Acme Corp"}}})
+      ).and_return({
+        "data" => {
+          "id" => {"record_id" => "123"},
+          "values" => {
+            "name" => [{
+              "active_from" => Time.now.iso8601,
+              "active_until" => nil,
+              "created_by_actor" => {"type" => "api-token", "id" => "token_123"},
+              "value" => "Acme Corp",
+              "attribute_type" => "text"
+            }]
+          }
+        }
+      })
 
       company = described_class.create(name: "Acme Corp")
       expect(company).to be_a(described_class)
@@ -38,7 +51,28 @@ RSpec.describe Attio::Company do
     it "creates a company with single domain" do
       expect(described_class).to receive(:execute_request) do |_, _, params, _|
         expect(params[:data][:values][:domains]).to eq(["acme.com"])
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              name: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                value: "Acme",
+                attribute_type: "text"
+              }],
+              domains: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                domain: "acme.com",
+                root_domain: "acme.com",
+                attribute_type: "domain"
+              }]
+            }
+          }
+        }
       end
 
       described_class.create(name: "Acme", domain: "acme.com")
@@ -47,7 +81,28 @@ RSpec.describe Attio::Company do
     it "creates a company with multiple domains" do
       expect(described_class).to receive(:execute_request) do |_, _, params, _|
         expect(params[:data][:values][:domains]).to eq(["acme.com", "acme.org", "acme.io"])
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              name: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                value: "Acme",
+                attribute_type: "text"
+              }],
+              domains: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                domain: "acme.com",
+                root_domain: "acme.com",
+                attribute_type: "domain"
+              }]
+            }
+          }
+        }
       end
 
       described_class.create(
@@ -64,7 +119,28 @@ RSpec.describe Attio::Company do
         expect(values[:domains]).to eq(["acme.com"])
         expect(values[:description]).to eq("Leading widget manufacturer")
         expect(values[:employee_count]).to eq("50")
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              name: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                value: "Acme",
+                attribute_type: "text"
+              }],
+              domains: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                domain: "acme.com",
+                root_domain: "acme.com",
+                attribute_type: "domain"
+              }]
+            }
+          }
+        }
       end
 
       described_class.create(
@@ -87,7 +163,17 @@ RSpec.describe Attio::Company do
 
   describe "#name" do
     it "returns the company name" do
-      company = described_class.new({values: {name: "Test Company"}})
+      company = described_class.new({
+        values: {
+          name: [{
+            active_from: Time.now.iso8601,
+            active_until: nil,
+            created_by_actor: {type: "api-token", id: "token_123"},
+            value: "Test Company",
+            attribute_type: "text"
+          }]
+        }
+      })
       expect(company.name).to eq("Test Company")
     end
   end
@@ -216,7 +302,10 @@ RSpec.describe Attio::Company do
       expect(Attio::Person).to receive(:list).with(
         params: {
           filter: {
-            company: {"$references": "company-123"}
+            company: {
+              target_object: "companies",
+              target_record_id: "company-123"
+            }
           }
         }
       )
@@ -225,45 +314,54 @@ RSpec.describe Attio::Company do
     end
   end
 
-  describe ".find_by_domain" do
-    it "searches for company by domain" do
+  describe ".find_by with domain" do
+    it "searches for company by domain using Rails-style syntax" do
       allow(described_class).to receive(:list).with(
-        filter: {
-          domains: {
-            domain: {
-              "$eq": "example.com"
+        params: {
+          filter: {
+            domains: {
+              domain: {
+                "$eq": "example.com"
+              }
             }
           }
         }
       ).and_return([described_class.new({id: {record_id: "123"}})])
 
-      company = described_class.find_by_domain("example.com")
+      company = described_class.find_by(domain: "example.com")
       expect(company).to be_a(described_class)
     end
 
     it "strips protocol before searching" do
       allow(described_class).to receive(:list).with(
-        filter: {
-          domains: {
-            domain: {
-              "$eq": "example.com"
+        params: {
+          filter: {
+            domains: {
+              domain: {
+                "$eq": "example.com"
+              }
             }
           }
         }
       ).and_return([described_class.new({id: {record_id: "123"}})])
 
-      result = described_class.find_by_domain("https://example.com")
+      result = described_class.find_by(domain: "https://example.com")
       expect(result).to be_a(described_class)
     end
   end
 
-  describe ".find_by_name" do
-    it "searches for company by name" do
-      allow(described_class).to receive(:search).with("Acme Corp").and_return(
-        [described_class.new({id: {record_id: "123"}})]
-      )
+  describe ".find_by with name" do
+    it "searches for company by name using Rails-style syntax" do
+      # Name searches now use filters with $contains
+      allow(described_class).to receive(:list).with(
+        params: {
+          filter: {
+            name: {"$contains": "Acme Corp"}
+          }
+        }
+      ).and_return([described_class.new({id: {record_id: "123"}})])
 
-      company = described_class.find_by_name("Acme Corp")
+      company = described_class.find_by(name: "Acme Corp")
       expect(company).to be_a(described_class)
     end
   end

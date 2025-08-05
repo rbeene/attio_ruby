@@ -251,19 +251,6 @@ module Attio
         super(values: values, **opts)
       end
 
-      # Find people by email
-      # @param email [String] Email address to search for
-      def find_by_email(email, **opts)
-        list(**opts.merge(
-          filter: {
-            email_addresses: {
-              email_address: {
-                "$eq": email
-              }
-            }
-          }
-        )).first
-      end
 
       # Search people by query
       # @param query [String] Query to search for
@@ -280,11 +267,28 @@ module Attio
         ))
       end
 
-      # Find people by name
-      # @param name [String] Name to search for
-      def find_by_name(name, **opts)
-        results = search(name, **opts)
-        results.first
+      private
+      
+      # Build filter for email field
+      def filter_by_email(value)
+        {
+          email_addresses: {
+            email_address: {
+              "$eq": value
+            }
+          }
+        }
+      end
+      
+      # Build filter for name field (searches across first, last, and full name)
+      def filter_by_name(value)
+        {
+          "$or": [
+            {name: {first_name: {"$contains": value}}},
+            {name: {last_name: {"$contains": value}}},
+            {name: {full_name: {"$contains": value}}}
+          ]
+        }
       end
     end
   end

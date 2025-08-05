@@ -177,13 +177,13 @@ RSpec.describe Attio::Object do
     end
   end
 
-  describe ".find_by_slug" do
-    it "retrieves by slug first" do
+  describe ".find_by with slug" do
+    it "retrieves by slug first using Rails-style syntax" do
       allow(described_class).to receive(:retrieve).with("people").and_return(
         described_class.new(object_attributes)
       )
 
-      result = described_class.find_by_slug("people")
+      result = described_class.find_by(slug: "people")
       expect(result.api_slug).to eq("people")
     end
 
@@ -197,7 +197,7 @@ RSpec.describe Attio::Object do
       allow(described_class).to receive(:retrieve).and_raise(Attio::NotFoundError.new("Not found"))
       allow(described_class).to receive(:list).and_return(objects)
 
-      result = described_class.find_by_slug("people")
+      result = described_class.find_by(slug: "people")
       expect(result.api_slug).to eq("people")
     end
 
@@ -205,7 +205,7 @@ RSpec.describe Attio::Object do
       allow(described_class).to receive(:retrieve).and_raise(Attio::NotFoundError.new("Not found"))
       allow(described_class).to receive(:list).and_return([])
 
-      result = described_class.find_by_slug("nonexistent")
+      result = described_class.find_by(slug: "nonexistent")
       expect(result).to be_nil
     end
 
@@ -213,7 +213,7 @@ RSpec.describe Attio::Object do
       allow(described_class).to receive(:retrieve).with("people", api_key: "custom_key").and_raise(Attio::NotFoundError.new("Not found"))
       allow(described_class).to receive(:list).with(api_key: "custom_key").and_return([])
 
-      described_class.find_by_slug("people", api_key: "custom_key")
+      described_class.find_by(slug: "people", api_key: "custom_key")
     end
   end
 

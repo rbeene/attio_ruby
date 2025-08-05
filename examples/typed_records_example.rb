@@ -73,10 +73,12 @@ puts <<~NEW
   puts person.email      # => "john@example.com"
   puts person.phone      # => "+12125551234"
 
-  # Searching is simpler
+  # Searching is simpler with Rails-style find_by
   people = Attio::Person.search("john")
-  people = Attio::Person.find_by_email("john@example.com")
-  people = Attio::Person.find_by_name("John Doe")
+  person = Attio::Person.find_by(email: "john@example.com")
+  person = Attio::Person.find_by(name: "John Doe")
+  # Can combine multiple conditions
+  person = Attio::Person.find_by(email: "john@example.com", job_title: "CEO")
 
   # Creating a company (no more array wrapping for simple names!)
   company = Attio::Company.create(
@@ -103,10 +105,11 @@ puts <<~NEW
   # Find company's team members
   team = company.team_members
 
-  # Find companies by various criteria
-  company = Attio::Company.find_by_domain("acme.com")
-  company = Attio::Company.find_by_name("Acme")
-  large_companies = Attio::Company.find_by_size(100)  # 100+ employees
+  # Find companies by various criteria using Rails-style find_by
+  company = Attio::Company.find_by(domain: "acme.com")
+  company = Attio::Company.find_by(name: "Acme")
+  # Can combine multiple conditions
+  tech_giant = Attio::Company.find_by(domain: "tech.com", employee_count: "1000+")
 NEW
 
 # Working example (if API key is set)

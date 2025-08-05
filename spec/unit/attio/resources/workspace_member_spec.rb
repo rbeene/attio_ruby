@@ -264,8 +264,8 @@ RSpec.describe Attio::WorkspaceMember do
     end
   end
 
-  describe ".find_by_email" do
-    it "finds member by email address" do
+  describe ".find_by with email" do
+    it "finds member by email address using Rails-style syntax" do
       members = [
         described_class.new(email_address: "alice@example.com"),
         described_class.new(email_address: "bob@example.com"),
@@ -274,7 +274,7 @@ RSpec.describe Attio::WorkspaceMember do
 
       allow(described_class).to receive(:list).and_return(members)
 
-      result = described_class.find_by_email("bob@example.com")
+      result = described_class.find_by(email: "bob@example.com")
       expect(result.email_address).to eq("bob@example.com")
     end
 
@@ -282,7 +282,7 @@ RSpec.describe Attio::WorkspaceMember do
       allow(described_class).to receive(:list).and_return([])
 
       expect {
-        described_class.find_by_email("nonexistent@example.com")
+        described_class.find_by(email: "nonexistent@example.com")
       }.to raise_error(
         Attio::NotFoundError,
         "Workspace member with email 'nonexistent@example.com' not found"
@@ -293,7 +293,7 @@ RSpec.describe Attio::WorkspaceMember do
       allow(described_class).to receive(:list).with(api_key: "custom_key").and_return([])
 
       expect {
-        described_class.find_by_email("test@example.com", api_key: "custom_key")
+        described_class.find_by(email: "test@example.com", api_key: "custom_key")
       }.to raise_error(Attio::NotFoundError)
     end
   end

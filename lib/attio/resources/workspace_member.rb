@@ -103,10 +103,23 @@ module Attio
       end
       alias_method :current, :me
 
-      # Find member by email
-      def find_by_email(email, **opts)
-        list(**opts).find { |member| member.email_address == email } ||
-          raise(NotFoundError, "Workspace member with email '#{email}' not found")
+      # Find member by attribute using Rails-style syntax
+      def find_by(**conditions)
+        # Extract any opts that aren't conditions
+        opts = {}
+        known_opts = [:api_key, :timeout, :idempotency_key]
+        known_opts.each do |opt|
+          opts[opt] = conditions.delete(opt) if conditions.key?(opt)
+        end
+        
+        # Currently only supports email
+        if conditions.key?(:email)
+          email = conditions[:email]
+          list(**opts).find { |member| member.email_address == email } ||
+            raise(NotFoundError, "Workspace member with email '#{email}' not found")
+        else
+          raise ArgumentError, "find_by only supports email attribute for workspace members"
+        end
       end
 
       # List active members only

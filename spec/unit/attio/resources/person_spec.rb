@@ -17,7 +17,43 @@ RSpec.describe Attio::Person do
 
   describe ".create" do
     it "creates a person with simple parameters" do
-      allow(described_class).to receive(:execute_request).and_return({data: {id: {record_id: "123"}}})
+      # Mock the API response with full structure
+      response_data = {
+        data: {
+          id: {record_id: "123"},
+          values: {
+            name: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              first_name: "John",
+              last_name: "Doe",
+              full_name: "John Doe",
+              attribute_type: "personal-name"
+            }],
+            email_addresses: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              email_address: "john@example.com",
+              email_domain: "example.com",
+              email_root_domain: "example.com",
+              attribute_type: "email-address"
+            }],
+            phone_numbers: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              original_phone_number: "+1234567890",
+              country_code: "US",
+              phone_number: "+1 234 567 890",
+              attribute_type: "phone-number"
+            }],
+            job_title: "Developer"
+          }
+        }
+      }
+      allow(described_class).to receive(:execute_request).and_return(response_data)
 
       person = described_class.create(
         first_name: "John",
@@ -45,12 +81,49 @@ RSpec.describe Attio::Person do
         job_title: "Developer"
       }
 
+      # Define the response data that will be returned
+      response_data = {
+        data: {
+          id: {record_id: "123"},
+          values: {
+            name: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              first_name: "John",
+              last_name: "Doe",
+              full_name: "John Doe",
+              attribute_type: "personal-name"
+            }],
+            email_addresses: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              email_address: "john@example.com",
+              email_domain: "example.com",
+              email_root_domain: "example.com",
+              attribute_type: "email-address"
+            }],
+            phone_numbers: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              original_phone_number: "+1234567890",
+              country_code: "US",
+              phone_number: "+1 234 567 890",
+              attribute_type: "phone-number"
+            }],
+            job_title: "Developer"
+          }
+        }
+      }
+
       allow(described_class).to receive(:execute_request).with(
         :POST,
         "objects/people/records",
         {data: {values: expected_values}},
         {}
-      ).and_return({data: {id: {record_id: "123"}}})
+      ).and_return(response_data)
 
       result = described_class.create(
         first_name: "John",
@@ -65,7 +138,32 @@ RSpec.describe Attio::Person do
     it "handles company association with Company instance" do
       company = Attio::Company.new({id: {record_id: "company-123"}})
 
-      allow(described_class).to receive(:execute_request).and_return({data: {id: {record_id: "123"}}})
+      # Mock response with company association
+      response_with_company = {
+        data: {
+          id: {record_id: "123"},
+          values: {
+            name: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              first_name: "John",
+              last_name: "Doe",
+              full_name: "John Doe",
+              attribute_type: "personal-name"
+            }],
+            company: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              target_object: "companies",
+              target_record_id: "company-123",
+              attribute_type: "record-reference"
+            }]
+          }
+        }
+      }
+      allow(described_class).to receive(:execute_request).and_return(response_with_company)
 
       result = described_class.create(
         first_name: "John",
@@ -81,7 +179,30 @@ RSpec.describe Attio::Person do
           target_object: "companies",
           target_record_id: "company-456"
         }])
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              name: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                first_name: "Jane",
+                last_name: "Smith",
+                full_name: "Jane Smith",
+                attribute_type: "personal-name"
+              }],
+              company: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                target_object: "companies",
+                target_record_id: "company-456",
+                attribute_type: "record-reference"
+              }]
+            }
+          }
+        }
       end
 
       result = described_class.create(
@@ -96,7 +217,31 @@ RSpec.describe Attio::Person do
       expect(described_class).to receive(:execute_request) do |_, _, params, _|
         phone = params[:data][:values][:phone_numbers].first
         expect(phone[:country_code]).to eq("GB")
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              name: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                first_name: "John",
+                last_name: "",
+                full_name: "John",
+                attribute_type: "personal-name"
+              }],
+              phone_numbers: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                original_phone_number: "+44123456789",
+                country_code: "GB",
+                phone_number: "+44 123 456 789",
+                attribute_type: "phone-number"
+              }]
+            }
+          }
+        }
       end
 
       described_class.create(
@@ -116,7 +261,15 @@ RSpec.describe Attio::Person do
         # job_title is a SIMPLE_VALUE_ATTRIBUTE so it won't be wrapped
         expect(params[:data][:values]).to include(job_title: "CEO")
         expect(params[:data][:values][:name]).to eq([{full_name: "Jane Smith"}])
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              job_title: "CEO",
+              name: [{full_name: "Jane Smith"}]
+            }
+          }
+        }
       end
 
       described_class.create(values: custom_values)
@@ -129,7 +282,31 @@ RSpec.describe Attio::Person do
           last_name: "Michael Doe Jr.",
           full_name: "John Michael Doe Jr."
         }])
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              name: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                first_name: "John",
+                last_name: "Michael Doe Jr.",
+                full_name: "John Michael Doe Jr.",
+                attribute_type: "personal-name"
+              }],
+              email_addresses: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                email_address: "john.doe@example.com",
+                email_domain: "example.com",
+                email_root_domain: "example.com",
+                attribute_type: "email-address"
+              }]
+            }
+          }
+        }
       end
 
       result = described_class.create(
@@ -146,7 +323,31 @@ RSpec.describe Attio::Person do
           last_name: "Doe",
           full_name: "Dr. John Doe"
         }])
-        {data: {id: {record_id: "123"}}}
+        {
+          data: {
+            id: {record_id: "123"},
+            values: {
+              name: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                first_name: "John",
+                last_name: "Doe",
+                full_name: "Dr. John Doe",
+                attribute_type: "personal-name"
+              }],
+              email_addresses: [{
+                active_from: Time.now.iso8601,
+                active_until: nil,
+                created_by_actor: {type: "api-token", id: "token_123"},
+                email_address: "john@example.com",
+                email_domain: "example.com",
+                email_root_domain: "example.com",
+                attribute_type: "email-address"
+              }]
+            }
+          }
+        }
       end
 
       result = described_class.create(
@@ -220,9 +421,13 @@ RSpec.describe Attio::Person do
           id: {record_id: "123"},
           values: {
             name: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
               first_name: "John",
               last_name: "Doe",
-              full_name: "John Doe"
+              full_name: "John Doe",
+              attribute_type: "personal-name"
             }]
           }
         })
@@ -531,31 +736,43 @@ RSpec.describe Attio::Person do
     end
   end
 
-  describe ".find_by_email" do
-    it "searches for person by email" do
+  describe ".find_by with email" do
+    it "searches for person by email using Rails-style syntax" do
       allow(described_class).to receive(:list).with(
-        filter: {
-          email_addresses: {
-            email_address: {
-              "$eq": "test@example.com"
+        params: {
+          filter: {
+            email_addresses: {
+              email_address: {
+                "$eq": "test@example.com"
+              }
             }
           }
         }
       ).and_return([described_class.new({id: {record_id: "123"}})])
 
-      person = described_class.find_by_email("test@example.com")
+      person = described_class.find_by(email: "test@example.com")
       expect(person).to be_a(described_class)
     end
   end
 
-  describe ".find_by_name" do
-    it "searches for person by name" do
-      allow(described_class).to receive(:search).with("John Doe").and_return(
-        [described_class.new({id: {record_id: "123"}})]
-      )
-
-      person = described_class.find_by_name("John Doe")
+  describe ".find_by with name" do
+    it "searches for person by name using Rails-style syntax" do
+      # Name searches now use filters with $or across name fields
+      allow(described_class).to receive(:list).with(
+        params: {
+          filter: {
+            "$or": [
+              {name: {first_name: {"$contains": "John Doe"}}},
+              {name: {last_name: {"$contains": "John Doe"}}},
+              {name: {full_name: {"$contains": "John Doe"}}}
+            ]
+          }
+        }
+      ).and_return([described_class.new({id: {record_id: "123"}})])
+      
+      person = described_class.find_by(name: "John Doe")
       expect(person).to be_a(described_class)
     end
   end
+
 end

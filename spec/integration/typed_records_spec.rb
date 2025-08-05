@@ -58,7 +58,7 @@ RSpec.describe "Typed Records Integration", :integration do
       )
 
       # Find by email
-      found = Attio::Person.find_by_email(unique_email)
+      found = Attio::Person.find_by(email: unique_email)
       expect(found).not_to be_nil
       expect(found.id).to eq(person.id)
 
@@ -142,12 +142,12 @@ RSpec.describe "Typed Records Integration", :integration do
       sleep 1
 
       # Find by domain
-      found = Attio::Company.find_by_domain(unique_domain)
+      found = Attio::Company.find_by(domain: unique_domain)
       expect(found).not_to be_nil
       expect(found.id).to eq(company.id)
 
       # Test protocol stripping
-      found_with_protocol = Attio::Company.find_by_domain("https://#{unique_domain}")
+      found_with_protocol = Attio::Company.find_by(domain: "https://#{unique_domain}")
       expect(found_with_protocol).not_to be_nil
       expect(found_with_protocol.id).to eq(found.id)
 

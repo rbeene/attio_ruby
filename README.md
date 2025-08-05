@@ -349,9 +349,11 @@ person.set_name(first: "Jane", last: "Doe")
 person.add_email("jane.doe@example.com")
 person.add_phone("+14155551234", country_code: "US")
 
-# Search methods
-jane = Attio::Person.find_by_email("jane@example.com")
-john = Attio::Person.find_by_name("John Smith")
+# Search methods - Rails-style find_by
+jane = Attio::Person.find_by(email: "jane@example.com")
+john = Attio::Person.find_by(name: "John Smith")
+# Can combine multiple conditions (uses AND logic)
+exec = Attio::Person.find_by(email: "exec@company.com", job_title: "CEO")
 ```
 
 #### Company Methods
@@ -369,10 +371,53 @@ company.name = "New Company Name"
 company.add_domain("newdomain.com")
 company.add_team_member(person)  # Associate a person with the company
 
+# Search methods - Rails-style find_by
+acme = Attio::Company.find_by(name: "Acme Corp")
+tech_co = Attio::Company.find_by(domain: "techcompany.com")
+# Can combine multiple conditions
+big_tech = Attio::Company.find_by(domain: "tech.com", employee_count: "100-500")
+```
+
+#### Deal Methods
+
+```ruby
+# Create a deal (requires name, stage, and owner)
+deal = Attio::Deal.create(
+  name: "Enterprise Deal",
+  value: 50000,
+  stage: "In Progress",  # Options: "Lead", "In Progress", "Won 🎉", "Lost"
+  owner: "sales@company.com"  # Must be a workspace member email
+)
+
+# Access methods
+deal.name    # Returns deal name
+deal.value   # Returns currency object with currency_value
+deal.stage   # Returns status object with nested title
+deal.status  # Alias for stage
+
+# Update methods
+deal.update_stage("Won 🎉")
+deal.update_value(75000)
+
 # Search methods
-acme = Attio::Company.find_by_name("Acme Corp")
-tech_co = Attio::Company.find_by_domain("techcompany.com")
-large_cos = Attio::Company.find_by_size(min: 100)
+big_deals = Attio::Deal.find_by_value_range(min: 100000)
+mid_deals = Attio::Deal.find_by_value_range(min: 50000, max: 100000)
+won_deals = Attio::Deal.find_by(stage: "Won 🎉")
+
+# Check deal status
+deal.open?   # true if not won or lost
+deal.won?    # true if stage includes "won"
+deal.lost?   # true if stage is "lost"
+
+# Associate with companies and people
+deal = Attio::Deal.create(
+  name: "Partnership Deal",
+  value: 100000,
+  stage: "Lead",
+  owner: "sales@company.com",
+  associated_people: ["contact@partner.com"],
+  associated_company: ["partner.com"]  # Uses domain
+)
 ```
 
 #### TypedRecord Methods
@@ -383,8 +428,10 @@ All typed records (Person, Company, and custom objects) support:
 # Search with query string
 results = Attio::Person.search("john")
 
-# Find by any attribute
-person = Attio::Person.find_by(:job_title, "CEO")
+# Find by any attribute using Rails-style syntax
+person = Attio::Person.find_by(job_title: "CEO")
+# Or find by multiple attributes (AND logic)
+person = Attio::Person.find_by(job_title: "CEO", company: "Acme Corp")
 
 # Aliases for common methods
 Attio::Person.all == Attio::Person.list

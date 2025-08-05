@@ -42,7 +42,9 @@ module Attio
           validate_object_identifier!(object)
 
           # Extract query parameters from opts
-          query_params = build_query_params(opts)
+          # Handle both opts[:params] (from find_by) and direct opts (from other callers)
+          params = opts[:params] || opts
+          query_params = build_query_params(params)
 
           response = execute_request(:POST, "#{resource_path}/#{object}/records/query", query_params, opts)
 
@@ -80,7 +82,7 @@ module Attio
 
           # Ensure object info is included
           record_data = response["data"] || {}
-          record_data[:object_api_slug] ||= object if record_data.is_a?(Hash)
+          record_data["object_api_slug"] ||= object if record_data.is_a?(Hash)
 
           new(record_data, opts)
         end
@@ -96,7 +98,7 @@ module Attio
           response = execute_request(:GET, "#{resource_path}/#{object}/records/#{simple_record_id}", {}, opts)
 
           record_data = response["data"] || {}
-          record_data[:object_api_slug] ||= object
+          record_data["object_api_slug"] ||= object if record_data.is_a?(Hash)
 
           new(record_data, opts)
         end
@@ -120,7 +122,7 @@ module Attio
           response = execute_request(:PUT, "#{resource_path}/#{object}/records/#{simple_record_id}", request_params, opts)
 
           record_data = response["data"] || {}
-          record_data[:object_api_slug] ||= object
+          record_data["object_api_slug"] ||= object if record_data.is_a?(Hash)
 
           new(record_data, opts)
         end
@@ -188,7 +190,7 @@ module Attio
 
         # Attributes that should be sent as simple arrays of strings or simple values
         SIMPLE_ARRAY_ATTRIBUTES = %w[email_addresses domains].freeze
-        SIMPLE_VALUE_ATTRIBUTES = %w[description linkedin job_title employee_count].freeze
+        SIMPLE_VALUE_ATTRIBUTES = %w[description linkedin job_title employee_count value stage status close_date probability owner].freeze
         # Attributes that are arrays of objects and should be sent as-is
         OBJECT_ARRAY_ATTRIBUTES = %w[phone_numbers primary_location company].freeze
 
@@ -338,9 +340,16 @@ module Attio
         when Hash
           if value_data.key?(:value) || value_data.key?("value")
             value_data[:value] || value_data["value"]
-          elsif value_data.key?(:target_object) || value_data.key?("target_object")
-            # Reference value
-            value_data[:target_object] || value_data["target_object"]
+          elsif value_data.key?(:target_object) || value_data.key?("target_object") ||
+                value_data.key?(:referenced_actor_type) || value_data.key?("referenced_actor_type")
+            # Reference value - return the full reference object
+            value_data
+          elsif value_data.key?(:currency_value) || value_data.key?("currency_value")
+            # Currency value - return the full object to preserve currency info
+            value_data
+          elsif value_data.key?(:status) || value_data.key?("status")
+            # Status value - return the full object to preserve status info
+            value_data
           else
             value_data
           end

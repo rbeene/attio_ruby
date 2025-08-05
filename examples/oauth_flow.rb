@@ -223,22 +223,22 @@ class OAuthApp < Sinatra::Base
 
       # Test 3: List People Records
       begin
-        people = Attio::Record.list(object: "people", limit: 3)
+        people = Attio::Person.list(limit: 3)
         results[:people] = people.count
-        puts "✓ Record.list (people) successful (#{people.count} records)"
+        puts "✓ Person.list successful (#{people.count} records)"
       rescue => e
         errors[:people] = e.message
-        puts "✗ Record.list (people) failed: #{e.message}"
+        puts "✗ Person.list failed: #{e.message}"
       end
 
       # Test 4: List Companies Records
       begin
-        companies = Attio::Record.list(object: "companies", limit: 3)
+        companies = Attio::Company.list(limit: 3)
         results[:companies] = companies.count
-        puts "✓ Record.list (companies) successful (#{companies.count} records)"
+        puts "✓ Company.list successful (#{companies.count} records)"
       rescue => e
         errors[:companies] = e.message
-        puts "✗ Record.list (companies) failed: #{e.message}"
+        puts "✗ Company.list failed: #{e.message}"
       end
 
       # Test 5: List Lists
@@ -399,23 +399,17 @@ class OAuthApp < Sinatra::Base
       # Test 3: Create a Person
       person = nil
       begin
-        person = Attio::Record.create(
-          object: "people",
-          values: {
-            name: [{
-              first_name: "OAuth",
-              last_name: "Test #{Time.now.to_i}",
-              full_name: "OAuth Test #{Time.now.to_i}"
-            }],
-            email_addresses: ["oauth-#{Time.now.to_i}@example.com"]
-          }
+        person = Attio::Person.create(
+          first_name: "OAuth",
+          last_name: "Test #{Time.now.to_i}",
+          email: "oauth-#{Time.now.to_i}@example.com"
         )
         created_resources << {type: "person", id: person.id["record_id"]}
         results[:create_person] = "Created person ID: #{person.id["record_id"][0..10]}..."
-        puts "✓ Record.create (person) successful"
+        puts "✓ Person.create successful"
       rescue => e
         errors[:create_person] = e.message
-        puts "✗ Record.create failed: #{e.message}"
+        puts "✗ Person.create failed: #{e.message}"
       end
 
       # Test 4: Create a Note
@@ -425,15 +419,12 @@ class OAuthApp < Sinatra::Base
           puts "  person.id: #{person.id.inspect}"
           puts "  person.id['record_id']: #{person.id["record_id"].inspect}"
 
-          note_params = {
+          Attio::Note.create(
             parent_object: "people",
             parent_record_id: person.id["record_id"],
             content: "Test note created via OAuth at #{Time.now}",
             format: "plaintext"
-          }
-          puts "  note_params: #{note_params.inspect}"
-
-          Attio::Note.create(note_params)
+          )
           results[:create_note] = "Created note on person"
           puts "✓ Note.create successful"
         rescue => e
@@ -571,31 +562,23 @@ class OAuthApp < Sinatra::Base
       # Test 12: Update Operations
       if person
         begin
-          Attio::Record.update(
-            object: "people",
-            record_id: person.id["record_id"],
-            data: {
-              values: {
-                name: [{
-                  first_name: "OAuth",
-                  last_name: "Test Updated #{Time.now.to_i}",
-                  full_name: "OAuth Test Updated #{Time.now.to_i}"
-                }]
-              }
-            }
+          person.set_name(
+            first: "OAuth",
+            last: "Test Updated #{Time.now.to_i}"
           )
+          person.save
           results[:update_record] = "Updated person name"
-          puts "✓ Record.update successful"
+          puts "✓ Person.update successful"
         rescue => e
           errors[:update_record] = e.message
-          puts "✗ Record.update failed: #{e.message}"
+          puts "✗ Person.update failed: #{e.message}"
         end
       end
 
       # Test 13: Error Handling
       begin
         # Use a properly formatted UUID that doesn't exist
-        Attio::Record.retrieve(object: "people", record_id: "00000000-0000-0000-0000-000000000000")
+        Attio::Person.retrieve("00000000-0000-0000-0000-000000000000")
       rescue Attio::NotFoundError => e
         results[:error_handling] = "404 errors handled correctly"
         puts "✓ Error handling working correctly"
@@ -620,7 +603,7 @@ class OAuthApp < Sinatra::Base
         case resource[:type]
         when "person"
           # Need to retrieve the record first to call destroy on the instance
-          record = Attio::Record.retrieve(object: "people", record_id: resource[:id])
+          record = Attio::Person.retrieve(resource[:id])
           record.destroy
           cleanup_count += 1
         when "task"
@@ -729,16 +712,10 @@ class OAuthApp < Sinatra::Base
     begin
       # Create a test person first
       timestamp = Time.now.to_i
-      person = Attio::Record.create(
-        object: "people",
-        values: {
-          name: [{
-            first_name: "Note",
-            last_name: "Test#{timestamp}",
-            full_name: "Note Test#{timestamp}"
-          }],
-          email_addresses: ["note-test-#{timestamp}@example.com"]
-        }
+      person = Attio::Person.create(
+        first_name: "Note",
+        last_name: "Test#{timestamp}",
+        email: "note-test-#{timestamp}@example.com"
       )
 
       result_html = "<h1>Note Creation Test</h1>"

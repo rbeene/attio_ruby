@@ -141,10 +141,10 @@ RSpec.describe Attio::TypedRecord do
       results = double(first: expected_record)
 
       allow(test_class).to receive(:list).with(
-        params: {filter: {"name" => "Test"}}
+        params: {filter: {name: "Test"}}
       ).and_return(results)
 
-      result = test_class.find_by("name", "Test")
+      result = test_class.find_by(name: "Test")
       expect(result).to eq(expected_record)
     end
   end

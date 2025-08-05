@@ -141,7 +141,10 @@ module Attio
       company_id = id.is_a?(Hash) ? id["record_id"] : id
       Person.list(**opts.merge(params: {
         filter: {
-          company: {"$references": company_id}
+          company: {
+            target_object: "companies",
+            target_record_id: company_id
+          }
         }
       }))
     end
@@ -173,29 +176,6 @@ module Attio
         super(values: values, **opts)
       end
 
-      # Find a company by domain
-      # @param domain [String] Domain to search for
-      def find_by_domain(domain, **opts)
-        # Normalize domain
-        domain = domain.sub(/^https?:\/\//, "")
-
-        list(**opts.merge(
-          filter: {
-            domains: {
-              domain: {
-                "$eq": domain
-              }
-            }
-          }
-        )).first
-      end
-
-      # Find companies by name
-      # @param name [String] Name to search for
-      def find_by_name(name, **opts)
-        results = search(name, **opts)
-        results.first
-      end
 
       # Find companies by employee count range
       # @param min [Integer] Minimum employee count
@@ -215,6 +195,28 @@ module Attio
         end
 
         list(**opts.merge(params: {filter: filter}))
+      end
+      
+      private
+      
+      # Build filter for domain field
+      def filter_by_domain(value)
+        # Strip protocol if present
+        normalized_domain = value.sub(/^https?:\/\//, "")
+        {
+          domains: {
+            domain: {
+              "$eq": normalized_domain
+            }
+          }
+        }
+      end
+      
+      # Build filter for name field
+      def filter_by_name(value)
+        {
+          name: {"$contains": value}
+        }
       end
     end
   end
