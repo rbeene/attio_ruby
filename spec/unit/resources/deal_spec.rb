@@ -161,6 +161,190 @@ RSpec.describe Attio::Deal do
     end
   end
 
+  describe "status-based query methods" do
+    describe ".in_stage" do
+      before do
+        stub_request(:post, "https://api.attio.com/v2/objects/deals/records/query")
+          .with(
+            body: {
+              filter: {
+                "$or": [
+                  { stage: "Won 🎉" },
+                  { stage: "Contract Signed" }
+                ]
+              }
+            }.to_json,
+            headers: {
+              "Authorization" => "Bearer test_api_key",
+              "Content-Type" => "application/json"
+            }
+          )
+          .to_return(
+            status: 200,
+            body: {
+              "data" => [deal_data]
+            }.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+      end
+
+      it "queries deals by multiple stage names" do
+        results = described_class.in_stage(stage_names: ["Won 🎉", "Contract Signed"])
+        expect(results).to be_a(Attio::APIResource::ListObject)
+        expect(results.first).to be_a(described_class)
+      end
+    end
+
+    describe ".won" do
+      before do
+        stub_request(:post, "https://api.attio.com/v2/objects/deals/records/query")
+          .with(
+            body: {
+              filter: {
+                stage: "Won 🎉"
+              }
+            }.to_json,
+            headers: {
+              "Authorization" => "Bearer test_api_key",
+              "Content-Type" => "application/json"
+            }
+          )
+          .to_return(
+            status: 200,
+            body: {
+              "data" => [deal_data.merge(
+                "values" => deal_data["values"].merge(
+                  "stage" => [{
+                    "status" => {
+                      "title" => "Won 🎉",
+                      "is_archived" => false
+                    },
+                    "attribute_type" => "status"
+                  }]
+                )
+              )]
+            }.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+      end
+
+      it "finds won deals using configuration" do
+        results = described_class.won
+        expect(results).to be_a(Attio::APIResource::ListObject)
+        expect(results.first[:stage]["status"]["title"]).to eq("Won 🎉")
+      end
+    end
+
+    describe ".lost" do
+      before do
+        stub_request(:post, "https://api.attio.com/v2/objects/deals/records/query")
+          .with(
+            body: {
+              filter: {
+                stage: "Lost"
+              }
+            }.to_json,
+            headers: {
+              "Authorization" => "Bearer test_api_key",
+              "Content-Type" => "application/json"
+            }
+          )
+          .to_return(
+            status: 200,
+            body: {
+              "data" => [deal_data.merge(
+                "values" => deal_data["values"].merge(
+                  "stage" => [{
+                    "status" => {
+                      "title" => "Lost",
+                      "is_archived" => false
+                    },
+                    "attribute_type" => "status"
+                  }]
+                )
+              )]
+            }.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+      end
+
+      it "finds lost deals using configuration" do
+        results = described_class.lost
+        expect(results).to be_a(Attio::APIResource::ListObject)
+        expect(results.first[:stage]["status"]["title"]).to eq("Lost")
+      end
+    end
+
+    describe ".open_deals" do
+      before do
+        stub_request(:post, "https://api.attio.com/v2/objects/deals/records/query")
+          .with(
+            body: {
+              filter: {
+                "$or": [
+                  { stage: "Lead" },
+                  { stage: "In Progress" }
+                ]
+              }
+            }.to_json,
+            headers: {
+              "Authorization" => "Bearer test_api_key",
+              "Content-Type" => "application/json"
+            }
+          )
+          .to_return(
+            status: 200,
+            body: {
+              "data" => [deal_data]
+            }.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+      end
+
+      it "finds open deals (lead + in progress) using configuration" do
+        results = described_class.open_deals
+        expect(results).to be_a(Attio::APIResource::ListObject)
+        expect(results.first).to be_a(described_class)
+      end
+    end
+
+    describe "with custom configuration" do
+      before do
+        # Set custom configuration (this runs after the spec_helper's before block)
+        Attio.configuration.won_statuses = ["Customer Won", "Deal Closed"]
+        Attio.configuration.lost_statuses = ["No Budget", "Competitor Won"]
+        
+        stub_request(:post, "https://api.attio.com/v2/objects/deals/records/query")
+          .with(
+            body: {
+              filter: {
+                "$or": [
+                  { stage: "Customer Won" },
+                  { stage: "Deal Closed" }
+                ]
+              }
+            }.to_json,
+            headers: {
+              "Authorization" => "Bearer test_api_key",
+              "Content-Type" => "application/json"
+            }
+          )
+          .to_return(
+            status: 200,
+            body: {
+              "data" => [deal_data]
+            }.to_json,
+            headers: {"Content-Type" => "application/json"}
+          )
+      end
+
+      it "uses custom configured statuses for queries" do
+        results = described_class.won
+        expect(results).to be_a(Attio::APIResource::ListObject)
+      end
+    end
+  end
+
   describe "search methods" do
     describe ".find_by" do
       before do

@@ -390,10 +390,12 @@ deal = Attio::Deal.create(
 )
 
 # Access methods
-deal.name    # Returns deal name
-deal.value   # Returns currency object with currency_value
-deal.stage   # Returns status object with nested title
-deal.status  # Alias for stage
+deal.name               # Returns deal name
+deal.value              # Returns currency object with currency_value
+deal.stage              # Returns status object with nested title
+deal.status             # Alias for stage
+deal.current_status     # Returns the current status title as a string
+deal.status_changed_at  # Returns when the status was last changed
 
 # Update methods
 deal.update_stage("Won 🎉")
@@ -404,10 +406,20 @@ big_deals = Attio::Deal.find_by_value_range(min: 100000)
 mid_deals = Attio::Deal.find_by_value_range(min: 50000, max: 100000)
 won_deals = Attio::Deal.find_by(stage: "Won 🎉")
 
-# Check deal status
-deal.open?   # true if not won or lost
-deal.won?    # true if stage includes "won"
-deal.lost?   # true if stage is "lost"
+# Query by status using convenience methods
+won_deals = Attio::Deal.won          # All deals with "Won 🎉" status
+lost_deals = Attio::Deal.lost        # All deals with "Lost" status
+open_deals = Attio::Deal.open_deals  # All deals with "Lead" or "In Progress"
+
+# Query by custom stages
+custom_deals = Attio::Deal.in_stage(stage_names: ["Won 🎉", "Contract Signed"])
+
+# Check deal status (uses configuration)
+deal.open?      # true if status is "Lead" or "In Progress"
+deal.won?       # true if status is "Won 🎉"
+deal.lost?      # true if status is "Lost"
+deal.won_at     # timestamp when deal was won (or nil)
+deal.closed_at  # timestamp when deal was closed (won or lost)
 
 # Associate with companies and people
 deal = Attio::Deal.create(
@@ -418,6 +430,27 @@ deal = Attio::Deal.create(
   associated_people: ["contact@partner.com"],
   associated_company: ["partner.com"]  # Uses domain
 )
+```
+
+##### Customizing Deal Statuses
+
+The gem uses Attio's default deal statuses ("Lead", "In Progress", "Won 🎉", "Lost") but you can customize these for your workspace:
+
+```ruby
+# In config/initializers/attio.rb
+Attio.configure do |config|
+  config.api_key = ENV["ATTIO_API_KEY"]
+  
+  # Customize which statuses are considered won, lost, or open
+  config.won_statuses = ["Won 🎉", "Contract Signed", "Customer"]
+  config.lost_statuses = ["Lost", "Disqualified", "No Budget"]
+  config.open_statuses = ["Lead", "Qualified Lead", "Prospect"]
+  config.in_progress_statuses = ["In Progress", "Negotiation", "Proposal Sent"]
+end
+
+# Now the convenience methods use your custom statuses
+won_deals = Attio::Deal.won  # Finds deals with any of your won_statuses
+deal.won?  # Returns true if deal status is in your won_statuses
 ```
 
 #### TypedRecord Methods

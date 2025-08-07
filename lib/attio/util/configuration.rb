@@ -22,6 +22,10 @@ module Attio
         ca_bundle_path
         verify_ssl_certs
         use_faraday
+        won_statuses
+        lost_statuses
+        open_statuses
+        in_progress_statuses
       ].freeze
 
       # All available configuration settings
@@ -38,7 +42,11 @@ module Attio
         debug: false,
         ca_bundle_path: nil,
         verify_ssl_certs: true,
-        use_faraday: true
+        use_faraday: true,
+        won_statuses: ["Won 🎉"].freeze,
+        lost_statuses: ["Lost"].freeze,
+        open_statuses: ["Lead"].freeze,
+        in_progress_statuses: ["In Progress"].freeze
       }.freeze
 
       attr_reader(*ALL_SETTINGS)
@@ -157,7 +165,9 @@ module Attio
 
       def reset_without_lock!
         DEFAULT_SETTINGS.each do |key, value|
-          instance_variable_set("@#{key}", value)
+          # For arrays, create a new copy to avoid frozen arrays
+          actual_value = value.is_a?(Array) ? value.dup : value
+          instance_variable_set("@#{key}", actual_value)
         end
         @api_key = nil
       end

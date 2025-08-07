@@ -80,6 +80,42 @@ module Attio
         super(values: values, **opts)
       end
 
+      # Find deals by stage names
+      # @param stage_names [Array<String>] Array of stage names to filter by
+      # @return [Attio::ListObject] List of matching deals
+      def in_stage(stage_names:, **opts)
+        # If only one stage, use simple equality
+        if stage_names.length == 1
+          filter = { stage: stage_names.first }
+        else
+          # Multiple stages need $or operator
+          filter = {
+            "$or": stage_names.map { |stage| { stage: stage } }
+          }
+        end
+        
+        list(**opts.merge(params: {filter: filter}))
+      end
+
+      # Find won deals using configured statuses
+      # @return [Attio::ListObject] List of won deals
+      def won(**opts)
+        in_stage(stage_names: Attio.configuration.won_statuses, **opts)
+      end
+
+      # Find lost deals using configured statuses
+      # @return [Attio::ListObject] List of lost deals
+      def lost(**opts)
+        in_stage(stage_names: Attio.configuration.lost_statuses, **opts)
+      end
+
+      # Find open deals (Lead + In Progress) using configured statuses
+      # @return [Attio::ListObject] List of open deals
+      def open_deals(**opts)
+        all_open_statuses = Attio.configuration.open_statuses + Attio.configuration.in_progress_statuses
+        in_stage(stage_names: all_open_statuses, **opts)
+      end
+
       # Find deals within a value range
       # @param min [Numeric] Minimum value (optional)
       # @param max [Numeric] Maximum value (optional)
@@ -246,31 +282,65 @@ module Attio
     #   (value * probability / 100.0).round(2)
     # end
 
+    # Get the current status title
+    # @return [String, nil] The current status title
+    def current_status
+      return nil unless stage
+      
+      if stage.is_a?(Hash)
+        stage.dig("status", "title")
+      else
+        stage
+      end
+    end
+
+    # Get the timestamp when the status changed
+    # @return [Time, nil] The timestamp when status changed
+    def status_changed_at
+      return nil unless stage
+      
+      if stage.is_a?(Hash) && stage["active_from"]
+        Time.parse(stage["active_from"])
+      else
+        nil
+      end
+    end
+
     # Check if the deal is open
     # @return [Boolean] True if the deal is open
     def open?
-      return false unless stage
+      return false unless current_status
       
-      stage_title = stage.is_a?(Hash) ? stage.dig("status", "title") : stage
-      stage_title && !["won 🎉", "lost"].include?(stage_title.downcase)
+      all_open_statuses = Attio.configuration.open_statuses + Attio.configuration.in_progress_statuses
+      all_open_statuses.include?(current_status)
     end
 
     # Check if the deal is won
     # @return [Boolean] True if the deal is won
     def won?
-      return false unless stage
+      return false unless current_status
       
-      stage_title = stage.is_a?(Hash) ? stage.dig("status", "title") : stage
-      stage_title && stage_title.downcase.include?("won")
+      Attio.configuration.won_statuses.include?(current_status)
     end
 
     # Check if the deal is lost
     # @return [Boolean] True if the deal is lost
     def lost?
-      return false unless stage
+      return false unless current_status
       
-      stage_title = stage.is_a?(Hash) ? stage.dig("status", "title") : stage
-      stage_title && stage_title.downcase == "lost"
+      Attio.configuration.lost_statuses.include?(current_status)
+    end
+
+    # Get the timestamp when the deal was won
+    # @return [Time, nil] The timestamp when deal was won, or nil if not won
+    def won_at
+      won? ? status_changed_at : nil
+    end
+
+    # Get the timestamp when the deal was closed (won or lost)
+    # @return [Time, nil] The timestamp when deal was closed, or nil if still open
+    def closed_at
+      (won? || lost?) ? status_changed_at : nil
     end
 
     # # Check if the deal is overdue

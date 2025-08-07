@@ -31,6 +31,22 @@ RSpec.describe Attio::Util::Configuration do
     it "enables SSL verification by default" do
       expect(config.verify_ssl_certs).to be true
     end
+
+    it "sets default won statuses" do
+      expect(config.won_statuses).to eq(["Won 🎉"])
+    end
+
+    it "sets default lost statuses" do
+      expect(config.lost_statuses).to eq(["Lost"])
+    end
+
+    it "sets default open statuses" do
+      expect(config.open_statuses).to eq(["Lead"])
+    end
+
+    it "sets default in_progress statuses" do
+      expect(config.in_progress_statuses).to eq(["In Progress"])
+    end
   end
 
   describe "#configure" do
@@ -42,6 +58,21 @@ RSpec.describe Attio::Util::Configuration do
 
       expect(config.api_key).to eq("test_key")
       expect(config.timeout).to eq(60)
+    end
+
+    it "allows configuring deal statuses" do
+      config.configure do |c|
+        c.api_key = "test_key"
+        c.won_statuses = ["Won 🎉", "Contract Signed", "Customer"]
+        c.lost_statuses = ["Lost", "Disqualified", "No Budget"]
+        c.open_statuses = ["Lead", "Qualified Lead", "Prospect"]
+        c.in_progress_statuses = ["In Progress", "Negotiation", "Proposal Sent"]
+      end
+
+      expect(config.won_statuses).to eq(["Won 🎉", "Contract Signed", "Customer"])
+      expect(config.lost_statuses).to eq(["Lost", "Disqualified", "No Budget"])
+      expect(config.open_statuses).to eq(["Lead", "Qualified Lead", "Prospect"])
+      expect(config.in_progress_statuses).to eq(["In Progress", "Negotiation", "Proposal Sent"])
     end
 
     it "validates configuration after yield" do
@@ -176,7 +207,11 @@ RSpec.describe Attio::Util::Configuration do
         open_timeout: 10,
         max_retries: 3,
         debug: false,
-        verify_ssl_certs: true
+        verify_ssl_certs: true,
+        won_statuses: ["Won 🎉"],
+        lost_statuses: ["Lost"],
+        open_statuses: ["Lead"],
+        in_progress_statuses: ["In Progress"]
       )
     end
   end
