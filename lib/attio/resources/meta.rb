@@ -26,7 +26,7 @@ module Attio
     # Build workspace object from flat attributes
     def workspace
       return nil unless self[:workspace_id]
-      
+
       {
         id: self[:workspace_id],
         name: self[:workspace_name],
@@ -34,22 +34,22 @@ module Attio
         logo_url: self[:workspace_logo_url]
       }.compact
     end
-    
+
     # Build token object from flat attributes
     def token
       return nil unless self[:client_id]
-      
+
       {
         id: self[:client_id],
         type: self[:token_type] || "Bearer",
         scope: self[:scope]
       }.compact
     end
-    
+
     # Build actor object from flat attributes
     def actor
       return nil unless self[:authorized_by_workspace_member_id]
-      
+
       {
         type: "workspace-member",
         id: self[:authorized_by_workspace_member_id]
