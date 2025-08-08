@@ -176,7 +176,6 @@ module Attio
         super(values: values, **opts)
       end
 
-
       # Find companies by employee count range
       # @param min [Integer] Minimum employee count
       # @param max [Integer] Maximum employee count (optional)
@@ -196,9 +195,9 @@ module Attio
 
         list(**opts.merge(params: {filter: filter}))
       end
-      
+
       private
-      
+
       # Build filter for domain field
       def filter_by_domain(value)
         # Strip protocol if present
@@ -211,7 +210,7 @@ module Attio
           }
         }
       end
-      
+
       # Build filter for name field
       def filter_by_name(value)
         {

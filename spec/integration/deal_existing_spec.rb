@@ -2,10 +2,10 @@
 
 require "spec_helper"
 
-RSpec.describe "Existing Deals", integration: true do
+RSpec.describe "Existing Deals", :integration do
   it "lists existing deals to understand structure" do
-    deals = Attio::Deal.list(params: { limit: 5 })
-    
+    deals = Attio::Deal.list(params: {limit: 5})
+
     puts "\n=== Existing Deals ==="
     if deals.any?
       deals.each_with_index do |deal, i|
@@ -24,7 +24,7 @@ RSpec.describe "Existing Deals", integration: true do
     else
       puts "No existing deals found"
     end
-    
+
     expect(deals).to be_a(Attio::APIResource::ListObject)
   end
 end

@@ -6,7 +6,7 @@ require_relative "integration_helper"
 RSpec.describe "Deal Improvements", :integration do
   let(:owner_email) { ENV["ATTIO_TEST_USER_EMAIL"] }
   let(:unique_id) { "#{Time.now.to_i}-#{rand(10000)}" }
-  
+
   before do
     skip "Set ATTIO_TEST_USER_EMAIL env var to run Deal tests" unless owner_email
   end
@@ -20,9 +20,9 @@ RSpec.describe "Deal Improvements", :integration do
         owner: owner_email
       )
     end
-    
+
     after do
-      deal.destroy if deal
+      deal&.destroy
     end
 
     describe "#amount" do
@@ -62,9 +62,9 @@ RSpec.describe "Deal Improvements", :integration do
         owner: owner_email
       )
     end
-    
+
     after do
-      deal.destroy if deal
+      deal&.destroy
     end
 
     describe "#stage" do
@@ -89,12 +89,12 @@ RSpec.describe "Deal Improvements", :integration do
           stage: "Lead",
           owner: owner_email
         )
-        
+
         expect(deal.enterprise?).to be true
         expect(deal.mid_market?).to be false
         expect(deal.small?).to be false
         expect(deal.size_category).to eq(:enterprise)
-        
+
         deal.destroy
       end
 
@@ -105,12 +105,12 @@ RSpec.describe "Deal Improvements", :integration do
           stage: "Lead",
           owner: owner_email
         )
-        
+
         expect(deal.enterprise?).to be false
         expect(deal.mid_market?).to be true
         expect(deal.small?).to be false
         expect(deal.size_category).to eq(:mid_market)
-        
+
         deal.destroy
       end
 
@@ -121,12 +121,12 @@ RSpec.describe "Deal Improvements", :integration do
           stage: "Lead",
           owner: owner_email
         )
-        
+
         expect(deal.enterprise?).to be false
         expect(deal.mid_market?).to be false
         expect(deal.small?).to be true
         expect(deal.size_category).to eq(:small)
-        
+
         deal.destroy
       end
     end
@@ -141,9 +141,9 @@ RSpec.describe "Deal Improvements", :integration do
         owner: owner_email
       )
     end
-    
+
     after do
-      deal.destroy if deal
+      deal&.destroy
     end
 
     describe "#summary" do
@@ -171,7 +171,7 @@ RSpec.describe "Deal Improvements", :integration do
         stage: "Lead",
         owner: owner_email
       )
-      
+
       @big_deal = Attio::Deal.create(
         name: "Big Deal #{unique_id}",
         value: 120000,
@@ -179,20 +179,20 @@ RSpec.describe "Deal Improvements", :integration do
         owner: owner_email
       )
     end
-    
+
     after do
-      @small_deal.destroy if @small_deal
-      @big_deal.destroy if @big_deal
+      @small_deal&.destroy
+      @big_deal&.destroy
     end
 
     describe ".high_value" do
       it "filters deals above threshold" do
         high_value_deals = Attio::Deal.high_value(100_000)
-        
+
         # Should include the big deal
         big_deal_names = high_value_deals.map(&:name)
         expect(big_deal_names).to include("Big Deal #{unique_id}")
-        
+
         # All returned deals should have amount > 100,000
         high_value_deals.each do |deal|
           expect(deal.amount).to be > 100_000
@@ -203,7 +203,7 @@ RSpec.describe "Deal Improvements", :integration do
     describe ".recently_created" do
       it "returns deals created recently" do
         recent_deals = Attio::Deal.recently_created(1)
-        
+
         # Should include our just-created deals
         recent_names = recent_deals.map(&:name)
         expect(recent_names).to include("Small Deal #{unique_id}")
@@ -221,9 +221,9 @@ RSpec.describe "Deal Improvements", :integration do
         owner: owner_email
       )
     end
-    
+
     after do
-      deal.destroy if deal
+      deal&.destroy
     end
 
     describe "#days_in_stage" do
@@ -244,7 +244,7 @@ RSpec.describe "Deal Improvements", :integration do
       it "returns false for open deals" do
         expect(deal.closed?).to be false
       end
-      
+
       it "returns true for won deals" do
         # Update to won status
         updated = deal.update_stage("Won 🎉")
@@ -268,15 +268,15 @@ RSpec.describe "Deal Improvements", :integration do
         owner: owner_email
       )
     end
-    
+
     after do
-      deal.destroy if deal
+      deal&.destroy
     end
 
     describe "#update_value" do
       it "updates the deal value" do
-        updated = deal.update_value(20000)
-        
+        deal.update_value(20000)
+
         # Fetch fresh to verify update
         fresh_deal = Attio::Deal.retrieve(deal.id)
         expect(fresh_deal.amount).to eq(20000.0)

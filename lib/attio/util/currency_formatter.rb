@@ -42,10 +42,10 @@ module Attio
         "PEN" => "S/",
         "ARS" => "$"
       }.freeze
-      
+
       # Currencies that typically don't use decimal places
       NO_DECIMAL_CURRENCIES = %w[JPY KRW VND IDR CLP].freeze
-      
+
       class << self
         # Format an amount with the appropriate currency symbol
         # @param amount [Numeric] The amount to format
@@ -58,12 +58,12 @@ module Attio
         def format(amount, currency_code = "USD", options = {})
           currency_code = currency_code.to_s.upcase
           symbol = symbol_for(currency_code)
-          
+
           # Determine decimal places
           decimal_places = options[:decimal_places] || decimal_places_for(currency_code)
           thousands_sep = options[:thousands_separator] || ","
           decimal_sep = options[:decimal_separator] || "."
-          
+
           # Handle zero amounts
           if amount == 0
             if decimal_places > 0
@@ -72,11 +72,11 @@ module Attio
               return "#{symbol}0"
             end
           end
-          
+
           # Handle negative amounts
           negative = amount < 0
           abs_amount = amount.abs
-          
+
           # Format the amount
           if decimal_places == 0
             # No decimal places
@@ -86,14 +86,14 @@ module Attio
           else
             # With decimal places
             whole = abs_amount.to_i
-            decimal = ((abs_amount - whole) * (10 ** decimal_places)).round
+            decimal = ((abs_amount - whole) * (10**decimal_places)).round
             formatted_whole = format_with_separators(whole, thousands_sep)
             formatted_whole = "-#{formatted_whole}" if negative
             formatted_decimal = decimal.to_s.rjust(decimal_places, "0")
             "#{symbol}#{formatted_whole}#{decimal_sep}#{formatted_decimal}"
           end
         end
-        
+
         # Get the currency symbol for a given code
         # @param currency_code [String] The ISO 4217 currency code
         # @return [String] The currency symbol or code with space
@@ -101,7 +101,7 @@ module Attio
           currency_code = currency_code.to_s.upcase
           CURRENCY_SYMBOLS[currency_code] || "#{currency_code} "
         end
-        
+
         # Determine the number of decimal places for a currency
         # @param currency_code [String] The ISO 4217 currency code
         # @return [Integer] Number of decimal places
@@ -109,14 +109,14 @@ module Attio
           currency_code = currency_code.to_s.upcase
           NO_DECIMAL_CURRENCIES.include?(currency_code) ? 0 : 2
         end
-        
+
         # Check if a currency typically uses decimal places
         # @param currency_code [String] The ISO 4217 currency code
         # @return [Boolean] True if the currency uses decimals
         def uses_decimals?(currency_code)
           decimal_places_for(currency_code) > 0
         end
-        
+
         # Format just the numeric part without currency symbol
         # @param amount [Numeric] The amount to format
         # @param currency_code [String] The ISO 4217 currency code
@@ -127,9 +127,9 @@ module Attio
           symbol = symbol_for(currency_code)
           result.sub(/^#{Regexp.escape(symbol)}/, "")
         end
-        
+
         private
-        
+
         # Add thousands separators to a number
         # @param number [Integer] The number to format
         # @param separator [String] The separator character

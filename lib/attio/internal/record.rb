@@ -341,7 +341,7 @@ module Attio
           if value_data.key?(:value) || value_data.key?("value")
             value_data[:value] || value_data["value"]
           elsif value_data.key?(:target_object) || value_data.key?("target_object") ||
-                value_data.key?(:referenced_actor_type) || value_data.key?("referenced_actor_type")
+              value_data.key?(:referenced_actor_type) || value_data.key?("referenced_actor_type")
             # Reference value - return the full reference object
             value_data
           elsif value_data.key?(:currency_value) || value_data.key?("currency_value")

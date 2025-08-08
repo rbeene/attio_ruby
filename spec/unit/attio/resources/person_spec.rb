@@ -769,10 +769,9 @@ RSpec.describe Attio::Person do
           }
         }
       ).and_return([described_class.new({id: {record_id: "123"}})])
-      
+
       person = described_class.find_by(name: "John Doe")
       expect(person).to be_a(described_class)
     end
   end
-
 end

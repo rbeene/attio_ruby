@@ -22,7 +22,6 @@ RSpec.describe Attio::Meta do
     }
   end
 
-
   describe ".resource_path" do
     it "returns the correct path" do
       expect(described_class.resource_path).to eq("self")
@@ -84,13 +83,13 @@ RSpec.describe Attio::Meta do
         slug: "test-workspace",
         logo_url: "https://assets.attio.com/logos/test.png"
       })
-      
+
       expect(meta.token).to eq({
         id: "token_123",
         type: "Bearer",
         scope: "record:read record:write list:read-write"
       })
-      
+
       expect(meta.actor).to eq({
         type: "workspace-member",
         id: "member_123"

@@ -53,7 +53,7 @@ module Attio
       known_opts.each do |opt|
         opts[opt] = conditions.delete(opt) if conditions.key?(opt)
       end
-      
+
       # Currently only supports slug
       if conditions.key?(:slug)
         slug = conditions[:slug]
@@ -66,7 +66,7 @@ module Attio
         raise ArgumentError, "find_by only supports slug attribute for objects"
       end
     end
-    
+
     # Find by API slug (deprecated - use find_by(slug: ...) instead)
     def self.find_by_slug(slug, **opts)
       find_by(slug: slug, **opts)

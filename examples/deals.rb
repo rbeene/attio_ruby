@@ -69,7 +69,7 @@ puts "Is lost? #{deal.lost?}"
 puts "\n=== Deal Pipeline Analysis ==="
 
 # List all deals and analyze by stage
-all_deals = Attio::Deal.list(params: { limit: 50 })
+all_deals = Attio::Deal.list(params: {limit: 50})
 stage_counts = Hash.new(0)
 
 all_deals.each do |d|

@@ -251,7 +251,6 @@ module Attio
         super(values: values, **opts)
       end
 
-
       # Search people by query
       # @param query [String] Query to search for
       def search(query, **opts)
@@ -268,7 +267,7 @@ module Attio
       end
 
       private
-      
+
       # Build filter for email field
       def filter_by_email(value)
         {
@@ -279,7 +278,7 @@ module Attio
           }
         }
       end
-      
+
       # Build filter for name field (searches across first, last, and full name)
       def filter_by_name(value)
         {

@@ -64,18 +64,18 @@ module Attio
       # Supports Rails-style hash syntax: find_by(name: "Test")
       def find_by(**conditions)
         raise ArgumentError, "find_by requires at least one condition" if conditions.empty?
-        
+
         # Extract any opts that aren't conditions (like api_key)
         opts = {}
         known_opts = [:api_key, :timeout, :idempotency_key]
         known_opts.each do |opt|
           opts[opt] = conditions.delete(opt) if conditions.key?(opt)
         end
-        
+
         # Build filter from conditions
         filters = []
         search_query = nil
-        
+
         conditions.each do |field, value|
           # Check if there's a special filter method for this field
           filter_method = "filter_by_#{field}"
@@ -92,7 +92,7 @@ module Attio
             filters << {field => value}
           end
         end
-        
+
         # If we have a search query, use search instead of filter
         if search_query
           search(search_query, **opts).first
@@ -105,7 +105,7 @@ module Attio
           else
             {}
           end
-          
+
           list(**opts.merge(params: {
             filter: final_filter
           })).first

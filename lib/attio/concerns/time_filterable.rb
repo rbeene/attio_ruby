@@ -24,7 +24,7 @@ module Attio
             else
               record[date_field]
             end
-            
+
             if date_value
               parsed_date = date_value.is_a?(String) ? Time.parse(date_value) : date_value
               period.includes?(parsed_date)
@@ -33,39 +33,39 @@ module Attio
             end
           end
         end
-        
+
         # Get records created in the last N days
         # @param days [Integer] Number of days to look back
         # @return [Array] Recently created records
         def recently_created(days = 7, **opts)
           in_period(Util::TimePeriod.last_days(days), date_field: :created_at, **opts)
         end
-        
+
         # Get records updated in the last N days
         # @param days [Integer] Number of days to look back
         # @return [Array] Recently updated records
         def recently_updated(days = 7, **opts)
           in_period(Util::TimePeriod.last_days(days), date_field: :updated_at, **opts)
         end
-        
+
         # Get records created this year
         # @return [Array] Records created in current year
         def created_this_year(**opts)
           in_period(Util::TimePeriod.current_year, date_field: :created_at, **opts)
         end
-        
+
         # Get records created this month
         # @return [Array] Records created in current month
         def created_this_month(**opts)
           in_period(Util::TimePeriod.current_month, date_field: :created_at, **opts)
         end
-        
+
         # Get records created year to date
         # @return [Array] Records created YTD
         def created_year_to_date(**opts)
           in_period(Util::TimePeriod.year_to_date, date_field: :created_at, **opts)
         end
-        
+
         # Get records created in a specific month
         # @param year [Integer] The year
         # @param month [Integer] The month (1-12)
@@ -73,7 +73,7 @@ module Attio
         def created_in_month(year, month, **opts)
           in_period(Util::TimePeriod.month(year, month), date_field: :created_at, **opts)
         end
-        
+
         # Get records created in a specific quarter
         # @param year [Integer] The year
         # @param quarter [Integer] The quarter (1-4)
@@ -81,21 +81,21 @@ module Attio
         def created_in_quarter(year, quarter, **opts)
           in_period(Util::TimePeriod.quarter(year, quarter), date_field: :created_at, **opts)
         end
-        
+
         # Get records created in a specific year
         # @param year [Integer] The year
         # @return [Array] Records created in that year
         def created_in_year(year, **opts)
           in_period(Util::TimePeriod.year(year), date_field: :created_at, **opts)
         end
-        
+
         # Get activity metrics for a period
         # @param period [Util::TimePeriod] The time period
         # @return [Hash] Metrics about records in the period
         def activity_metrics(period, **opts)
           created = in_period(period, date_field: :created_at, **opts)
           updated = in_period(period, date_field: :updated_at, **opts)
-          
+
           {
             period: period.label,
             created_count: created.size,
@@ -104,9 +104,9 @@ module Attio
           }
         end
       end
-      
+
       # Instance methods for time-based checks
-      
+
       # Check if this record was created in a specific period
       # @param period [Util::TimePeriod] The time period
       # @return [Boolean] True if created in the period
@@ -115,7 +115,7 @@ module Attio
         date = created_at.is_a?(String) ? Time.parse(created_at) : created_at
         period.includes?(date)
       end
-      
+
       # Check if this record was updated in a specific period
       # @param period [Util::TimePeriod] The time period
       # @return [Boolean] True if updated in the period
@@ -124,7 +124,7 @@ module Attio
         date = updated_at.is_a?(String) ? Time.parse(updated_at) : updated_at
         period.includes?(date)
       end
-      
+
       # Get the age of the record in days
       # @return [Integer] Days since creation
       def age_in_days
@@ -132,7 +132,7 @@ module Attio
         created = created_at.is_a?(String) ? Time.parse(created_at) : created_at
         ((Time.now - created) / (24 * 60 * 60)).round
       end
-      
+
       # Check if record is new (created recently)
       # @param days [Integer] Number of days to consider "new"
       # @return [Boolean] True if created within specified days
@@ -140,7 +140,7 @@ module Attio
         age = age_in_days
         age && age <= days
       end
-      
+
       # Check if record is old
       # @param days [Integer] Number of days to consider "old"
       # @return [Boolean] True if created more than specified days ago

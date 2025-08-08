@@ -111,7 +111,7 @@ module Attio
         known_opts.each do |opt|
           opts[opt] = conditions.delete(opt) if conditions.key?(opt)
         end
-        
+
         # Currently only supports email
         if conditions.key?(:email)
           email = conditions[:email]
