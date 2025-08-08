@@ -35,21 +35,34 @@ RSpec.describe "Simple Deal Test", integration: true do
   end
   
   it "tests deal with associations" do
-    deal = Attio::Deal.create(
-      name: "Deal with Associations #{Time.now.to_i}",
-      stage: "Lead", 
-      value: 5000,
-      owner: ENV["ATTIO_TEST_USER_EMAIL"] || "test@example.com",
-      associated_people: ["contact@example.com"],
-      associated_company: "example.com"
+    # First create a person to associate with
+    person = Attio::Person.create(
+      email_addresses: ["contact@example.com"],
+      name: [{
+        first_name: "Test",
+        last_name: "Contact"
+      }]
     )
     
-    puts "\n=== Deal with Associations ==="
-    puts "ID: #{deal.id}"
-    puts "Associated People: #{deal[:associated_people].inspect}"
-    puts "Associated Company: #{deal[:associated_company].inspect}"
-    
-    deal.destroy
+    begin
+      deal = Attio::Deal.create(
+        name: "Deal with Associations #{Time.now.to_i}",
+        stage: "Lead", 
+        value: 5000,
+        owner: ENV["ATTIO_TEST_USER_EMAIL"] || "test@example.com",
+        associated_people: [person.id],
+        associated_company: "example.com"
+      )
+      
+      puts "\n=== Deal with Associations ==="
+      puts "ID: #{deal.id}"
+      puts "Associated People: #{deal[:associated_people].inspect}"
+      puts "Associated Company: #{deal[:associated_company].inspect}"
+      
+      deal.destroy
+    ensure
+      person.destroy if person
+    end
   rescue Attio::BadRequestError => e
     puts "Failed: #{e.message}"
   end
