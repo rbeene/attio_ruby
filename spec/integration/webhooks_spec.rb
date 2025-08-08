@@ -3,7 +3,7 @@
 require "spec_helper"
 require "webmock/rspec"
 
-RSpec.describe "Webhook Integration", :integration do
+RSpec.describe "Webhook Integration", :integration, :webhook do
   before do
     Attio.configure do |config|
       config.api_key = ENV["ATTIO_API_KEY"]

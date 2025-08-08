@@ -24,11 +24,11 @@ RSpec.describe "Deal Integration", integration: true do
       
       expect(deal).to be_a(Attio::Deal)
       expect(deal[:name]).to eq(deal_name)
-      # Value is returned as a complex currency object
-      expect(deal[:value]).to be_a(Hash)
-      expect(deal[:value]["currency_value"]).to eq(50000)
-      expect(deal[:stage]).to be_a(Hash)
-      expect(deal[:stage]["status"]["title"]).to eq("In Progress")
+      # Use the new amount method
+      expect(deal.amount).to eq(50000.0)
+      expect(deal.currency).to eq("USD")
+      # Use the new stage method
+      expect(deal.stage).to eq("In Progress")
       
       # Clean up
       deal.destroy
@@ -44,11 +44,11 @@ RSpec.describe "Deal Integration", integration: true do
       
       expect(deal).to be_a(Attio::Deal)
       expect(deal[:name]).to eq("Full Deal #{unique_id}")
-      # Value is returned as a complex currency object
-      expect(deal[:value]).to be_a(Hash)
-      expect(deal[:value]["currency_value"]).to eq(100000)
-      expect(deal[:stage]).to be_a(Hash)
-      expect(deal[:stage]["status"]["title"]).to eq("Lead")
+      # Use the new amount method
+      expect(deal.amount).to eq(100000.0)
+      expect(deal.currency).to eq("USD")
+      # Use the new stage method
+      expect(deal.stage).to eq("Lead")
       # Note: close_date and probability may not be standard attributes
       
       # Clean up
@@ -73,8 +73,8 @@ RSpec.describe "Deal Integration", integration: true do
       # Find our test deal
       our_deal = deals.find { |d| d[:name] == "List Test #{unique_id}" }
       expect(our_deal).not_to be_nil
-      expect(our_deal[:value]).to be_a(Hash)
-      expect(our_deal[:value]["currency_value"]).to eq(25000)
+      expect(our_deal.amount).to eq(25000.0)
+      expect(our_deal.currency).to eq("USD")
       
       # Clean up
       test_deal.destroy
@@ -92,8 +92,7 @@ RSpec.describe "Deal Integration", integration: true do
       # Update the deal
       updated = deal.update_stage("Won 🎉")
       
-      expect(updated[:stage]).to be_a(Hash)
-      expect(updated[:stage]["status"]["title"]).to eq("Won 🎉")
+      expect(updated.stage).to eq("Won 🎉")
       expect(updated[:name]).to eq("Update Test #{unique_id}")
       
       # Clean up
@@ -156,7 +155,7 @@ RSpec.describe "Deal Integration", integration: true do
       # Check results
       our_big_deals = high_value_deals.select { |d| d[:name].include?(unique_id) }
       expect(our_big_deals.count).to be >= 1
-      expect(our_big_deals.first[:value]["currency_value"]).to be >= 100000
+      expect(our_big_deals.first.amount).to be >= 100000
       
       # Clean up
       small_deal.destroy

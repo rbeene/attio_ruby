@@ -59,6 +59,7 @@ RSpec.configure do |config|
   # Filter run examples by tags
   config.filter_run_when_matching :focus
   config.filter_run_excluding :integration unless ENV["RUN_INTEGRATION_TESTS"]
+  config.filter_run_excluding :webhook unless ENV["RUN_WEBHOOK_TESTS"]
 
   # Output formatting
   config.formatter = :documentation if ENV["CI"]

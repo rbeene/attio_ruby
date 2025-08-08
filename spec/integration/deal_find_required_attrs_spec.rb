@@ -49,9 +49,14 @@ RSpec.describe "Find Required Deal Attributes", integration: true do
     
     # First, let's try to get current workspace members
     begin
+      puts "About to call WorkspaceMember.all..."
       members = Attio::WorkspaceMember.all
+      puts "Successfully got members list"
       puts "\nWorkspace Members:"
-      members.first(3).each do |member|
+      puts "Calling members.first(3)..."
+      first_three = members.first(3)
+      puts "Got first three members"
+      first_three.each do |member|
         puts "  - #{member[:email_address]} (ID: #{member.id})"
       end
       

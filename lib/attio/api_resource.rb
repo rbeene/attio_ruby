@@ -409,10 +409,11 @@ module Attio
       alias_method :size, :length
       alias_method :count, :length
 
-      # Get the first item in the current page
-      # @return [APIResource, nil] The first resource or nil if empty
-      def first
-        @data.first
+      # Get the first item(s) in the current page
+      # @param [Integer] n Number of items to return (optional)
+      # @return [APIResource, Array<APIResource>, nil] The first resource(s) or nil if empty
+      def first(n = nil)
+        n.nil? ? @data.first : @data.first(n)
       end
 
       # Get the last item in the current page

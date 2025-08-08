@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "typed_record"
+require_relative "../util/time_period"
+require_relative "../util/currency_formatter"
 
 module Attio
   # Represents a Deal record in Attio
@@ -169,6 +171,128 @@ module Attio
         }))
       end
       
+      # Get deals that closed in a specific time period
+      # @param period [Util::TimePeriod] The time period
+      # @return [Array<Attio::Deal>] List of deals closed in the period
+      def closed_in_period(period, **opts)
+        all(**opts).select do |deal|
+          closed_date = deal.closed_at
+          closed_date && period.includes?(closed_date)
+        end
+      end
+      
+      # Get deals that closed in a specific quarter
+      # @param year [Integer] The year
+      # @param quarter [Integer] The quarter (1-4)
+      # @return [Array<Attio::Deal>] List of deals closed in the quarter
+      def closed_in_quarter(year, quarter, **opts)
+        period = Util::TimePeriod.quarter(year, quarter)
+        closed_in_period(period, **opts)
+      end
+      
+      # Get metrics for any time period
+      # @param period [Util::TimePeriod] The time period
+      # @return [Hash] Metrics for the period
+      def metrics_for_period(period, **opts)
+        # Build date filter for stage.active_from
+        # Note: We need to add a day to end_date to include all of that day
+        # since stage.active_from includes time
+        date_filter = {
+          "stage" => {
+            "active_from" => {
+              "$gte" => period.start_date.strftime("%Y-%m-%d"),
+              "$lte" => (period.end_date + 1).strftime("%Y-%m-%d")
+            }
+          }
+        }
+        
+        # Fetch won deals closed in the period
+        won_filter = {
+          "$and" => [
+            { "stage" => "Won 🎉" },
+            date_filter
+          ]
+        }
+        won_response = list(**opts.merge(params: { filter: won_filter }))
+        
+        # Fetch lost deals closed in the period
+        lost_filter = {
+          "$and" => [
+            { "stage" => "Lost" },
+            date_filter
+          ]
+        }
+        lost_response = list(**opts.merge(params: { filter: lost_filter }))
+        
+        won_deals = won_response.data
+        lost_deals = lost_response.data
+        total_closed = won_deals.size + lost_deals.size
+        
+        {
+          period: period.label,
+          won_count: won_deals.size,
+          won_amount: won_deals.sum(&:amount),
+          lost_count: lost_deals.size,
+          lost_amount: lost_deals.sum(&:amount),
+          total_closed: total_closed,
+          win_rate: total_closed > 0 ? (won_deals.size.to_f / total_closed * 100).round(2) : 0.0
+        }
+      end
+      
+      # Get current quarter metrics
+      # @return [Hash] Metrics for the current quarter
+      def current_quarter_metrics(**opts)
+        metrics_for_period(Util::TimePeriod.current_quarter, **opts)
+      end
+      
+      # Get year-to-date metrics
+      # @return [Hash] Metrics for year to date
+      def year_to_date_metrics(**opts)
+        metrics_for_period(Util::TimePeriod.year_to_date, **opts)
+      end
+      
+      # Get month-to-date metrics
+      # @return [Hash] Metrics for month to date
+      def month_to_date_metrics(**opts)
+        metrics_for_period(Util::TimePeriod.month_to_date, **opts)
+      end
+      
+      # Get last 30 days metrics
+      # @return [Hash] Metrics for last 30 days
+      def last_30_days_metrics(**opts)
+        metrics_for_period(Util::TimePeriod.last_30_days, **opts)
+      end
+      
+      # Get high-value deals above a threshold
+      # @param threshold [Numeric] The minimum value threshold (defaults to 50,000)
+      # @return [Array<Attio::Deal>] List of high-value deals
+      def high_value(threshold = 50_000, **opts)
+        all(**opts).select { |deal| deal.amount > threshold }
+      end
+      
+      # Get deals without owners
+      # @return [Array<Attio::Deal>] List of unassigned deals
+      def unassigned(**opts)
+        all(**opts).select { |deal| deal.owner.nil? }
+      end
+      
+      # Get recently created deals
+      # @param days [Integer] Number of days to look back (defaults to 7)
+      # @return [Array<Attio::Deal>] List of recently created deals
+      def recently_created(days = 7, **opts)
+        created_in_period(Util::TimePeriod.last_days(days), **opts)
+      end
+      
+      # Get deals created in a specific period
+      # @param period [Util::TimePeriod] The time period
+      # @return [Array<Attio::Deal>] List of deals created in the period
+      def created_in_period(period, **opts)
+        all(**opts).select do |deal|
+          created_at = deal.created_at
+          created_at && period.includes?(created_at)
+        end
+      end
+      
       private
       
       # Build filter for status field (maps to stage)
@@ -183,23 +307,53 @@ module Attio
       self[:name]
     end
 
-    # Get the deal value
-    # @return [Numeric, nil] The deal value
+    # Get the monetary amount from the deal value
+    # @return [Float] The deal amount (0.0 if not set)
+    def amount
+      return 0.0 unless self[:value].is_a?(Hash)
+      (self[:value]["currency_value"] || 0).to_f
+    end
+    
+    # Get the currency code
+    # @return [String] The currency code (defaults to "USD")
+    def currency
+      return "USD" unless self[:value].is_a?(Hash)
+      self[:value]["currency_code"] || "USD"
+    end
+    
+    # Get formatted amount for display
+    # @return [String] The formatted currency amount
+    def formatted_amount
+      Util::CurrencyFormatter.format(amount, currency)
+    end
+    
+    # Get the raw deal value (for backward compatibility)
+    # @deprecated Use {#amount} for monetary values or {#raw_value} for raw API response
+    # @return [Object] The raw value from the API
     def value
+      warn "[DEPRECATION] `value` is deprecated. Use `amount` for monetary values or `raw_value` for the raw API response." unless ENV["ATTIO_SUPPRESS_DEPRECATION"]
+      amount
+    end
+    
+    # Get the raw value data from the API
+    # @return [Object] The raw value data
+    def raw_value
       self[:value]
     end
 
-    # Get the deal stage (API uses "stage" but we provide status for compatibility)
-    # @return [String, nil] The deal stage
+    # Get the normalized deal stage/status
+    # @return [String, nil] The deal stage title
     def stage
-      self[:stage]
+      stage_data = self[:stage]
+      return nil unless stage_data.is_a?(Hash)
+      
+      # Attio always returns stage as a hash with nested status.title
+      stage_data.dig("status", "title")
     end
     
     # Alias for stage (for compatibility)
     # @return [String, nil] The deal stage
-    def status
-      self[:stage]
-    end
+    alias_method :status, :stage
 
     # # Get the close date (if attribute exists)
     # # @return [String, nil] The close date
@@ -282,28 +436,20 @@ module Attio
     #   (value * probability / 100.0).round(2)
     # end
 
-    # Get the current status title
+    # Get the current status title (delegates to stage for simplicity)
     # @return [String, nil] The current status title
     def current_status
-      return nil unless stage
-      
-      if stage.is_a?(Hash)
-        stage.dig("status", "title")
-      else
-        stage
-      end
+      stage
     end
 
     # Get the timestamp when the status changed
     # @return [Time, nil] The timestamp when status changed
     def status_changed_at
-      return nil unless stage
+      return nil unless self[:stage].is_a?(Hash)
       
-      if stage.is_a?(Hash) && stage["active_from"]
-        Time.parse(stage["active_from"])
-      else
-        nil
-      end
+      # Attio returns active_from at the top level of the stage hash
+      timestamp = self[:stage]["active_from"]
+      timestamp ? Time.parse(timestamp) : nil
     end
 
     # Check if the deal is open
@@ -334,13 +480,15 @@ module Attio
     # Get the timestamp when the deal was won
     # @return [Time, nil] The timestamp when deal was won, or nil if not won
     def won_at
-      won? ? status_changed_at : nil
+      return nil unless won?
+      status_changed_at
     end
 
     # Get the timestamp when the deal was closed (won or lost)
     # @return [Time, nil] The timestamp when deal was closed, or nil if still open
     def closed_at
-      (won? || lost?) ? status_changed_at : nil
+      return nil unless (won? || lost?)
+      status_changed_at
     end
 
     # # Check if the deal is overdue
@@ -349,6 +497,85 @@ module Attio
     #   return false unless close_date && open?
     #   Date.parse(close_date) < Date.today
     # end
+    
+    # Check if this is an enterprise deal
+    # @return [Boolean] True if amount > 100,000
+    def enterprise?
+      amount > 100_000
+    end
+    
+    # Check if this is a mid-market deal
+    # @return [Boolean] True if amount is between 10,000 and 100,000
+    def mid_market?
+      amount.between?(10_000, 100_000)
+    end
+    
+    # Check if this is a small deal
+    # @return [Boolean] True if amount < 10,000
+    def small?
+      amount < 10_000
+    end
+    
+    # Get the number of days the deal has been in current stage
+    # @return [Integer] Number of days in current stage
+    def days_in_stage
+      return 0 unless status_changed_at
+      ((Time.now - status_changed_at) / (24 * 60 * 60)).round
+    end
+    
+    # Check if the deal is stale (no activity for specified days)
+    # @param days [Integer] Number of days to consider stale (defaults to 30)
+    # @return [Boolean] True if deal is open and hasn't changed in specified days
+    def stale?(days = 30)
+      return false if closed?
+      days_in_stage > days
+    end
+    
+    # Check if the deal is closed (won or lost)
+    # @return [Boolean] True if deal is won or lost
+    def closed?
+      won? || lost?
+    end
+    
+    # Get a simple summary of the deal
+    # @return [String] Summary string with name, amount, and stage
+    def summary
+      "#{name || 'Unnamed Deal'}: #{formatted_amount} (#{stage || 'No Stage'})"
+    end
+    
+    # Convert to string for display
+    # @return [String] The deal summary
+    def to_s
+      summary
+    end
+    
+    # Get deal size category
+    # @return [Symbol] :enterprise, :mid_market, or :small
+    def size_category
+      if enterprise?
+        :enterprise
+      elsif mid_market?
+        :mid_market
+      else
+        :small
+      end
+    end
+    
+    # Check if deal needs attention (stale and not closed)
+    # @param stale_days [Integer] Days to consider stale
+    # @return [Boolean] True if deal needs attention
+    def needs_attention?(stale_days = 30)
+      !closed? && stale?(stale_days)
+    end
+    
+    # Get deal velocity (amount per day if closed)
+    # @return [Float, nil] Amount per day or nil if not closed
+    def velocity
+      return nil unless closed? && closed_at && self.created_at
+      
+      days_to_close = ((closed_at - self.created_at) / (24 * 60 * 60)).round
+      days_to_close > 0 ? (amount / days_to_close).round(2) : amount
+    end
   end
 
   # Alias for Deal (plural form)
