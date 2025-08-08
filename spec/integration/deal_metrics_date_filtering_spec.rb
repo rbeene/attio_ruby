@@ -12,7 +12,7 @@ RSpec.describe "Deal Metrics Date Filtering", :integration do
   end
 
   describe "Date filtering verification" do
-    it "ONLIES include deals closed within the specified period" do
+    it "ONLY includes deals closed within the specified period" do
       created_deals = []
 
       begin
