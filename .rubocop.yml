@@ -84,7 +84,7 @@ Style/Documentation:
 
 # RSpec Configuration
 RSpec/ExampleLength:
-  Max: 30
+  Max: 45  # API mocking tests require comprehensive setup
   Exclude:
     - 'spec/integration/**/*'
 

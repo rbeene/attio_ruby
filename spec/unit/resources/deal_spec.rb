@@ -121,21 +121,19 @@ RSpec.describe Attio::Deal do
         expect(deal.amount).to eq(150000.0)
       end
 
-      context "with different value formats" do
-        it "handles currency_value correctly" do
-          deal_with_numeric = described_class.new(deal_data.merge("values" => {"value" => [{"currency_value" => 75000}]}))
-          expect(deal_with_numeric.amount).to eq(75000.0)
-        end
+      it "handles currency_value correctly" do
+        deal_with_numeric = described_class.new(deal_data.merge("values" => {"value" => [{"currency_value" => 75000}]}))
+        expect(deal_with_numeric.amount).to eq(75000.0)
+      end
 
-        it "handles missing values" do
-          deal_without_value = described_class.new(deal_data.merge("values" => {}))
-          expect(deal_without_value.amount).to eq(0.0)
-        end
+      it "handles missing values" do
+        deal_without_value = described_class.new(deal_data.merge("values" => {}))
+        expect(deal_without_value.amount).to eq(0.0)
+      end
 
-        it "handles nil value field" do
-          deal_with_nil = described_class.new(deal_data.merge("values" => {"value" => nil}))
-          expect(deal_with_nil.amount).to eq(0.0)
-        end
+      it "handles nil value field" do
+        deal_with_nil = described_class.new(deal_data.merge("values" => {"value" => nil}))
+        expect(deal_with_nil.amount).to eq(0.0)
       end
     end
 
@@ -201,16 +199,14 @@ RSpec.describe Attio::Deal do
         expect(deal.stage).to eq("negotiating")
       end
 
-      context "with different stage formats" do
-        it "handles missing stage" do
-          no_stage_deal = described_class.new(deal_data.merge("values" => {}))
-          expect(no_stage_deal.stage).to be_nil
-        end
+      it "handles missing stage" do
+        no_stage_deal = described_class.new(deal_data.merge("values" => {}))
+        expect(no_stage_deal.stage).to be_nil
+      end
 
-        it "handles nil stage" do
-          nil_stage_deal = described_class.new(deal_data.merge("values" => {"stage" => nil}))
-          expect(nil_stage_deal.stage).to be_nil
-        end
+      it "handles nil stage" do
+        nil_stage_deal = described_class.new(deal_data.merge("values" => {"stage" => nil}))
+        expect(nil_stage_deal.stage).to be_nil
       end
     end
 

@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe "Attio::Deal time-based methods" do
+RSpec.describe Attio::Deal do
   let(:deal_data) do
     {
       "id" => {"object_id" => "obj_deals", "record_id" => "rec_deal123"},
@@ -37,7 +37,7 @@ RSpec.describe "Attio::Deal time-based methods" do
       q2_2024 = Attio::Util::TimePeriod.quarter(2024, 2)
 
       # Create deals with different closed dates
-      deal_in_q2 = Attio::Deal.new(deal_data.merge(
+      deal_in_q2 = described_class.new(deal_data.merge(
         "values" => deal_data["values"].merge(
           "stage" => [{
             "active_from" => "2024-05-15T10:00:00Z",
@@ -47,7 +47,7 @@ RSpec.describe "Attio::Deal time-based methods" do
         )
       ))
 
-      deal_in_q1 = Attio::Deal.new(deal_data.merge(
+      deal_in_q1 = described_class.new(deal_data.merge(
         "values" => deal_data["values"].merge(
           "stage" => [{
             "active_from" => "2024-02-15T10:00:00Z",
@@ -58,9 +58,9 @@ RSpec.describe "Attio::Deal time-based methods" do
       ))
 
       # Mock the all method
-      allow(Attio::Deal).to receive(:all).and_return([deal_in_q2, deal_in_q1])
+      allow(described_class).to receive(:all).and_return([deal_in_q2, deal_in_q1])
 
-      result = Attio::Deal.closed_in_period(q2_2024)
+      result = described_class.closed_in_period(q2_2024)
       expect(result).to contain_exactly(deal_in_q2)
     end
   end
@@ -70,9 +70,9 @@ RSpec.describe "Attio::Deal time-based methods" do
       q2_period = instance_double(Attio::Util::TimePeriod)
       allow(Attio::Util::TimePeriod).to receive(:quarter).with(2024, 2).and_return(q2_period)
 
-      expect(Attio::Deal).to receive(:closed_in_period).with(q2_period)
+      expect(described_class).to receive(:closed_in_period).with(q2_period)
 
-      Attio::Deal.closed_in_quarter(2024, 2)
+      described_class.closed_in_quarter(2024, 2)
     end
   end
 
@@ -80,7 +80,7 @@ RSpec.describe "Attio::Deal time-based methods" do
     it "calculates metrics for any time period" do
       period = Attio::Util::TimePeriod.last_30_days
 
-      won_deal = Attio::Deal.new(deal_data.merge(
+      won_deal = described_class.new(deal_data.merge(
         "values" => deal_data["values"].merge(
           "stage" => [{
             "active_from" => (fixed_now - 5 * 24 * 60 * 60).iso8601,
@@ -90,7 +90,7 @@ RSpec.describe "Attio::Deal time-based methods" do
         )
       ))
 
-      lost_deal = Attio::Deal.new(deal_data.merge(
+      lost_deal = described_class.new(deal_data.merge(
         "values" => deal_data["values"].merge(
           "value" => [{"currency_value" => 30000}],
           "stage" => [{
@@ -105,10 +105,10 @@ RSpec.describe "Attio::Deal time-based methods" do
       won_list = double("ListObject", data: [won_deal])
       lost_list = double("ListObject", data: [lost_deal])
 
-      allow(Attio::Deal).to receive(:list).and_return(won_list, lost_list)
+      allow(described_class).to receive(:list).and_return(won_list, lost_list)
       allow(period).to receive_messages(label: "Last 30 Days", includes?: true)
 
-      metrics = Attio::Deal.metrics_for_period(period)
+      metrics = described_class.metrics_for_period(period)
 
       expect(metrics[:period]).to eq("Last 30 Days")
       expect(metrics[:won_count]).to eq(1)
@@ -125,9 +125,9 @@ RSpec.describe "Attio::Deal time-based methods" do
       ytd_period = instance_double(Attio::Util::TimePeriod)
       allow(Attio::Util::TimePeriod).to receive(:year_to_date).and_return(ytd_period)
 
-      expect(Attio::Deal).to receive(:metrics_for_period).with(ytd_period)
+      expect(described_class).to receive(:metrics_for_period).with(ytd_period)
 
-      Attio::Deal.year_to_date_metrics
+      described_class.year_to_date_metrics
     end
   end
 
@@ -136,9 +136,9 @@ RSpec.describe "Attio::Deal time-based methods" do
       mtd_period = instance_double(Attio::Util::TimePeriod)
       allow(Attio::Util::TimePeriod).to receive(:month_to_date).and_return(mtd_period)
 
-      expect(Attio::Deal).to receive(:metrics_for_period).with(mtd_period)
+      expect(described_class).to receive(:metrics_for_period).with(mtd_period)
 
-      Attio::Deal.month_to_date_metrics
+      described_class.month_to_date_metrics
     end
   end
 
@@ -147,9 +147,9 @@ RSpec.describe "Attio::Deal time-based methods" do
       last_30_period = instance_double(Attio::Util::TimePeriod)
       allow(Attio::Util::TimePeriod).to receive(:last_30_days).and_return(last_30_period)
 
-      expect(Attio::Deal).to receive(:metrics_for_period).with(last_30_period)
+      expect(described_class).to receive(:metrics_for_period).with(last_30_period)
 
-      Attio::Deal.last_30_days_metrics
+      described_class.last_30_days_metrics
     end
   end
 
@@ -159,18 +159,18 @@ RSpec.describe "Attio::Deal time-based methods" do
       period = Attio::Util::TimePeriod.last_week
 
       # Create deal with created_at that's 2 days ago (within last week)
-      recent_deal = Attio::Deal.new(deal_data.merge(
+      recent_deal = described_class.new(deal_data.merge(
         "created_at" => (fixed_now - 2 * 24 * 60 * 60).iso8601
       ))
 
       # Create deal with created_at that's 10 days ago (outside last week)
-      old_deal = Attio::Deal.new(deal_data.merge(
+      old_deal = described_class.new(deal_data.merge(
         "created_at" => (fixed_now - 10 * 24 * 60 * 60).iso8601
       ))
 
-      allow(Attio::Deal).to receive(:all).and_return([recent_deal, old_deal])
+      allow(described_class).to receive(:all).and_return([recent_deal, old_deal])
 
-      result = Attio::Deal.created_in_period(period)
+      result = described_class.created_in_period(period)
       expect(result).to contain_exactly(recent_deal)
     end
   end
@@ -180,18 +180,18 @@ RSpec.describe "Attio::Deal time-based methods" do
       period = instance_double(Attio::Util::TimePeriod)
       allow(Attio::Util::TimePeriod).to receive(:last_days).with(7).and_return(period)
 
-      expect(Attio::Deal).to receive(:created_in_period).with(period)
+      expect(described_class).to receive(:created_in_period).with(period)
 
-      Attio::Deal.recently_created(7)
+      described_class.recently_created(7)
     end
 
     it "defaults to 7 days" do
       period = instance_double(Attio::Util::TimePeriod)
       allow(Attio::Util::TimePeriod).to receive(:last_days).with(7).and_return(period)
 
-      expect(Attio::Deal).to receive(:created_in_period).with(period)
+      expect(described_class).to receive(:created_in_period).with(period)
 
-      Attio::Deal.recently_created
+      described_class.recently_created
     end
   end
 end

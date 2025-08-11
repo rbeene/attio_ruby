@@ -7,36 +7,34 @@ RSpec.describe "Combined filtering", :integration do
   let(:test_email) { "combined-filter-test-#{unique_id}@example.com" }
   let(:test_name) { "FilterTest#{unique_id}" }
 
+  let!(:test_people) do
+    [
+      Attio::Person.create(
+        first_name: test_name,
+        last_name: "User One",
+        email: test_email
+      ),
+      Attio::Person.create(
+        first_name: test_name,
+        last_name: "User Two",
+        email: "different-#{Time.now.to_i}-#{rand(1000)}@example.com"
+      ),
+      Attio::Person.create(
+        first_name: "Different",
+        last_name: "Name",
+        email: "another-#{Time.now.to_i}-#{rand(1000)}@example.com"
+      )
+    ]
+  end
+
   before do
-    # Create test data
-    # Create a person with specific email and name
-    @person1 = Attio::Person.create(
-      first_name: test_name,
-      last_name: "User One",
-      email: test_email
-    )
-
-    # Create a person with same name but different email
-    @person2 = Attio::Person.create(
-      first_name: test_name,
-      last_name: "User Two",
-      email: "different-#{Time.now.to_i}-#{rand(1000)}@example.com"
-    )
-
-    # Create a person with different name and different email (can't share emails due to uniqueness)
-    @person3 = Attio::Person.create(
-      first_name: "Different",
-      last_name: "Name",
-      email: "another-#{Time.now.to_i}-#{rand(1000)}@example.com"
-    )
-
     # Give the API a moment to index
     sleep 2
   end
 
   after do
     # Clean up test data
-    [@person1, @person2, @person3].each do |person|
+    test_people.each do |person|
       person.destroy
     rescue
       nil
@@ -108,25 +106,32 @@ RSpec.describe "Combined filtering", :integration do
 
   describe "Company.find_by with combined conditions" do
     let(:company_unique_id) { "#{Time.now.to_i}-#{rand(10000)}" }
-    let(:company_name) { "CombinedFilter Corp #{company_unique_id}" }
-    let(:company_domain) { "combined-filter-#{company_unique_id}.com" }
+    let(:company_data) do
+      {
+        name: "CombinedFilter Corp #{company_unique_id}",
+        domain: "combined-filter-#{company_unique_id}.com"
+      }
+    end
+
+    let!(:test_companies) do
+      [
+        Attio::Company.create(
+          name: company_data[:name],
+          domain: company_data[:domain]
+        ),
+        Attio::Company.create(
+          name: company_data[:name],
+          domain: "different-#{Time.now.to_i}.com"
+        )
+      ]
+    end
 
     before do
-      @company1 = Attio::Company.create(
-        name: company_name,
-        domain: company_domain
-      )
-
-      @company2 = Attio::Company.create(
-        name: company_name,
-        domain: "different-#{Time.now.to_i}.com"
-      )
-
       sleep 1
     end
 
     after do
-      [@company1, @company2].each do |company|
+      test_companies.each do |company|
         company.destroy
       rescue
         nil
@@ -134,12 +139,12 @@ RSpec.describe "Combined filtering", :integration do
     end
 
     it "finds company matching BOTH domain AND name" do
-      result = Attio::Company.find_by(domain: company_domain, name: company_name)
+      result = Attio::Company.find_by(domain: company_data[:domain], name: company_data[:name])
 
       expect(result).not_to be_nil
       # Check the attributes match what we're looking for
-      expect(result.domain).to eq(company_domain)
-      expect(result.name).to eq(company_name)
+      expect(result.domain).to eq(test_companies[0].domain)
+      expect(result.name).to eq(test_companies[0].name)
     end
   end
 
@@ -148,49 +153,49 @@ RSpec.describe "Combined filtering", :integration do
     let(:job_title) { "Senior Engineer #{unique_id}" }
     let(:company_name) { "Tech Corp #{unique_id}" }
 
-    before do
-      # Create a company first
-      @company = Attio::Company.create(
+    let!(:company) do
+      Attio::Company.create(
         name: company_name
       )
+    end
 
-      # Create people with different combinations
-      @person1 = Attio::Person.create(
-        first_name: "Engineer",
-        last_name: "One",
-        email: "engineer1-#{unique_id}@example.com",
-        job_title: job_title,
-        company: @company
-      )
+    let!(:test_people) do
+      [
+        Attio::Person.create(
+          first_name: "Engineer",
+          last_name: "One",
+          email: "engineer1-#{unique_id}@example.com",
+          job_title: job_title,
+          company: company
+        ),
+        Attio::Person.create(
+          first_name: "Engineer",
+          last_name: "Two",
+          email: "engineer2-#{unique_id}@example.com",
+          job_title: job_title
+        ),
+        Attio::Person.create(
+          first_name: "Manager",
+          last_name: "Three",
+          email: "manager3-#{unique_id}@example.com",
+          job_title: "Product Manager",
+          company: company
+        )
+      ]
+    end
 
-      # Same job title, different company
-      @person2 = Attio::Person.create(
-        first_name: "Engineer",
-        last_name: "Two",
-        email: "engineer2-#{unique_id}@example.com",
-        job_title: job_title
-      )
-
-      # Same company, different job title
-      @person3 = Attio::Person.create(
-        first_name: "Manager",
-        last_name: "Three",
-        email: "manager3-#{unique_id}@example.com",
-        job_title: "Product Manager",
-        company: @company
-      )
-
+    before do
       sleep 2
     end
 
     after do
-      [@person1, @person2, @person3].each do |person|
+      test_people.each do |person|
         person.destroy
       rescue
         nil
       end
       begin
-        @company.destroy
+        company.destroy
       rescue
         nil
       end
@@ -205,7 +210,7 @@ RSpec.describe "Combined filtering", :integration do
 
     it "finds person by company reference" do
       # This might need special handling for company references
-      company_id = @company.id.is_a?(Hash) ? @company.id["record_id"] : @company.id
+      company_id = company.id.is_a?(Hash) ? company.id["record_id"] : company.id
 
       result = Attio::Person.find_by(company: {
         target_object: "companies",
@@ -214,7 +219,7 @@ RSpec.describe "Combined filtering", :integration do
 
       expect(result).not_to be_nil
       # Should find one of the people associated with the company
-      expect([@person1.id, @person3.id]).to include(result.id)
+      expect([test_people[0].id, test_people[2].id]).to include(result.id)
     end
   end
 end

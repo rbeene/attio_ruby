@@ -359,7 +359,7 @@ RSpec.describe Attio::Util::TimePeriod do
   end
 
   describe "edge cases" do
-    context "leap year handling" do
+    context "when handling leap years" do
       it "correctly handles February 29 in leap years" do
         period = described_class.month(2024, 2)
         expect(period.end_date).to eq(Date.new(2024, 2, 29))
@@ -373,7 +373,7 @@ RSpec.describe Attio::Util::TimePeriod do
       end
     end
 
-    context "year boundaries" do
+    context "when crossing year boundaries" do
       before do
         # Test around New Year's Eve/Day
         allow(Date).to receive(:today).and_return(Date.new(2024, 1, 2))
@@ -393,22 +393,19 @@ RSpec.describe Attio::Util::TimePeriod do
       end
     end
 
-    context "month boundaries" do
-      it "handles varying month lengths correctly" do
-        # 31-day months
-        expect(described_class.month(2024, 1).days).to eq(31)
-        expect(described_class.month(2024, 3).days).to eq(31)
-        expect(described_class.month(2024, 5).days).to eq(31)
-        expect(described_class.month(2024, 7).days).to eq(31)
-        expect(described_class.month(2024, 8).days).to eq(31)
-        expect(described_class.month(2024, 10).days).to eq(31)
-        expect(described_class.month(2024, 12).days).to eq(31)
+    context "when handling month boundaries" do
+      it "handles 31-day months correctly" do
+        months_with_31_days = [1, 3, 5, 7, 8, 10, 12]
+        months_with_31_days.each do |month|
+          expect(described_class.month(2024, month).days).to eq(31)
+        end
+      end
 
-        # 30-day months
-        expect(described_class.month(2024, 4).days).to eq(30)
-        expect(described_class.month(2024, 6).days).to eq(30)
-        expect(described_class.month(2024, 9).days).to eq(30)
-        expect(described_class.month(2024, 11).days).to eq(30)
+      it "handles 30-day months correctly" do
+        months_with_30_days = [4, 6, 9, 11]
+        months_with_30_days.each do |month|
+          expect(described_class.month(2024, month).days).to eq(30)
+        end
       end
     end
   end

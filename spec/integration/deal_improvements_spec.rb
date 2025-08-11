@@ -163,16 +163,17 @@ RSpec.describe "Deal Improvements", :integration do
   end
 
   describe "Class methods" do
-    before do
-      # Create test deals with different values
-      @small_deal = Attio::Deal.create(
+    let!(:small_deal) do
+      Attio::Deal.create(
         name: "Small Deal #{unique_id}",
         value: 5000,
         stage: "Lead",
         owner: owner_email
       )
+    end
 
-      @big_deal = Attio::Deal.create(
+    let!(:big_deal) do
+      Attio::Deal.create(
         name: "Big Deal #{unique_id}",
         value: 120000,
         stage: "In Progress",
@@ -181,8 +182,8 @@ RSpec.describe "Deal Improvements", :integration do
     end
 
     after do
-      @small_deal&.destroy
-      @big_deal&.destroy
+      small_deal&.destroy
+      big_deal&.destroy
     end
 
     describe ".high_value" do

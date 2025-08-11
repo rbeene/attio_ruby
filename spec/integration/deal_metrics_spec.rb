@@ -6,7 +6,7 @@ RSpec.describe "Deal Metrics", :integration do
   let(:unique_id) { Time.now.to_i }
   let(:owner_email) { ENV["ATTIO_TEST_USER_EMAIL"] }
 
-  before(:all) do
+  before do
     skip "Skipping integration tests (RUN_INTEGRATION_TESTS not set)" unless ENV["RUN_INTEGRATION_TESTS"]
     skip "Cannot test without ATTIO_TEST_USER_EMAIL environment variable" unless ENV["ATTIO_TEST_USER_EMAIL"]
   end

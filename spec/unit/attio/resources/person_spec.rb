@@ -16,6 +16,60 @@ RSpec.describe Attio::Person do
   end
 
   describe ".create" do
+    let(:expected_values) do
+      {
+        name: [{
+          first_name: "John",
+          last_name: "Doe",
+          full_name: "John Doe"
+        }],
+        email_addresses: ["john@example.com"],
+        phone_numbers: [{
+          original_phone_number: "+1234567890",
+          country_code: "US"
+        }],
+        job_title: "Developer"
+      }
+    end
+
+    let(:response_data) do
+      {
+        data: {
+          id: {record_id: "123"},
+          values: {
+            name: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              first_name: "John",
+              last_name: "Doe",
+              full_name: "John Doe",
+              attribute_type: "personal-name"
+            }],
+            email_addresses: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              email_address: "john@example.com",
+              email_domain: "example.com",
+              email_root_domain: "example.com",
+              attribute_type: "email-address"
+            }],
+            phone_numbers: [{
+              active_from: Time.now.iso8601,
+              active_until: nil,
+              created_by_actor: {type: "api-token", id: "token_123"},
+              original_phone_number: "+1234567890",
+              country_code: "US",
+              phone_number: "+1 234 567 890",
+              attribute_type: "phone-number"
+            }],
+            job_title: "Developer"
+          }
+        }
+      }
+    end
+
     it "creates a person with simple parameters" do
       # Mock the API response with full structure
       response_data = {
@@ -67,57 +121,6 @@ RSpec.describe Attio::Person do
     end
 
     it "sends correct parameters when creating a person" do
-      expected_values = {
-        name: [{
-          first_name: "John",
-          last_name: "Doe",
-          full_name: "John Doe"
-        }],
-        email_addresses: ["john@example.com"],
-        phone_numbers: [{
-          original_phone_number: "+1234567890",
-          country_code: "US"
-        }],
-        job_title: "Developer"
-      }
-
-      # Define the response data that will be returned
-      response_data = {
-        data: {
-          id: {record_id: "123"},
-          values: {
-            name: [{
-              active_from: Time.now.iso8601,
-              active_until: nil,
-              created_by_actor: {type: "api-token", id: "token_123"},
-              first_name: "John",
-              last_name: "Doe",
-              full_name: "John Doe",
-              attribute_type: "personal-name"
-            }],
-            email_addresses: [{
-              active_from: Time.now.iso8601,
-              active_until: nil,
-              created_by_actor: {type: "api-token", id: "token_123"},
-              email_address: "john@example.com",
-              email_domain: "example.com",
-              email_root_domain: "example.com",
-              attribute_type: "email-address"
-            }],
-            phone_numbers: [{
-              active_from: Time.now.iso8601,
-              active_until: nil,
-              created_by_actor: {type: "api-token", id: "token_123"},
-              original_phone_number: "+1234567890",
-              country_code: "US",
-              phone_number: "+1 234 567 890",
-              attribute_type: "phone-number"
-            }],
-            job_title: "Developer"
-          }
-        }
-      }
-
       allow(described_class).to receive(:execute_request).with(
         :POST,
         "objects/people/records",
@@ -132,6 +135,7 @@ RSpec.describe Attio::Person do
         phone: "+1234567890",
         job_title: "Developer"
       )
+
       expect(result).to be_a(described_class)
     end
 

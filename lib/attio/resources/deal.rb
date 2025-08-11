@@ -211,7 +211,7 @@ module Attio
         won_conditions = won_statuses.map { |status| {"stage" => status} }
         won_filter = {
           "$and" => [
-            won_conditions.size > 1 ? {"$or" => won_conditions} : won_conditions.first,
+            ((won_conditions.size > 1) ? {"$or" => won_conditions} : won_conditions.first),
             date_filter
           ].compact
         }
@@ -222,7 +222,7 @@ module Attio
         lost_conditions = lost_statuses.map { |status| {"stage" => status} }
         lost_filter = {
           "$and" => [
-            lost_conditions.size > 1 ? {"$or" => lost_conditions} : lost_conditions.first,
+            ((lost_conditions.size > 1) ? {"$or" => lost_conditions} : lost_conditions.first),
             date_filter
           ].compact
         }

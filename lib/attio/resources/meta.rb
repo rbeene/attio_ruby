@@ -138,7 +138,5 @@ module Attio
     def inspect
       "#<#{self.class.name}:#{object_id} workspace=#{workspace_slug.inspect} token=#{token_name.inspect}>"
     end
-
-    private
   end
 end

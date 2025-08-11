@@ -10,9 +10,7 @@ RSpec.describe "Deal status methods", :integration do
       results = Attio::Deal.in_stage(stage_names: ["Won 🎉"])
 
       expect(results).to be_a(Attio::APIResource::ListObject)
-      results.each do |deal|
-        expect(deal).to be_a(Attio::Deal)
-      end
+      expect(results).to all(be_a(Attio::Deal))
     end
 
     it "accepts multiple stage names" do
@@ -27,15 +25,19 @@ RSpec.describe "Deal status methods", :integration do
       results = Attio::Deal.won
 
       expect(results).to be_a(Attio::APIResource::ListObject)
-      results.each do |deal|
-        expect(deal).to be_a(Attio::Deal)
-        # Check that the deal's stage is actually "Won 🎉"
-        stage_title = if deal.stage.is_a?(Hash)
+      expect(results).to all(be_a(Attio::Deal))
+
+      # Check that all deals have the correct stage
+      stage_titles = results.filter_map do |deal|
+        if deal.stage.is_a?(Hash)
           deal.stage.dig("status", "title")
         else
           deal.stage
         end
-        expect(["Won 🎉"]).to include(stage_title) if stage_title
+      end
+
+      unless stage_titles.empty?
+        expect(stage_titles).to all(eq("Won 🎉"))
       end
     end
   end
@@ -45,15 +47,19 @@ RSpec.describe "Deal status methods", :integration do
       results = Attio::Deal.lost
 
       expect(results).to be_a(Attio::APIResource::ListObject)
-      results.each do |deal|
-        expect(deal).to be_a(Attio::Deal)
-        # Check that the deal's stage is actually "Lost"
-        stage_title = if deal.stage.is_a?(Hash)
+      expect(results).to all(be_a(Attio::Deal))
+
+      # Check that all deals have the correct stage
+      stage_titles = results.filter_map do |deal|
+        if deal.stage.is_a?(Hash)
           deal.stage.dig("status", "title")
         else
           deal.stage
         end
-        expect(["Lost"]).to include(stage_title) if stage_title
+      end
+
+      unless stage_titles.empty?
+        expect(stage_titles).to all(eq("Lost"))
       end
     end
   end
@@ -63,15 +69,19 @@ RSpec.describe "Deal status methods", :integration do
       results = Attio::Deal.open_deals
 
       expect(results).to be_a(Attio::APIResource::ListObject)
-      results.each do |deal|
-        expect(deal).to be_a(Attio::Deal)
-        # Check that the deal's stage is either "Lead" or "In Progress"
-        stage_title = if deal.stage.is_a?(Hash)
+      expect(results).to all(be_a(Attio::Deal))
+
+      # Check that all deals have an open stage
+      stage_titles = results.filter_map do |deal|
+        if deal.stage.is_a?(Hash)
           deal.stage.dig("status", "title")
         else
           deal.stage
         end
-        expect(["Lead", "In Progress"]).to include(stage_title) if stage_title
+      end
+
+      unless stage_titles.empty?
+        expect(stage_titles).to all(satisfy { |t| ["Lead", "In Progress"].include?(t) })
       end
     end
   end
