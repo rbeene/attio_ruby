@@ -2,5 +2,5 @@
 
 module Attio
   # Current version of the Attio Ruby gem
-  VERSION = "0.1.4"
+  VERSION = "0.1.5"
 end
